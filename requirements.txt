@@ -1,0 +1,5 @@
+paramiko
+pytest-testinfra
+pytest-xdist
+junit2html
+pytest

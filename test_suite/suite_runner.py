@@ -35,15 +35,13 @@ class SuiteRunner:
 
     def get_all_instances_hosts_with_users(self):
         """
-        Returns a comma-separated list of <user>@<host> items, as string
-        :return: A string with comma-separated items in the form of '<user>@<host>'
+        :return: A string with comma-separated items in the form of '<user1>@<host1>,<user2>@<host2>'
         """
         return ','.join(['{0}@{1}'.format(inst['username'], inst['public_dns']) for inst in self.instances.values()])
 
     def get_test_suite_paths(self):
         """
-        Returns a list of test files (absolute paths) that will be executed in the cloud instances
-        :return: A String array
+        :return: A String array of test file absolute paths that will be executed in the cloud instances
         """
         test_suites_to_run = ['generic/test_generic.py']
 
