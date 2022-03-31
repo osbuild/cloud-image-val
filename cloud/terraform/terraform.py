@@ -2,6 +2,8 @@ from ast import alias
 import os
 import json
 import sys
+from pprint import pprint
+
 
 class TerraformConfigurator:
     def __init__(self, cloud):
@@ -25,14 +27,11 @@ class TerraformConfigurator:
     def add_region_conf(self, region):
         # Do not create provider block if it already exists
         providers = [provider['alias'] for provider in self.providers['provider'][self.cloud]]
-        print(providers)
         if region in providers:
             return
 
         if self.cloud == 'aws':
             new_provider = self.__new_aws_provider(region)
-
-        self.providers['provider'][self.cloud].append(new_provider)
 
     def __new_aws_provider(self, region):
         # If no profile was specified, select the default
@@ -45,39 +44,45 @@ class TerraformConfigurator:
             'profile': self.aws_profile,
         }
 
-        return new_provider
+        self.providers['provider'][self.cloud].append(new_provider)
 
-    def add_instance_conf(self, region, image_id, name, instance_type=''):
+    def add_instance_conf(self, instance):
+        if self.cloud == 'aws':
+            self.__new_aws_instance(instance)
+
+    def __new_aws_instance(self, instance):
+        if not instance['instance_type']:
+            instance['instance_type'] = 't2.micro'
+
+        name = instance['name'].replace('.', '-')
+
+        # TODO: agree on a name for 'region' or 'location' across all cloud so we can move
+        #      this code to 'add_instance_conf'
         aliases = [provider['alias'] for provider in self.providers['provider'][self.cloud]]
-        if region not in aliases:
+        if instance['region'] not in aliases:
             print('Cannot add an instance if region provider is not set up')
             exit(1)
 
-        if self.cloud == 'aws':
-            self.__new_aws_instance(region, image_id, name, instance_type)
-
-    def __new_aws_instance(self, region, image_id, name, instance_type):
-        if not instance_type:
-            instance_type = 't2.micro'
-
-        resource_id = f'{region}-{name}'.replace('.', '-')
         new_instance = {
-            'instance_type': instance_type,
-            'ami': image_id,
-            'provider': f'aws.{region}',
+            'instance_type': instance['instance_type'],
+            'ami': instance['ami'],
+            'provider': f'aws.{instance["region"]}',
             'tags': {'name': name},
         }
         self.resources['resource']['aws_instance'][name] = new_instance
 
     def print_configuration(self):
-        print(
-            '------------\nResources:',
-            str(self.resources),
-            '\n------------\nProviders:',
-            str(self.providers),
-        )
+        pprint(self.resources)
+        pprint(self.providers)
 
     def set_configuration(self):
+        main_tf = {
+            'terraform': {
+                'required_providers': {'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}},
+                'required_version': '>= 0.14.9',
+            }
+        }
+        self.__dump_to_json(main_tf, 'main.tf.json')
         self.__dump_to_json(self.resources, 'resources.tf.json')
         self.__dump_to_json(self.providers, 'providers.tf.json')
 
@@ -96,12 +101,7 @@ class TerraformConfigurator:
     def configure_aws_resources(self, resource_file):
         for instance in resource_file['instances']:
             self.add_region_conf(instance['region'])
-            self.add_instance_conf(
-                instance['region'],
-                instance['ami'],
-                instance['name'].replace('.', '-'),
-                instance['instance_type'],
-            )
+            self.add_instance_conf(instance)
 
 
 class TerraformController:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     tf_conf = TerraformConfigurator('aws')
     tf_controller = TerraformController('aws')
 
-    tf_conf.configure_from_resources_json('resources.json')
+    tf_conf.configure_from_resources_json('sample/resources.json')
     tf_conf.print_configuration()
     tf_conf.set_configuration()
     tf_controller.create_infra()
