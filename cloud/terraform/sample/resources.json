@@ -1,0 +1,12 @@
+{
+    "provider": "aws",
+    "instances": [
+        {
+            "ami": "ami-0767af0854a146e3e",
+            "region": "us-east-1",
+            "instance_type": "",
+            "username": "ec2-user",
+            "name": "sample-name-RHEL-8.6"
+        }
+    ]
+}
