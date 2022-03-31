@@ -6,7 +6,7 @@
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "example-name-RHEL-8.6"
+            "name": "sample-name-RHEL-8.6"
         }
     ]
 }
