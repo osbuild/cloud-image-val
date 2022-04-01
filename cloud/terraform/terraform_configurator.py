@@ -4,9 +4,10 @@ from pprint import pprint
 
 
 class TerraformConfigurator:
-    def __init__(self, cloud, ssh_key_path):
+    def __init__(self, cloud, ssh_key_path, resources_path):
         self.cloud = cloud
         self.ssh_key_path = ssh_key_path
+        self.resources_path = resources_path
 
         self.main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
         self.resources_tf = {'resource': {}}
@@ -19,9 +20,8 @@ class TerraformConfigurator:
                 'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}
             }
 
-    def configure_from_resources_json(self, resources_path):
-        self.resources_path = resources_path
-        with open(resources_path) as f:
+    def configure_from_resources_json(self):
+        with open(self.resources_path) as f:
             resources_file = json.load(f)
 
         if resources_file['provider'] == 'aws':
@@ -91,7 +91,7 @@ class TerraformConfigurator:
         new_key_pair = {
             'provider': f'aws.{region}',
             'key_name': key_name,
-            'public_key': f'${{file(\"{self.ssh_key_path}.pub")}}',
+            'public_key': f'${{file("{self.ssh_key_path}.pub")}}',
         }
 
         self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
@@ -127,4 +127,3 @@ class TerraformConfigurator:
             
         print(f'ERROR: No instance with name "{name}" was found')
         exit(1)
-        

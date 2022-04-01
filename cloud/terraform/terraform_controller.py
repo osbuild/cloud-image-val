@@ -1,7 +1,5 @@
 import os
 import json
-from typing import final
-from wsgiref.simple_server import WSGIRequestHandler
 
 from terraform_configurator import TerraformConfigurator
 
@@ -36,7 +34,7 @@ class TerraformController:
                     continue
 
                 username = self.tf_configurator.get_username_by_instance_name(
-                    resource['address'].replace('aws_instance.', '')
+                    resource['address'].split('.')[1]
                 )
                 instances_info[resource['address']] = {
                     'instance_id': resource['values']['id'],
@@ -63,12 +61,13 @@ class TerraformController:
 
 
 if __name__ == '__main__':
-    tf_conf = TerraformConfigurator('aws', '/tmp/test-key')
+    resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
+
+    tf_conf = TerraformConfigurator('aws', '/tmp/test-key', resources_test_file)
     tf_controller = TerraformController('aws', tf_conf)
 
     try:
-        resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
-        tf_conf.configure_from_resources_json(resources_test_file)
+        tf_conf.configure_from_resources_json()
         tf_conf.print_configuration()
         tf_conf.set_configuration()
 
