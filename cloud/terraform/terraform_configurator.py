@@ -4,28 +4,34 @@ from pprint import pprint
 
 
 class TerraformConfigurator:
-    def __init__(self, cloud):
+    def __init__(self, cloud, ssh_key_path, resources_path):
         self.cloud = cloud
+        self.ssh_key_path = ssh_key_path
+        self.resources_path = resources_path
+
         self.main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
-
-        if cloud == 'aws':
-            self.cloud_instance = 'aws_instance'
-            self.main_tf['terraform']['required_providers'] = {'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}}
-
-        self.resources_tf = {'resource': {self.cloud_instance: {}}}
+        self.resources_tf = {'resource': {}}
         self.providers_tf = {'provider': {cloud: []}}
 
-    def configure_from_resources_json(self, resources_path):
-        with open(resources_path) as f:
+        if cloud == 'aws':
+            self.resources_tf['resource']['aws_instance'] = {}
+            self.resources_tf['resource']['aws_key_pair'] = {}
+            self.main_tf['terraform']['required_providers'] = {
+                'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}
+            }
+
+    def configure_from_resources_json(self):
+        with open(self.resources_path) as f:
             resources_file = json.load(f)
 
         if resources_file['provider'] == 'aws':
             self.configure_aws_resources(resources_file)
 
-    def configure_aws_resources(self, resource_file):
-        for instance in resource_file['instances']:
+    def configure_aws_resources(self, resources_file):
+        for instance in resources_file['instances']:
             self.add_region_conf(instance['region'])
             self.add_instance_conf(instance)
+            self.add_ssh_key_conf(instance['region'])
 
     def add_region_conf(self, region):
         # Do not create provider block if it already exists
@@ -70,9 +76,25 @@ class TerraformConfigurator:
             'instance_type': instance['instance_type'],
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
+            'key_name': f'{instance["region"]}-key',
             'tags': {'name': name},
         }
         self.resources_tf['resource']['aws_instance'][name] = new_instance
+
+    def add_ssh_key_conf(self, region):
+        if self.cloud == 'aws':
+            self.__new_aws_key_pair(region)
+
+    def __new_aws_key_pair(self, region):
+        key_name = f'{region}-key'
+        
+        new_key_pair = {
+            'provider': f'aws.{region}',
+            'key_name': key_name,
+            'public_key': f'${{file("{self.ssh_key_path}.pub")}}',
+        }
+
+        self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
 
     def set_configuration(self):
         self.__dump_to_json(self.main_tf, 'main.tf.json')
@@ -88,9 +110,20 @@ class TerraformConfigurator:
         pprint(self.providers_tf)
 
     def remove_configuration(self):
-        for file in ['main.tf', 'resources.tf', 'providers.tf']:
+        for file in ['main.tf.json', 'resources.tf.json', 'providers.tf.json']:
             if os.path.exists(file):
                 os.remove(file)
 
     def set_aws_profile(self, profile):
         self.aws_profile = profile
+
+    def get_username_by_instance_name(self, name):
+        with open(self.resources_path) as f:
+            resources_file = json.load(f)
+
+        for instance in resources_file['instances']:
+            if instance['name'].replace('.', '-') == name:
+                return instance['username']
+            
+        print(f'ERROR: No instance with name "{name}" was found')
+        exit(1)

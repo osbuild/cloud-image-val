@@ -7,6 +7,20 @@
             "instance_type": "",
             "username": "ec2-user",
             "name": "sample-name-RHEL-8.6"
+        },
+        {
+            "ami": "ami-09d21608cdeb79c49",
+            "region": "us-east-1",
+            "instance_type": "",
+            "username": "ec2-user",
+            "name": "sample-name-2-CentOS-stream-9"
+        },
+        {
+            "ami": "ami-02aaa61ea41b30dae",
+            "region": "us-west-2",
+            "instance_type": "",
+            "username": "ec2-user",
+            "name": "sample-name-3-RHEL-8.6"
         }
     ]
 }
