@@ -1,13 +1,15 @@
 import os
 import json
 from typing import final
+from wsgiref.simple_server import WSGIRequestHandler
 
 from terraform_configurator import TerraformConfigurator
 
 
 class TerraformController:
-    def __init__(self, cloud):
+    def __init__(self, cloud, tf_configurator):
         self.cloud = cloud
+        self.tf_configurator = tf_configurator
 
     def create_infra(self):
         cmd_output = os.system('terraform init')
@@ -32,12 +34,17 @@ class TerraformController:
             for resource in resources:
                 if 'aws_instance' not in resource['address']:
                     continue
+
+                username = self.tf_configurator.get_username_by_instance_name(
+                    resource['address'].replace('aws_instance.', '')
+                )
                 instances_info[resource['address']] = {
                     'instance_id': resource['values']['id'],
                     'public_ip': resource['values']['public_ip'],
                     'public_dns': resource['values']['public_dns'],
                     'availability_zone': resource['values']['availability_zone'],
                     'ami': resource['values']['ami'],
+                    'username': username,
                 }
 
         return instances_info
@@ -57,7 +64,7 @@ class TerraformController:
 
 if __name__ == '__main__':
     tf_conf = TerraformConfigurator('aws', '/tmp/test-key')
-    tf_controller = TerraformController('aws')
+    tf_controller = TerraformController('aws', tf_conf)
 
     try:
         resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
@@ -68,7 +75,7 @@ if __name__ == '__main__':
         tf_controller.create_infra()
         print(tf_controller.get_instances())
         input("Test instances access via ssh. Press ENTER to remove infra")
-        
+
     finally:
         tf_controller.destroy_infra()
         tf_conf.remove_configuration()

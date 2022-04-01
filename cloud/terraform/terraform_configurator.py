@@ -20,14 +20,15 @@ class TerraformConfigurator:
             }
 
     def configure_from_resources_json(self, resources_path):
+        self.resources_path = resources_path
         with open(resources_path) as f:
             resources_file = json.load(f)
 
         if resources_file['provider'] == 'aws':
             self.configure_aws_resources(resources_file)
 
-    def configure_aws_resources(self, resource_file):
-        for instance in resource_file['instances']:
+    def configure_aws_resources(self, resources_file):
+        for instance in resources_file['instances']:
             self.add_region_conf(instance['region'])
             self.add_instance_conf(instance)
             self.add_ssh_key_conf(instance['region'])
@@ -115,3 +116,15 @@ class TerraformConfigurator:
 
     def set_aws_profile(self, profile):
         self.aws_profile = profile
+
+    def get_username_by_instance_name(self, name):
+        with open(self.resources_path) as f:
+            resources_file = json.load(f)
+
+        for instance in resources_file['instances']:
+            if instance['name'].replace('.', '-') == name:
+                return instance['username']
+            
+        print(f'ERROR: No instance with name "{name}" was found')
+        exit(1)
+        
