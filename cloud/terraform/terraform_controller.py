@@ -1,5 +1,6 @@
 import os
 import json
+from typing import final
 
 from terraform_configurator import TerraformConfigurator
 
@@ -23,12 +24,14 @@ class TerraformController:
         output = os.popen('terraform show --json').read()
         json_output = json.loads(output)
 
-        resources = json_output['values']['root_module']['resources_tf']
+        resources = json_output['values']['root_module']['resources']
 
         instances_info = {}
         if self.cloud == 'aws':
             # 'address' corresponds to the tf resource id
             for resource in resources:
+                if 'aws_instance' not in resource['address']:
+                    continue
                 instances_info[resource['address']] = {
                     'instance_id': resource['values']['id'],
                     'public_ip': resource['values']['public_ip'],
@@ -53,15 +56,19 @@ class TerraformController:
 
 
 if __name__ == '__main__':
-    tf_conf = TerraformConfigurator('aws')
+    tf_conf = TerraformConfigurator('aws', '/tmp/test-key')
     tf_controller = TerraformController('aws')
 
-    resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
-    tf_conf.configure_from_resources_json(resources_test_file)
-    tf_conf.print_configuration()
-    tf_conf.set_configuration()
-    
-    tf_controller.create_infra()
-    print(tf_controller.get_instances())
-    tf_controller.destroy_infra()
-    tf_conf.remove_configuration()
+    try:
+        resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
+        tf_conf.configure_from_resources_json(resources_test_file)
+        tf_conf.print_configuration()
+        tf_conf.set_configuration()
+
+        tf_controller.create_infra()
+        print(tf_controller.get_instances())
+        input("Test instances access via ssh. Press ENTER to remove infra")
+        
+    finally:
+        tf_controller.destroy_infra()
+        tf_conf.remove_configuration()
