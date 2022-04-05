@@ -1,7 +1,7 @@
 import os
 import json
 
-from terraform_configurator import TerraformConfigurator
+from cloud.terraform.terraform_configurator import TerraformConfigurator
 
 
 class TerraformController:

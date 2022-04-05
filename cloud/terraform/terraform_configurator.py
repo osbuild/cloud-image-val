@@ -65,19 +65,20 @@ class TerraformConfigurator:
 
         name = instance['name'].replace('.', '-')
 
-        # TODO: agree on a name for 'region' or 'location' across all cloud so we can move
-        #      this code to 'add_instance_conf'
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud]]
         if instance['region'] not in aliases:
             print('Cannot add an instance if region provider is not set up')
             exit(1)
 
+        key_name = f'{instance["region"]}-key'
+
         new_instance = {
             'instance_type': instance['instance_type'],
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
-            'key_name': f'{instance["region"]}-key',
+            'key_name': key_name,
             'tags': {'name': name},
+            'depends_on': [f'aws_key_pair.{key_name}']
         }
         self.resources_tf['resource']['aws_instance'][name] = new_instance
 
@@ -91,7 +92,7 @@ class TerraformConfigurator:
         new_key_pair = {
             'provider': f'aws.{region}',
             'key_name': key_name,
-            'public_key': f'${{file("{self.ssh_key_path}.pub")}}',
+            'public_key': f'${{file("{self.ssh_key_path}")}}',
         }
 
         self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
