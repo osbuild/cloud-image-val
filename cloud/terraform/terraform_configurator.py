@@ -4,21 +4,36 @@ from pprint import pprint
 
 
 class TerraformConfigurator:
-    def __init__(self, cloud, ssh_key_path, resources_path):
-        self.cloud = cloud
+    supported_providers = ('aws')
+
+    def __init__(self, ssh_key_path, resources_path):
         self.ssh_key_path = ssh_key_path
         self.resources_path = resources_path
+        self.cloud = self.get_cloud_provider_from_resources_json()
 
         self.main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
         self.resources_tf = {'resource': {}}
-        self.providers_tf = {'provider': {cloud: []}}
+        self.providers_tf = {'provider': {self.cloud: []}}
 
-        if cloud == 'aws':
+        if self.cloud == 'aws':
             self.resources_tf['resource']['aws_instance'] = {}
             self.resources_tf['resource']['aws_key_pair'] = {}
             self.main_tf['terraform']['required_providers'] = {
                 'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}
             }
+
+    def get_cloud_provider_from_resources_json(self):
+        with open(self.resources_path) as f:
+            resources_data = json.load(f)
+
+        if 'provider' not in resources_data:
+            raise f'No cloud providers found in {self.resources_path}'
+
+        cloud_provider = resources_data['provider']
+        if cloud_provider not in self.supported_providers:
+            raise f'Unsupported cloud provider: {cloud_provider}'
+
+        return cloud_provider
 
     def configure_from_resources_json(self):
         with open(self.resources_path) as f:
