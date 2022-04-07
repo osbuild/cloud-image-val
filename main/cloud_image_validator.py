@@ -18,26 +18,13 @@ class CloudImageValidator:
     ssh_config_file = '/tmp/ssh_config'
 
     infra_controller = None
+    infra_configurator = None
 
     def __init__(self, resources_file, output_file, parallel, debug):
         self.resources_file = resources_file
         self.output_file = output_file
         self.parallel = parallel
         self.debug = debug
-        self.cloud_provider = self.get_cloud_provider_from_resources_json()
-
-    def get_cloud_provider_from_resources_json(self):
-        with open(self.resources_file) as f:
-            resources_data = json.load(f)
-
-        if 'provider' not in resources_data:
-            raise f'No cloud providers found in {resources_data}'
-
-        cloud_provider = resources_data['provider']
-        if cloud_provider not in self.supported_providers:
-            raise f'Unsupported cloud provider: {cloud_provider}'
-
-        return cloud_provider
 
     def main(self):
         self.infra_controller = self.initialize_infrastructure()
@@ -54,17 +41,16 @@ class CloudImageValidator:
     def initialize_infrastructure(self):
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
 
-        infra_configurator = TerraformConfigurator(cloud=self.cloud_provider,
-                                                   ssh_key_path=self.ssh_pub_key_file,
-                                                   resources_path=self.resources_file)
-        infra_configurator.configure_from_resources_json()
+        self.infra_configurator = TerraformConfigurator(ssh_key_path=self.ssh_pub_key_file,
+                                                        resources_path=self.resources_file)
+        self.infra_configurator.configure_from_resources_json()
 
         if self.debug:
-            infra_configurator.print_configuration()
+            self.infra_configurator.print_configuration()
 
-        infra_configurator.set_configuration()
+        self.infra_configurator.set_configuration()
 
-        return TerraformController(self.cloud_provider, infra_configurator)
+        return TerraformController(self.infra_configurator)
 
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()
@@ -83,7 +69,7 @@ class CloudImageValidator:
 
     def run_tests_in_all_instances(self, instances):
         time.sleep(5)
-        runner = SuiteRunner(self.cloud_provider,
+        runner = SuiteRunner(self.infra_configurator.cloud,
                              instances,
                              self.ssh_config_file,
                              parallel=self.parallel,
