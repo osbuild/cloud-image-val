@@ -2,14 +2,31 @@ import os
 
 
 class SuiteRunner:
-    def __init__(self, cloud_provider, instances, ssh_identity_file, parallel=True, debug=False):
+    max_processes = 40  # based on the number of threads used by ami-val
+
+    connection_type = 'ssh'
+
+    # rerun failed tests in case ssh times out or connection is refused by host
+    rerun_failing_tests_regex = r'refused|timeout'
+    max_reruns = 3
+    rerun_delay_sec = 5
+
+    def __init__(self,
+                 cloud_provider,
+                 instances,
+                 ssh_config,
+                 parallel=True,
+                 debug=False):
         self.cloud_provider = cloud_provider
         self.instances = instances
-        self.ssh_identity_file = ssh_identity_file
+        self.ssh_config = ssh_config
         self.parallel = parallel
         self.debug = debug
 
     def run_tests(self, output_filepath):
+        if os.path.exists(output_filepath):
+            os.remove(output_filepath)
+
         os.system(self.compose_testinfra_command(output_filepath))
 
     def compose_testinfra_command(self, output_filepath):
@@ -20,16 +37,21 @@ class SuiteRunner:
             'py.test',
             ' '.join(test_suite_paths),
             f'--hosts={all_hosts}',
-            f'--ssh-identity-file {self.ssh_identity_file}',
-            f'--junit-xml {output_filepath}'
+            f'--ssh-config {self.ssh_config}',
+            f'--junit-xml {output_filepath}',
+            f'--connection={self.connection_type}'
         ]
+
+        if self.parallel:
+            command_with_args.append(f'--numprocesses={len(self.instances)}')
+            command_with_args.append(f'--maxprocesses={self.max_processes}')
+
+            command_with_args.append(f'--only-rerun="{self.rerun_failing_tests_regex}"')
+            command_with_args.append(f'--reruns {self.max_reruns}')
+            command_with_args.append(f'--reruns-delay {self.rerun_delay_sec}')
 
         if self.debug:
             command_with_args.append('-v')
-
-        if self.parallel:
-            command_with_args.append(f'--numprocesses=logical')
-            command_with_args.append('--dist=loadfile')
 
         return ' '.join(command_with_args)
 

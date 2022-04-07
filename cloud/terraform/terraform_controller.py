@@ -1,12 +1,12 @@
 import os
 import json
 
-from terraform_configurator import TerraformConfigurator
+from cloud.terraform.terraform_configurator import TerraformConfigurator
 
 
 class TerraformController:
-    def __init__(self, cloud, tf_configurator):
-        self.cloud = cloud
+    def __init__(self, tf_configurator):
+        self.cloud = tf_configurator.cloud
         self.tf_configurator = tf_configurator
 
     def create_infra(self):
@@ -63,8 +63,8 @@ class TerraformController:
 if __name__ == '__main__':
     resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
 
-    tf_conf = TerraformConfigurator('aws', '/tmp/test-key', resources_test_file)
-    tf_controller = TerraformController('aws', tf_conf)
+    tf_conf = TerraformConfigurator('/tmp/test-key', resources_test_file)
+    tf_controller = TerraformController(tf_conf)
 
     try:
         tf_conf.configure_from_resources_json()

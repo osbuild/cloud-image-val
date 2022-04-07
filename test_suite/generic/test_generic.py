@@ -1,11 +1,4 @@
 class TestsGeneric:
-    def test_passwd_file(self, host):
-        passwd = host.file("/etc/passwd")
-        assert passwd.contains("root")
-        assert passwd.user == "root"
-        assert passwd.group == "root"
-        assert passwd.mode == 0o644
-
     def test_bash_history_empty(self, host):
         users = [host.user().name, 'root']
 
@@ -17,7 +10,13 @@ class TestsGeneric:
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
 
-class TestsNetworking:
-    def test_curl_is_installed(self, host):
-        curl = host.package("curl")
-        assert curl.is_installed
+class TestsSecurity:
+    def test_firewalld_is_disabled(self, host):
+        product_version = 7.0
+        if float(host.system_info.release) < product_version:
+            for s in ['iptables', 'ip6tables']:
+                assert not host.service(s).is_enabled,\
+                    f'{s} service should be disabled in RHEL below {product_version}'
+        else:
+            assert not host.package('firewalld').is_installed,\
+                f'firewalld should not be installed in cloud images for RHEL {product_version} and above'

@@ -4,21 +4,36 @@ from pprint import pprint
 
 
 class TerraformConfigurator:
-    def __init__(self, cloud, ssh_key_path, resources_path):
-        self.cloud = cloud
+    supported_providers = ('aws')
+
+    def __init__(self, ssh_key_path, resources_path):
         self.ssh_key_path = ssh_key_path
         self.resources_path = resources_path
+        self.cloud = self.get_cloud_provider_from_resources_json()
 
         self.main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
         self.resources_tf = {'resource': {}}
-        self.providers_tf = {'provider': {cloud: []}}
+        self.providers_tf = {'provider': {self.cloud: []}}
 
-        if cloud == 'aws':
+        if self.cloud == 'aws':
             self.resources_tf['resource']['aws_instance'] = {}
             self.resources_tf['resource']['aws_key_pair'] = {}
             self.main_tf['terraform']['required_providers'] = {
                 'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}
             }
+
+    def get_cloud_provider_from_resources_json(self):
+        with open(self.resources_path) as f:
+            resources_data = json.load(f)
+
+        if 'provider' not in resources_data:
+            raise f'No cloud providers found in {self.resources_path}'
+
+        cloud_provider = resources_data['provider']
+        if cloud_provider not in self.supported_providers:
+            raise f'Unsupported cloud provider: {cloud_provider}'
+
+        return cloud_provider
 
     def configure_from_resources_json(self):
         with open(self.resources_path) as f:
@@ -65,19 +80,20 @@ class TerraformConfigurator:
 
         name = instance['name'].replace('.', '-')
 
-        # TODO: agree on a name for 'region' or 'location' across all cloud so we can move
-        #      this code to 'add_instance_conf'
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud]]
         if instance['region'] not in aliases:
             print('Cannot add an instance if region provider is not set up')
             exit(1)
 
+        key_name = f'{instance["region"]}-key'
+
         new_instance = {
             'instance_type': instance['instance_type'],
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
-            'key_name': f'{instance["region"]}-key',
+            'key_name': key_name,
             'tags': {'name': name},
+            'depends_on': [f'aws_key_pair.{key_name}']
         }
         self.resources_tf['resource']['aws_instance'][name] = new_instance
 
@@ -91,7 +107,7 @@ class TerraformConfigurator:
         new_key_pair = {
             'provider': f'aws.{region}',
             'key_name': key_name,
-            'public_key': f'${{file("{self.ssh_key_path}.pub")}}',
+            'public_key': f'${{file("{self.ssh_key_path}")}}',
         }
 
         self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair

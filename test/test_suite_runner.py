@@ -5,15 +5,15 @@ from test_suite.suite_runner import SuiteRunner
 
 class TestSuiteRunner:
     test_cloud_provider = 'aws'
-    test_instances = []
-    test_ssh_identity_file = '/path/to/ssh/key.pem'
+    test_instances = ['test instance 1', 'test instance 2']
+    test_ssh_config = '/path/to/ssh_config'
     test_output_filepath = 'test/output/filepath.xml'
 
     @pytest.fixture
     def suite_runner(self):
         return SuiteRunner(self.test_cloud_provider,
                            self.test_instances,
-                           self.test_ssh_identity_file)
+                           self.test_ssh_config)
 
     def test_run_tests(self, mocker, suite_runner):
         # Arrange
@@ -23,29 +23,38 @@ class TestSuiteRunner:
         mock_compose_testinfra_command = mocker.MagicMock(return_value=test_composed_command)
         suite_runner.compose_testinfra_command = mock_compose_testinfra_command
 
+        mock_os_path_exists = mocker.patch('os.path.exists', return_value=True)
+        mock_os_remove = mocker.patch('os.remove')
         mock_os_system = mocker.patch('os.system')
 
         # Act
         suite_runner.run_tests(test_output_filepath)
 
         # Assert
-        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath)
+        mock_os_path_exists.assert_called_once_with(test_output_filepath)
+        mock_os_remove.assert_called_once_with(test_output_filepath)
+
         mock_os_system.assert_called_once_with(test_composed_command)
+        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath)
 
     @pytest.mark.parametrize(
         'test_debug, test_parallel, expected_command_string',
         [(False, False,
-          f'py.test path1 path2 --hosts=user1@host1,user2@host2 '
-          f'--ssh-identity-file {test_ssh_identity_file} --junit-xml {test_output_filepath}'),
+          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh'),
          (False, True,
-          f'py.test path1 path2 --hosts=user1@host1,user2@host2 '
-          f'--ssh-identity-file {test_ssh_identity_file} --junit-xml {test_output_filepath} '
-          f'--numprocesses=logical --dist=loadfile'),
+          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh '
+          f'--numprocesses={len(test_instances)} --maxprocesses=40 '
+          '--only-rerun="refused|timeout" '
+          '--reruns 3 --reruns-delay 5'),
          (True, True,
-          f'py.test path1 path2 --hosts=user1@host1,user2@host2 '
-          f'--ssh-identity-file {test_ssh_identity_file} --junit-xml {test_output_filepath} '
-          f'-v '
-          f'--numprocesses=logical --dist=loadfile')]
+          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh '
+          f'--numprocesses={len(test_instances)} --maxprocesses=40 '
+          '--only-rerun="refused|timeout" '
+          '--reruns 3 --reruns-delay 5 '
+          '-v')]
     )
     def test_compose_testinfra_command(self,
                                        mocker,

@@ -1,5 +1,6 @@
-paramiko
+pytest
 pytest-testinfra
 pytest-xdist
+pytest-rerunfailures
+sshconf
 junit2html
-pytest
