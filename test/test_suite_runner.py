@@ -6,7 +6,7 @@ from test_suite.suite_runner import SuiteRunner
 class TestSuiteRunner:
     test_cloud_provider = 'aws'
     test_instances = ['test instance 1', 'test instance 2']
-    test_ssh_config = '/path/to/ssh/key.pem'
+    test_ssh_config = '/path/to/ssh_config'
     test_output_filepath = 'test/output/filepath.xml'
 
     @pytest.fixture
