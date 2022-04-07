@@ -4,6 +4,13 @@ import os
 class SuiteRunner:
     max_processes = 40  # based on the number of threads used by ami-val
 
+    connection_type = 'ssh'
+
+    # rerun failed tests in case ssh times out or connection is refused by host
+    rerun_failing_tests_regex = r'refused|timeout'
+    max_reruns = 3
+    rerun_delay_sec = 5
+
     def __init__(self,
                  cloud_provider,
                  instances,
@@ -32,17 +39,16 @@ class SuiteRunner:
             f'--hosts={all_hosts}',
             f'--ssh-config {self.ssh_config}',
             f'--junit-xml {output_filepath}',
-            '--connection=ssh'
+            f'--connection={self.connection_type}'
         ]
 
         if self.parallel:
             command_with_args.append(f'--numprocesses={len(self.instances)}')
             command_with_args.append(f'--maxprocesses={self.max_processes}')
 
-            # rerun failed tests in case ssh times out or connection is refused by host
-            command_with_args.append('--only-rerun="refused|timeout"')
-            command_with_args.append('--reruns 3')
-            command_with_args.append('--reruns-delay 5')
+            command_with_args.append(f'--only-rerun="{self.rerun_failing_tests_regex}"')
+            command_with_args.append(f'--reruns {self.max_reruns}')
+            command_with_args.append(f'--reruns-delay {self.rerun_delay_sec}')
 
         if self.debug:
             command_with_args.append('-v')
