@@ -12,7 +12,7 @@ class TestCloudImageValidator:
     test_output_file = '/fake/test/output_file.xml'
     test_parallel = True
     test_debug = True
-    test_instances = ['test instance 1', 'test instance 2']
+    test_instances = ['test-instance-1', 'test-instance-2']
 
     @pytest.fixture
     def validator(self):
