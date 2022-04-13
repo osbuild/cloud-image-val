@@ -7,7 +7,6 @@ from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
 from test_suite.suite_runner import SuiteRunner
 from result.reporter import Reporter
-from pprint import pprint
 
 
 class CloudImageValidator:
@@ -56,11 +55,6 @@ class CloudImageValidator:
         self.infra_controller.create_infra()
         instances = self.infra_controller.get_instances()
 
-        if self.debug:
-            pprint(instances)
-            with open('/tmp/created_instances.json', 'w') as f:
-                json.dump(instances, f)
-
         ssh_lib.generate_instances_ssh_config(instances=instances,
                                               ssh_config_file=self.ssh_config_file,
                                               ssh_key_path=self.ssh_identity_file)
@@ -69,9 +63,9 @@ class CloudImageValidator:
 
     def run_tests_in_all_instances(self, instances):
         time.sleep(5)
-        runner = SuiteRunner(self.infra_configurator.cloud,
-                             instances,
-                             self.ssh_config_file,
+        runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud,
+                             instances=instances,
+                             ssh_config=self.ssh_config_file,
                              parallel=self.parallel,
                              debug=self.debug)
         runner.run_tests(self.output_file)
