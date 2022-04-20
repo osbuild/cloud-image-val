@@ -2,5 +2,8 @@
 */__pycache__/
 */*/__pycache__/
 .idea
-.terraform
+.terraform*
 *.tfstate*
+.vscode/
+.coverage
+*.tf.json
