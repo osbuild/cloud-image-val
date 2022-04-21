@@ -6,3 +6,4 @@ pytest-xdist
 pytest-rerunfailures
 sshconf
 junit2html
+flake8
