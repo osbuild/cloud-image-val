@@ -108,14 +108,14 @@ class TestCloudImageValidator:
         validator.run_tests_in_all_instances(self.test_instances)
 
         mock_run_tests.assert_called_once_with(validator.output_file)
-    
+
     def test_report_test_results(self, mocker, validator):
         mock_generate_html_report = mocker.patch.object(Reporter, 'generate_html_report')
 
         validator.report_test_results()
 
         mock_generate_html_report.assert_called_once_with(validator.output_file.replace('xml', 'html'))
-    
+
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(TerraformController, 'destroy_infra')
         validator.infra_controller = TerraformController

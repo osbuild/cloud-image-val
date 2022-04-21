@@ -28,3 +28,6 @@ jobs:
 
       - name: Get code coverage
         run: pytest --cov-report term-missing --cov=cloud/terraform --cov=result/ --cov=main/ --cov=test_suite/ test/
+
+      - name: Python linter
+        run: flake8 --max-line-length 120
