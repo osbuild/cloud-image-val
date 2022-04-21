@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from main.cloud_image_validator import CloudImageValidator
@@ -55,27 +57,27 @@ class TestCloudImageValidator:
     def test_initialize_infrastructure(self, mocker, validator):
         # Arrange
         mocker.patch('lib.ssh_lib.generate_ssh_key_pair')
-        mock_get_cloud_provider_from_resources_json = mocker.patch.object(TerraformConfigurator,
-                                                                          'get_cloud_provider_from_resources_json')
+        mock_get_cloud_provider_from_resources = mocker.patch.object(TerraformConfigurator,
+                                                                     'get_cloud_provider_from_resources')
         mock_configure_from_resources_json = mocker.patch.object(TerraformConfigurator,
                                                                  'configure_from_resources_json')
         mock_print_configuration = mocker.patch.object(TerraformConfigurator,
                                                        'print_configuration')
-        mock_set_configuration = mocker.patch.object(TerraformConfigurator,
-                                                     'set_configuration')
+        mock_initialize_resources_dict = mocker.patch.object(TerraformConfigurator,
+                                                             '_initialize_resources_dict')
 
         # Act
         validator.initialize_infrastructure()
 
         # Assert
-        mock_get_cloud_provider_from_resources_json.assert_called_once()
+        mock_get_cloud_provider_from_resources.assert_called_once()
         mock_configure_from_resources_json.assert_called_once()
         mock_print_configuration.assert_called_once()
-        mock_set_configuration.assert_called_once()
+        mock_initialize_resources_dict.assert_called_once()
 
     def test_deploy_infrastructure(self, mocker, validator):
         # Arrange
-        mocker.patch.object(TerraformConfigurator, 'cloud', create=True)
+        mocker.patch.object(TerraformConfigurator, 'cloud_name', create=True)
 
         mock_create_infra = mocker.patch.object(TerraformController,
                                                 'create_infra')
@@ -99,7 +101,7 @@ class TestCloudImageValidator:
                                                                    ssh_key_path=validator.ssh_identity_file)
 
     def test_run_tests_in_all_instances(self, mocker, validator):
-        mocker.patch.object(TerraformConfigurator, 'cloud', create=True)
+        mocker.patch.object(TerraformConfigurator, 'cloud_name', create=True)
         validator.infra_configurator = TerraformConfigurator
 
         mocker.patch('time.sleep')

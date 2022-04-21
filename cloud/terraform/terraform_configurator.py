@@ -2,144 +2,80 @@ import os
 import json
 from pprint import pprint
 
+from cloud.terraform.aws_config_builder import AWSConfigBuilder
+from cloud.terraform.azure_config_builder import AzureConfigBuilder
+
 
 class TerraformConfigurator:
-    supported_providers = ('aws')
+    supported_providers = ('aws', 'azure')
+
+    main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
+    providers_tf = None
+    resources_tf = None
 
     def __init__(self, ssh_key_path, resources_path):
-        self.ssh_key_path = ssh_key_path
         self.resources_path = resources_path
-        self.cloud = self.get_cloud_provider_from_resources_json()
+        self.ssh_key_path = ssh_key_path
 
-        self.main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
-        self.resources_tf = {'resource': {}}
-        self.providers_tf = {'provider': {self.cloud: []}}
+        self.resources_dict = self._initialize_resources_dict()
+        self.cloud_name = self.get_cloud_provider_from_resources()
 
-        if self.cloud == 'aws':
-            self.resources_tf['resource']['aws_instance'] = {}
-            self.resources_tf['resource']['aws_key_pair'] = {}
-            self.main_tf['terraform']['required_providers'] = {
-                'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}
-            }
-
-    def get_cloud_provider_from_resources_json(self):
+    def _initialize_resources_dict(self):
         with open(self.resources_path) as f:
-            resources_data = json.load(f)
+            return json.load(f)
 
-        if 'provider' not in resources_data:
-            raise f'No cloud providers found in {self.resources_path}'
+    def get_cloud_provider_from_resources(self):
+        if 'provider' not in self.resources_dict:
+            raise Exception(f'No cloud providers found in {self.resources_path}')
 
-        cloud_provider = resources_data['provider']
+        cloud_provider = self.resources_dict['provider']
         if cloud_provider not in self.supported_providers:
-            raise f'Unsupported cloud provider: {cloud_provider}'
+            raise Exception(f'Unsupported cloud provider: {cloud_provider}')
 
         return cloud_provider
 
     def configure_from_resources_json(self):
-        with open(self.resources_path) as f:
-            resources_file = json.load(f)
+        self.build_configuration()
+        self.save_configuration_to_json()
 
-        if resources_file['provider'] == 'aws':
-            self.configure_aws_resources(resources_file)
+    def build_configuration(self):
+        config_builder = self.get_config_builder()
 
-    def configure_aws_resources(self, resources_file):
-        for instance in resources_file['instances']:
-            self.add_region_conf(instance['region'])
-            self.add_instance_conf(instance)
-            self.add_ssh_key_conf(instance['region'])
+        self.main_tf['terraform']['required_providers'] = config_builder.cloud_provider_definition
 
-    def add_region_conf(self, region):
-        # Do not create provider block if it already exists
-        providers = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud]]
-        if region in providers:
-            return
+        self.providers_tf = config_builder.build_provider()
+        self.resources_tf = config_builder.build_resources()
 
-        if self.cloud == 'aws':
-            self.__new_aws_provider(region)
+    def get_config_builder(self):
+        cloud_name = self.resources_dict['provider']
 
-    def __new_aws_provider(self, region):
-        # If no profile was specified, select the default
-        if not hasattr(self, 'aws_profile'):
-            self.aws_profile = 'aws'
+        if cloud_name == 'aws':
+            return AWSConfigBuilder(self.resources_dict, self.ssh_key_path)
+        elif cloud_name == 'azure':
+            return AzureConfigBuilder(self.resources_dict, self.ssh_key_path)
 
-        new_provider = {
-            'region': region,
-            'alias': region,
-            'profile': self.aws_profile,
-        }
-
-        self.providers_tf['provider'][self.cloud].append(new_provider)
-
-    def add_instance_conf(self, instance):
-        if self.cloud == 'aws':
-            self.__new_aws_instance(instance)
-
-    def __new_aws_instance(self, instance):
-        if not instance['instance_type']:
-            instance['instance_type'] = 't2.micro'
-
-        name = instance['name'].replace('.', '-')
-
-        aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud]]
-        if instance['region'] not in aliases:
-            print('Cannot add an instance if region provider is not set up')
-            exit(1)
-
-        key_name = f'{instance["region"]}-key'
-
-        new_instance = {
-            'instance_type': instance['instance_type'],
-            'ami': instance['ami'],
-            'provider': f'aws.{instance["region"]}',
-            'key_name': key_name,
-            'tags': {'name': name},
-            'depends_on': [f'aws_key_pair.{key_name}']
-        }
-        self.resources_tf['resource']['aws_instance'][name] = new_instance
-
-    def add_ssh_key_conf(self, region):
-        if self.cloud == 'aws':
-            self.__new_aws_key_pair(region)
-
-    def __new_aws_key_pair(self, region):
-        key_name = f'{region}-key'
-
-        new_key_pair = {
-            'provider': f'aws.{region}',
-            'key_name': key_name,
-            'public_key': f'${{file("{self.ssh_key_path}")}}',
-        }
-
-        self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
-
-    def set_configuration(self):
+    def save_configuration_to_json(self):
         self.__dump_to_json(self.main_tf, 'main.tf.json')
-        self.__dump_to_json(self.resources_tf, 'resources.tf.json')
         self.__dump_to_json(self.providers_tf, 'providers.tf.json')
+        self.__dump_to_json(self.resources_tf, 'resources.tf.json')
 
     def __dump_to_json(self, content, file):
         with open(file, 'w') as config_file:
             json.dump(content, config_file)
 
     def print_configuration(self):
-        pprint(self.resources_tf)
+        pprint(self.main_tf)
         pprint(self.providers_tf)
+        pprint(self.resources_tf)
 
     def remove_configuration(self):
         for file in ['main.tf.json', 'resources.tf.json', 'providers.tf.json']:
             if os.path.exists(file):
                 os.remove(file)
 
-    def set_aws_profile(self, profile):
-        self.aws_profile = profile
-
     def get_username_by_instance_name(self, name):
-        with open(self.resources_path) as f:
-            resources_file = json.load(f)
-
-        for instance in resources_file['instances']:
+        for instance in self.resources_dict['instances']:
             if instance['name'].replace('.', '-') == name:
                 return instance['username']
 
-        print(f'ERROR: No instance with name "{name}" was found')
-        exit(1)
+        raise Exception(f'ERROR: No instance with name "{name}" was found')
