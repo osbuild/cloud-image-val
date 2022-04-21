@@ -103,7 +103,7 @@ class TerraformConfigurator:
 
     def __new_aws_key_pair(self, region):
         key_name = f'{region}-key'
-        
+
         new_key_pair = {
             'provider': f'aws.{region}',
             'key_name': key_name,
@@ -140,6 +140,6 @@ class TerraformConfigurator:
         for instance in resources_file['instances']:
             if instance['name'].replace('.', '-') == name:
                 return instance['username']
-            
+
         print(f'ERROR: No instance with name "{name}" was found')
         exit(1)
