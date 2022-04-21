@@ -10,7 +10,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
         self.ssh_key_path = ssh_key_path
 
-    def build_provider(self):
+    def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
         for region in all_regions:
             self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]\
@@ -59,7 +59,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
         if instance['region'] not in aliases:
-            raise 'Cannot add an instance if region provider is not set up'
+            raise Exception('Cannot add an instance if region provider is not set up')
 
         key_name = f'{instance["region"]}-key'
 

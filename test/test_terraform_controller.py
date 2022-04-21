@@ -30,10 +30,14 @@ class TestTerraformController:
         assert result is None
         mock_os_system.assert_has_calls([mocker.call(tf_init), mocker.call(tf_apply)])
 
-    @pytest.mark.parametrize('cloud', ['aws'])
-    def test_get_instances(self, mocker, tf_controller, cloud):
+    @pytest.mark.parametrize(
+        'cloud, test_instance',
+        [('aws', 'test_instance_aws'),
+         ('azure', 'test_instance_azure')])
+    def test_get_instances(self, mocker, tf_controller, cloud, test_instance):
         # Arrange
-        tf_controller.cloud = cloud
+        tf_controller.cloud_name = cloud
+        test_resource = 'test_resource'
 
         mock_popen = mocker.patch('os.popen', return_value=os._wrap_close)
 
@@ -41,12 +45,12 @@ class TestTerraformController:
         os._wrap_close.read = mock_read
 
         mock_loads = mocker.patch('json.loads',
-                                  return_value={'values': {'root_module': {'resources': 'test'}}})
+                                  return_value={'values': {'root_module': {'resources': test_resource}}})
 
-        test_dict = {'test_dict': 42}
-        mock_get_instances_cloud = mocker.MagicMock(return_value=test_dict)
-        if cloud == 'aws':
-            tf_controller.get_instances_aws = mock_get_instances_cloud
+        test_instance = {'test_instance': 'test'}
+        mock_get_instances_cloud = mocker.MagicMock(return_value=test_instance)
+        tf_controller.get_instances_aws = mock_get_instances_cloud
+        tf_controller.get_instances_azure = mock_get_instances_cloud
 
         # Act
         result = tf_controller.get_instances()
@@ -55,13 +59,15 @@ class TestTerraformController:
         mock_popen.assert_called_once_with('terraform show --json')
         mock_read.assert_called_once()
         mock_loads.called_once_with('test_json')
-        mock_get_instances_cloud.assert_called_once_with('test')
-        assert result == test_dict
+        mock_get_instances_cloud.assert_called_once_with(test_resource)
+
+        assert result == test_instance
 
     def test_get_instances_aws(self, mocker, tf_controller):
         # Arrange
         resources = [
             {
+                'type': 'aws_instance',
                 'address': 'a.aws_instance_test',
                 'values': {
                     'id': 'test_id',
@@ -71,7 +77,7 @@ class TestTerraformController:
                     'ami': 'test_ami',
                 },
             },
-            {'address': 'a.not_an_instance'},
+            {'type': 'not_an_instance'},
         ]
 
         instances_info_expected = {
@@ -94,6 +100,70 @@ class TestTerraformController:
         # Assert
         mock_get_username_by_instance_name.assert_called_once_with('aws_instance_test')
         assert result == instances_info_expected
+
+    def test_get_instances_azure(self, mocker, tf_controller):
+        # Arrange
+        test_computer_name = 'test_hostname'
+        test_location = 'eastus'
+        test_public_dns = f'{test_computer_name}.{test_location}.cloudapp.azure.com'
+        test_public_ip = '10.11.12.13'
+        test_resource_address = 'a.test_azure_address'
+        test_id = '/subscription/xxx/test_azure_resource_id'
+        test_username = 'azure'
+        test_image_type = 'test_image_resource_type'
+        test_image = 'test_image_data'
+
+        resources = [
+            {
+                'type': 'azurerm_linux_virtual_machine',
+                'address': test_resource_address,
+                'values': {
+                    'id': test_id,
+                    'computer_name': test_computer_name,
+                    'admin_username': test_username,
+                    'public_ip_address': test_public_ip,
+                    'location': test_location,
+                    test_image_type: test_image,
+                },
+            },
+            {
+                'type': 'not_a_vm_resource_type'
+            },
+        ]
+
+        instances_info_expected = {
+            test_resource_address: {
+                'instance_id': test_id,
+                'public_ip': test_public_ip,
+                'public_dns': test_public_dns,
+                'location': test_location,
+                'image': test_image,
+                'username': test_username,
+            }
+        }
+
+        mock_get_azure_image_data_from_resource = mocker.patch.object(tf_controller,
+                                                                      '_get_azure_image_data_from_resource',
+                                                                      return_value=test_image)
+
+        # Act
+        result = tf_controller.get_instances_azure(resources)
+
+        # Assert
+        assert result == instances_info_expected
+        mock_get_azure_image_data_from_resource.assert_called_once_with(resources[0])
+
+    @pytest.mark.parametrize(
+        'test_image_type, test_image',
+        [('source_image_reference', {'publisher': 'Canonical'}),
+         ('source_image_id', '/test/image/uri')]
+    )
+    def test_get_azure_image_data_from_resource(self, tf_controller, test_image_type, test_image):
+        test_resources = {'values': {test_image_type: test_image}}
+
+        result = tf_controller._get_azure_image_data_from_resource(test_resources)
+
+        assert result == test_image
 
     def test_destroy_resource(self, mocker, tf_controller):
         # Arrange

@@ -16,5 +16,5 @@ class BaseConfigBuilder:
     def build_resources(self) -> dict:
         pass
 
-    def build_provider(self) -> dict:
+    def build_providers(self) -> dict:
         pass

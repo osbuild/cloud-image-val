@@ -43,7 +43,7 @@ class TerraformConfigurator:
 
         self.main_tf['terraform']['required_providers'] = config_builder.cloud_provider_definition
 
-        self.providers_tf = config_builder.build_provider()
+        self.providers_tf = config_builder.build_providers()
         self.resources_tf = config_builder.build_resources()
 
     def get_config_builder(self):

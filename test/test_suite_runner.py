@@ -106,7 +106,7 @@ class TestSuiteRunner:
     @pytest.mark.parametrize(
         'test_cloud_provider, expected_suite_paths',
         [('other', ['generic/test_generic.py']),
-         ('aws', ['generic/test_generic.py', 'cloud/test_aws.py']), ],
+         ('aws', ['generic/test_generic.py', 'cloud/test_aws.py'])],
     )
     def test_get_test_suite_paths(self,
                                   mocker,
