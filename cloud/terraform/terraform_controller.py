@@ -41,10 +41,8 @@ class TerraformController:
             if 'aws_instance' not in resource['address']:
                 continue
 
-            username = self.tf_configurator.get_username_by_instance_name(
-                resource['address'].split('.')[1]
-            )
-            
+            username = self.tf_configurator.get_username_by_instance_name(resource['address'].split('.')[1])
+
             instances_info[resource['address']] = {
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip'],
@@ -54,7 +52,7 @@ class TerraformController:
                 'username': username,
             }
 
-        return instances_info           
+        return instances_info
 
     def destroy_resource(self, resource_id):
         cmd_output = os.system(f'terraform destroy -target={resource_id}')
@@ -82,7 +80,7 @@ if __name__ == '__main__':
 
         tf_controller.create_infra()
         print(tf_controller.get_instances())
-        input("Test instances access via ssh. Press ENTER to remove infra")
+        input('Test instances access via ssh. Press ENTER to remove infra')
 
     finally:
         tf_controller.destroy_infra()

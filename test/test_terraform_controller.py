@@ -3,6 +3,7 @@ import os
 
 from cloud.terraform.terraform_controller import TerraformController
 
+
 class TestTerraformController:
     test_ssh_key = '/fake/ssh/dir'
     test_resources_path = '/fake/resources/path'
@@ -39,12 +40,11 @@ class TestTerraformController:
         mock_read = mocker.MagicMock(return_value='test_json')
         os._wrap_close.read = mock_read
 
-        mock_loads = mocker.patch(
-            'json.loads',
-            return_value={'values': {'root_module': {'resources': 'test'}}},
-        )
+        mock_loads = mocker.patch('json.loads',
+                                  return_value={'values': {'root_module': {'resources': 'test'}}})
 
-        mock_get_instances_cloud = mocker.MagicMock(return_value={'test_dict': 42})
+        test_dict = {'test_dict': 42}
+        mock_get_instances_cloud = mocker.MagicMock(return_value=test_dict)
         if cloud == 'aws':
             tf_controller.get_instances_aws = mock_get_instances_cloud
 
@@ -56,7 +56,7 @@ class TestTerraformController:
         mock_read.assert_called_once()
         mock_loads.called_once_with('test_json')
         mock_get_instances_cloud.assert_called_once_with('test')
-        assert result == {'test_dict': 42}
+        assert result == test_dict
 
     def test_get_instances_aws(self, mocker, tf_controller):
         # Arrange
@@ -86,7 +86,7 @@ class TestTerraformController:
         }
 
         mock_get_username_by_instance_name = mocker.MagicMock(return_value='test_user')
-        self.tf_configurator.get_username_by_instance_name = mock_get_username_by_instance_name
+        self.tf_configurator.get_username_by_instance_name = (mock_get_username_by_instance_name)
 
         # Act
         result = tf_controller.get_instances_aws(resources)
