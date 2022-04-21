@@ -10,8 +10,6 @@ from result.reporter import Reporter
 
 
 class CloudImageValidator:
-    supported_providers = ('aws')
-
     ssh_identity_file = '/tmp/ssh_key'
     ssh_pub_key_file = f'{ssh_identity_file}.pub'
     ssh_config_file = '/tmp/ssh_config'
@@ -47,8 +45,6 @@ class CloudImageValidator:
         if self.debug:
             self.infra_configurator.print_configuration()
 
-        self.infra_configurator.set_configuration()
-
         return TerraformController(self.infra_configurator)
 
     def deploy_infrastructure(self):
@@ -63,7 +59,7 @@ class CloudImageValidator:
 
     def run_tests_in_all_instances(self, instances):
         time.sleep(5)
-        runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud,
+        runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
                              instances=instances,
                              ssh_config=self.ssh_config_file,
                              parallel=self.parallel,
