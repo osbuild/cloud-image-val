@@ -22,7 +22,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.azure_resource_id_base = f'/subscriptions/{self.subscription_id}/resourceGroups/' \
                                       f'{self.resource_group}/providers'
 
-    def build_provider(self):
+    def build_providers(self):
         self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]\
             .append(self.__new_azure_provider())
 
@@ -47,7 +47,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
 
         for instance in self.resources_dict['instances']:
             instance['hostname'] = f'az-{self.__generate_random_string(6)}-vm'.lower()
-            instance['location'] = instance['region'].lower().replace(' ', '')
+            instance['location'] = instance['location'].lower().replace(' ', '')
 
             self.__new_azure_virtual_network(instance)
             self.__new_azure_subnet(instance)
