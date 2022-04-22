@@ -25,7 +25,7 @@ The automation of some of the steps below will be automated in later versions of
   - https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli
 - You must setup a **service principal** as per the following guide:
   - https://learn.hashicorp.com/tutorials/terraform/azure-build?in=terraform/azure-get-started#create-a-service-principal
--  And **export** the corresponding environment variables as per the guide:
+- And **export** the corresponding environment variables as per the guide:
   - https://learn.hashicorp.com/tutorials/terraform/azure-build?in=terraform/azure-get-started#set-your-environment-variables
 
 
