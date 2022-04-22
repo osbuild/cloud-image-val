@@ -1,13 +1,12 @@
-import argparse
-
+from argparse import ArgumentParser, RawTextHelpFormatter
 from main.cloud_image_validator import CloudImageValidator
 
 
-parser = argparse.ArgumentParser()
+parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
 parser.add_argument('-r', '--resources-file',
-                    help='Path to the resources.json file that contains the Cloud provider and the images to use. '
-                         'See cloud/terraform/sample/resources.json to know about the expected file structure.',
+                    help='Path to the resources_aws.json file that contains the Cloud provider and the images to use.\n'
+                         'See cloud/terraform/sample/resources_<cloud>.json to know about the expected file structure.',
                     required=True)
 parser.add_argument('-o', '--output-file',
                     help='Output file path of the resultant Junit XML test report and others',

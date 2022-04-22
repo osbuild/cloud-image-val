@@ -1,12 +1,10 @@
 import os
 import json
 
-from cloud.terraform.terraform_configurator import TerraformConfigurator
-
 
 class TerraformController:
     def __init__(self, tf_configurator):
-        self.cloud = tf_configurator.cloud
+        self.cloud_name = tf_configurator.cloud_name
         self.tf_configurator = tf_configurator
 
     def create_infra(self):
@@ -28,8 +26,12 @@ class TerraformController:
 
         resources = json_output['values']['root_module']['resources']
 
-        if self.cloud == 'aws':
+        if self.cloud_name == 'aws':
             instances_info = self.get_instances_aws(resources)
+        elif self.cloud_name == 'azure':
+            instances_info = self.get_instances_azure(resources)
+        else:
+            raise Exception(f'Unsupported cloud provider: {self.cloud_name}')
 
         return instances_info
 
@@ -38,7 +40,7 @@ class TerraformController:
 
         # 'address' key corresponds to the tf resource id
         for resource in resources:
-            if 'aws_instance' not in resource['address']:
+            if resource['type'] != 'aws_instance':
                 continue
 
             username = self.tf_configurator.get_username_by_instance_name(resource['address'].split('.')[1])
@@ -54,34 +56,41 @@ class TerraformController:
 
         return instances_info
 
+    def get_instances_azure(self, resources):
+        instances_info = {}
+
+        for resource in resources:
+            if resource['type'] != 'azurerm_linux_virtual_machine':
+                continue
+
+            public_dns = '{}.{}.cloudapp.azure.com'.format(resource['values']['computer_name'],
+                                                           resource['values']['location'])
+
+            image = self._get_azure_image_data_from_resource(resource)
+
+            instances_info[resource['address']] = {
+                'instance_id': resource['values']['id'],
+                'public_ip': resource['values']['public_ip_address'],
+                'public_dns': public_dns,
+                'location': resource['values']['location'],
+                'image': image,
+                'username': resource['values']['admin_username'],
+            }
+
+        return instances_info
+
+    def _get_azure_image_data_from_resource(self, resource):
+        if 'source_image_reference' in resource['values']:
+            return resource['values']['source_image_reference']
+        elif 'source_image_id' in resource['values']:
+            return resource['values']['source_image_id']
+
     def destroy_resource(self, resource_id):
         cmd_output = os.system(f'terraform destroy -target={resource_id}')
         if cmd_output:
-            print('terraform destroy specific resource command failed')
-            exit(1)
+            raise Exception('terraform destroy specific resource command failed')
 
     def destroy_infra(self):
         cmd_output = os.system('terraform destroy -auto-approve')
         if cmd_output:
-            print('terraform destroy command failed')
-            exit(1)
-
-
-if __name__ == '__main__':
-    resources_test_file = os.path.join(os.path.dirname(__file__), 'sample/resources.json')
-
-    tf_conf = TerraformConfigurator('/tmp/test-key.pub', resources_test_file)
-    tf_controller = TerraformController(tf_conf)
-
-    try:
-        tf_conf.configure_from_resources_json()
-        tf_conf.print_configuration()
-        tf_conf.set_configuration()
-
-        tf_controller.create_infra()
-        print(tf_controller.get_instances())
-        input('Test instances access via ssh. Press ENTER to remove infra')
-
-    finally:
-        tf_controller.destroy_infra()
-        tf_conf.remove_configuration()
+            raise Exception('terraform destroy command failed')
