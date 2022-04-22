@@ -15,7 +15,7 @@
             "sku": "16.04-LTS",
             "version": "latest"
         },
-      "region": "West Europe",
+      "location": "West Europe",
       "name": "sample-name-2"
     },
     {
@@ -25,7 +25,7 @@
             "sku": "16.04-LTS",
             "version": "latest"
         },
-      "region": "East US",
+      "location": "East US",
       "name": "sample-name-3"
     }
   ]
