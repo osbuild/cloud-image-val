@@ -1,6 +1,6 @@
-import os
 import time
 
+from os import remove
 from cloud.terraform.terraform_controller import TerraformController
 from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
@@ -72,8 +72,8 @@ class CloudImageValidator:
     def cleanup(self):
         self.infra_controller.destroy_infra()
 
-        os.remove(self.ssh_identity_file)
-        os.remove(self.ssh_pub_key_file)
+        remove(self.ssh_identity_file)
+        remove(self.ssh_pub_key_file)
 
         if not self.debug:
-            os.remove(self.ssh_config_file)
+            remove(self.ssh_config_file)
