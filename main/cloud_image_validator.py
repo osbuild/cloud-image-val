@@ -16,9 +16,15 @@ class CloudImageValidator:
     infra_controller = None
     infra_configurator = None
 
-    def __init__(self, resources_file, output_file, parallel, debug):
+    def __init__(self,
+                 resources_file,
+                 output_file,
+                 test_filter=None,
+                 parallel=False,
+                 debug=False):
         self.resources_file = resources_file
         self.output_file = output_file
+        self.test_filter = test_filter
         self.parallel = parallel
         self.debug = debug
 
@@ -63,7 +69,7 @@ class CloudImageValidator:
                              ssh_config=self.ssh_config_file,
                              parallel=self.parallel,
                              debug=self.debug)
-        runner.run_tests(self.output_file)
+        runner.run_tests(self.output_file, self.test_filter)
 
     def report_test_results(self):
         reporter = Reporter(self.output_file)

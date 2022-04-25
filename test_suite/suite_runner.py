@@ -23,13 +23,13 @@ class SuiteRunner:
         self.parallel = parallel
         self.debug = debug
 
-    def run_tests(self, output_filepath):
+    def run_tests(self, output_filepath, test_filter=None):
         if os.path.exists(output_filepath):
             os.remove(output_filepath)
 
-        os.system(self.compose_testinfra_command(output_filepath))
+        os.system(self.compose_testinfra_command(output_filepath, test_filter))
 
-    def compose_testinfra_command(self, output_filepath):
+    def compose_testinfra_command(self, output_filepath, test_filter):
         all_hosts = self.get_all_instances_hosts_with_users()
         test_suite_paths = self.get_test_suite_paths()
 
@@ -41,6 +41,9 @@ class SuiteRunner:
             f'--junit-xml {output_filepath}',
             f'--connection={self.connection_type}'
         ]
+
+        if test_filter:
+            command_with_args.append(f'-k "{test_filter}"')
 
         if self.parallel:
             command_with_args.append(f'--numprocesses={len(self.instances)}')

@@ -11,6 +11,10 @@ parser.add_argument('-r', '--resources-file',
 parser.add_argument('-o', '--output-file',
                     help='Output file path of the resultant Junit XML test report and others',
                     required=True)
+parser.add_argument('-t', '--test-filter',
+                    help='Use this option to filter tests execution by test name',
+                    default=None,
+                    required=False)
 parser.add_argument('-p', '--parallel',
                     help='Use this option to enable parallel test execution mode. Default is DISABLED',
                     default=False,
@@ -27,6 +31,7 @@ if __name__ == '__main__':
 
     cloud_image_validator = CloudImageValidator(resources_file=args.resources_file,
                                                 output_file=args.output_file,
+                                                test_filter=args.test_filter,
                                                 parallel=args.parallel,
                                                 debug=args.debug)
     cloud_image_validator.main()

@@ -8,6 +8,7 @@ class TestSuiteRunner:
     test_instances = ['test instance 1', 'test instance 2']
     test_ssh_config = '/path/to/ssh_config'
     test_output_filepath = 'test/output/filepath.xml'
+    test_filter = 'test_test_name'
 
     @pytest.fixture
     def suite_runner(self):
@@ -28,27 +29,31 @@ class TestSuiteRunner:
         mock_os_system = mocker.patch('os.system')
 
         # Act
-        suite_runner.run_tests(test_output_filepath)
+        suite_runner.run_tests(test_output_filepath, self.test_filter)
 
         # Assert
         mock_os_path_exists.assert_called_once_with(test_output_filepath)
         mock_os_remove.assert_called_once_with(test_output_filepath)
 
         mock_os_system.assert_called_once_with(test_composed_command)
-        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath)
+        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath, self.test_filter)
 
     @pytest.mark.parametrize(
-        'test_debug, test_parallel, expected_command_string',
-        [(False, False,
+        'test_filter, test_debug, test_parallel, expected_command_string',
+        [(None, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh'),
-         (False, True,
+         (test_filter, False, False,
+          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh '
+          f'-k "{test_filter}"'),
+         (None, False, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout" '
           '--reruns 3 --reruns-delay 5'),
-         (True, True,
+         (None, True, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} --connection=ssh '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
@@ -59,6 +64,7 @@ class TestSuiteRunner:
     def test_compose_testinfra_command(self,
                                        mocker,
                                        suite_runner,
+                                       test_filter,
                                        test_debug,
                                        test_parallel,
                                        expected_command_string):
@@ -76,7 +82,8 @@ class TestSuiteRunner:
         suite_runner.get_test_suite_paths = mock_get_test_suite_paths
 
         # Act, Assert
-        assert suite_runner.compose_testinfra_command(self.test_output_filepath) == expected_command_string
+        assert suite_runner.compose_testinfra_command(self.test_output_filepath,
+                                                      test_filter) == expected_command_string
 
         mock_get_all_instances_hosts_with_users.assert_called_once()
 
