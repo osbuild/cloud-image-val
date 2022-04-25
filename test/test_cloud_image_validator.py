@@ -10,16 +10,18 @@ from test_suite.suite_runner import SuiteRunner
 class TestCloudImageValidator:
     test_resources_file = '/fake/test/resources_file.json'
     test_output_file = '/fake/test/output_file.xml'
+    test_filter = 'test_test_name'
     test_parallel = True
     test_debug = True
     test_instances = ['test-instance-1', 'test-instance-2']
 
     @pytest.fixture
     def validator(self):
-        return CloudImageValidator(self.test_resources_file,
-                                   self.test_output_file,
-                                   self.test_parallel,
-                                   self.test_debug)
+        return CloudImageValidator(resources_file=self.test_resources_file,
+                                   output_file=self.test_output_file,
+                                   test_filter=self.test_filter,
+                                   parallel=self.test_parallel,
+                                   debug=self.test_debug)
 
     def test_main(self, mocker, validator):
         # Arrange
@@ -107,7 +109,7 @@ class TestCloudImageValidator:
 
         validator.run_tests_in_all_instances(self.test_instances)
 
-        mock_run_tests.assert_called_once_with(validator.output_file)
+        mock_run_tests.assert_called_once_with(validator.output_file, self.test_filter)
 
     def test_report_test_results(self, mocker, validator):
         mock_generate_html_report = mocker.patch.object(Reporter, 'generate_html_report')
