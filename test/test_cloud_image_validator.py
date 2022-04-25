@@ -1,5 +1,3 @@
-import os
-
 import pytest
 
 from main.cloud_image_validator import CloudImageValidator
