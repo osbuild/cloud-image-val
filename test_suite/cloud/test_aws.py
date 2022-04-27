@@ -1,5 +1,7 @@
 import pytest
 
+from lib import test_lib
+
 
 class TestsAWS:
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
@@ -21,8 +23,8 @@ class TestsAWS:
 
         with host.sudo():
             product_version = 8.5
-            if float(host.system_info.release) < product_version and \
-                    not host.file('/etc/redhat-release').contains('Atomic'):
+            if float(host.system_info.release) < product_version \
+                    and not test_lib.is_rhel_atomic_host(host):
                 pytest.skip(f'Not applicable to RHEL AMIs earlier than {product_version}')
 
                 iommu_option_present = host.file('/proc/cmdline').contains(option)
@@ -52,6 +54,102 @@ class TestsAWS:
 
         assert host.file(file_to_check).contains('blacklist nouveau'), \
             f'nouveau is not blacklisted in "{file_to_check}"'
+
+    def test_unwanted_packages_are_not_present(self, host):
+        unwanted_pkgs = [
+            'aic94xx-firmware', 'alsa-firmware', 'alsa-lib', 'alsa-tools-firmware',
+            'ivtv-firmware', 'iwl1000-firmware', 'iwl100-firmware', 'iwl105-firmware',
+            'iwl135-firmware', 'iwl2000-firmware', 'iwl2030-firmware', 'iwl3160-firmware',
+            'iwl3945-firmware', 'iwl4965-firmware', 'iwl5000-firmware', 'iwl5150-firmware',
+            'iwl6000-firmware', 'iwl6000g2a-firmware', 'iwl6000g2b-firmware', 'iwl6050-firmware',
+            'iwl7260-firmware', 'libertas-sd8686-firmware', 'libertas-sd8787-firmware', 'libertas-usb8388-firmware',
+            'firewalld', 'biosdevname', 'plymouth', 'iprutils',
+        ]
+
+        if float(host.system_info.release) > 8.3:
+            unwanted_pkgs.append('rng-tools')  # BugZilla 1888695
+
+        if test_lib.is_rhel_sap(host):
+            unwanted_pkgs.remove('alsa-lib')  # In RHEL SAP images, alsa-lib is allowed
+
+        if test_lib.is_rhel_high_availability(host):
+            unwanted_pkgs.append('rh-amazon-rhui-client')
+
+        found_pkgs = [pkg for pkg in unwanted_pkgs if host.package(pkg).is_installed]
+
+        assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
+
+    def test_required_packages_are_installed(self, host):
+        required_pkgs = [
+            'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
+            'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',
+            'NetworkManager-cloud-setup', 'cloud-utils-growpart', 'gdisk',
+            'insights-client', 'dracut-config-generic', 'dracut-config-rescue', 'grub2-tools',
+        ]
+
+        required_pkgs_v7 = [
+            'kernel', 'yum-utils', 'cloud-init', 'dracut-config-generic',
+            'dracut-config-rescue', 'grub2', 'tar', 'rsync', 'chrony'
+        ]
+
+        product_version = float(host.system_info.release)
+        if product_version > 8.4:
+            required_pkgs.remove('NetworkManager-cloud-setup')
+
+        if 8.4 > product_version >= 8.0:
+            required_pkgs.append('rng-tools')
+
+        if test_lib.is_rhel_sap(host):
+            required_pkgs.extend(['rhel-system-roles-sap', 'ansible'])
+
+            required_pkgs.extend(['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])  # BugZilla 1959813
+
+            required_pkgs.append('uuidd')  # BugZilla 1959813
+
+            required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
+                                  'iptraf-ng', 'krb5-workstation', 'libaio'])  # BugZilla 1959923, 1961168
+
+            required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
+                                  'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])  # BugZilla 1959923, 1961168
+
+            required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
+
+            required_pkgs.append('tuned-profiles-sap-hana')  # BugZilla 1959962
+
+        if test_lib.is_rhel_high_availability(host):
+            required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
+
+        if product_version < 8.0:
+            required_pkgs = required_pkgs_v7
+
+        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
+
+        assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
+
+    def test_rhui_pkg_is_installed(self, host):
+        if host.system_info.distribution('fedora'):
+            pytest.skip('Fedora AMIs do not require rhui pkg')
+
+        unwanted_rhui_pkgs = None
+
+        if test_lib.is_rhel_high_availability(host):
+            required_rhui_pkg = 'rh-amazon-rhui-client-ha'
+        elif test_lib.is_rhel_sap(host):
+            required_rhui_pkg = 'rh-amazon-rhui-client-sap-bundle'
+        else:
+            required_rhui_pkg = 'rh-amazon-rhui-client'
+            unwanted_rhui_pkgs = [
+                'rh-amazon-rhui-client-ha',
+                'rh-amazon-rhui-client-sap',
+            ]
+
+        if unwanted_rhui_pkgs:
+            for pkg in unwanted_rhui_pkgs:
+                assert not host.package(pkg).is_installed, \
+                    f'Unexpected rhui package installed: {pkg}'
+
+        assert host.package(required_rhui_pkg).is_installed, \
+            f'Package "{required_rhui_pkg}" should be present'
 
 
 class TestsNetworkDrivers:
