@@ -42,6 +42,40 @@ class TestsGeneric:
             assert host.file('/proc/cmdline').contains(expected_content), \
                 'crashkernel must be enabled in RHEL 8.x and above'
 
+    def test_cpu_flags_are_correct(self, host):
+        """
+        BugZilla 1061348
+        """
+        arch = 'x86_64'
+        if host.system_info.arch == arch:
+            pytest.skip(f'Not applicable to {arch}')
+
+        expected_flags = 'avx,xsave'
+        with host.sudo():
+            assert host.file('/proc/cpuinfo').contains(expected_flags), \
+                f'Expected CPU flags "{expected_flags}" not set'
+
+    def test_rhgb_quiet_not_present_in_cmdline(self, host):
+        """
+        BugZilla 1122300
+        """
+        rhgb_quiet = 'rhgb,quiet'
+        with host.sudo():
+            assert not host.file('/proc/cmdline').contains(rhgb_quiet), \
+                f'{rhgb_quiet} must not be present in cmdline'
+
+    def test_numa_settings(self, host):
+        with host.sudo():
+            assert host.run_test('dmesg | grep -i numa'), \
+                'There is no NUMA information available'
+
+            lscpu_numa_nodes = host.check_output("lscpu | grep -i 'NUMA node(s)' | awk -F' ' '{print $NF}'")
+            dmesg_numa_nodes = host.check_output("dmesg | grep -i 'No NUMA'|wc -l")
+
+            if int(lscpu_numa_nodes) > 1:
+                assert dmesg_numa_nodes > 1, \
+                    f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
