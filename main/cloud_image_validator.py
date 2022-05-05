@@ -1,6 +1,7 @@
 import os
 import time
 
+from pprint import pprint
 from cloud.terraform.terraform_controller import TerraformController
 from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
@@ -55,6 +56,9 @@ class CloudImageValidator:
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()
         instances = self.infra_controller.get_instances()
+
+        if self.debug:
+            pprint(instances)
 
         ssh_lib.generate_instances_ssh_config(instances=instances,
                                               ssh_config_file=self.ssh_config_file,

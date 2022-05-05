@@ -7,7 +7,7 @@ class SuiteRunner:
     connection_type = 'ssh'
 
     # rerun failed tests in case ssh times out or connection is refused by host
-    rerun_failing_tests_regex = r'refused|timeout'
+    rerun_failing_tests_regex = r'refused|timeout|NoValidConnectionsError'
     max_reruns = 3
     rerun_delay_sec = 5
 
@@ -39,7 +39,6 @@ class SuiteRunner:
             f'--hosts={all_hosts}',
             f'--ssh-config {self.ssh_config}',
             f'--junit-xml {output_filepath}',
-            f'--connection={self.connection_type}'
         ]
 
         if test_filter:
