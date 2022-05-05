@@ -9,13 +9,6 @@
             "name": "sample-name-RHEL-8.6"
         },
         {
-            "ami": "ami-09d21608cdeb79c49",
-            "region": "us-east-1",
-            "instance_type": "",
-            "username": "ec2-user",
-            "name": "sample-name-2-CentOS-stream-9"
-        },
-        {
             "ami": "ami-02aaa61ea41b30dae",
             "region": "us-west-2",
             "instance_type": "",
@@ -23,32 +16,32 @@
             "name": "sample-name-3-RHEL-8.6"
         },
         {
-            "ami": "ami-4769732e",
+            "ami": "ami-00ab5f025c8723717",
+            "region": "us-east-1",
+            "instance_type": "",
+            "username": "cloud-user",
+            "name": "sample-Atomic-RHEL-7.8"
+        },
+        {
+            "ami": "ami-0a16d641d1d1f1e00",
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-name-RHEL-6.5"
+            "name": "sample-SAP-RHEL-8.1"
         },
         {
-            "ami": "ami-01aaeab7625fe79ab",
-            "region": "ap-south-1",
-            "instance_type": "",
+            "ami": "ami-00bde567792a74481",
+            "region": "us-east-1",
+            "instance_type": "a1.medium",
             "username": "ec2-user",
-            "name": "sample-name-RHEL-9.0"
+            "name": "sample-ARM-RHEL-8.5"
         },
         {
-            "ami": "ami-0b89039c976312686",
-            "region": "ap-south-1",
+            "ami": "ami-098453baf108a57d0",
+            "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-name-RHEL-9.0-2"
-        },
-        {
-            "ami": "ami-008a2e66e170819f8",
-            "region": "ap-northeast-1",
-            "instance_type": "",
-            "username": "ec2-user",
-            "name": "sample-name-RHEL-7.0"
+            "name": "sample-HA-RHEL-8.5"
         }
     ]
 }

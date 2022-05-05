@@ -76,6 +76,31 @@ class TestsGeneric:
                 assert dmesg_numa_nodes > 1, \
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
 
+    def test_no_avc_denials(self, host):
+        with host.sudo():
+            assert 'no matches' in host.check_output('x=$(sudo ausearch -m avc 2>&1 &); echo $x'), \
+                'There should not be any avc denials (selinux)'
+
+    def test_cert_product_version_is_correct(self, host):
+        """
+        BugZilla 1938930
+        Issue RHELPLAN-60817
+        """
+        product_version = float(host.system_info.release)
+
+        if product_version < 8.0:
+            rpm_to_check = 'redhat-release-server'
+        else:
+            rpm_to_check = 'redhat-release'
+
+        with host.sudo():
+            host.run_test(f'rpm -q {rpm_to_check}')
+
+            cert_version = host.check_output('rct cat-cert /etc/pki/product-default/*.pem | grep Version')
+
+            assert f'Version: {product_version}' in cert_version, \
+                'Inconsistent version in pki certificate'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
