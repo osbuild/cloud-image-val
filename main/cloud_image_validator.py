@@ -6,7 +6,6 @@ from cloud.terraform.terraform_controller import TerraformController
 from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
 from test_suite.suite_runner import SuiteRunner
-from result.reporter import Reporter
 
 
 class CloudImageValidator:
@@ -36,8 +35,6 @@ class CloudImageValidator:
             instances = self.deploy_infrastructure()
 
             self.run_tests_in_all_instances(instances)
-
-            self.report_test_results()
         finally:
             self.cleanup()
 
@@ -74,10 +71,6 @@ class CloudImageValidator:
                              parallel=self.parallel,
                              debug=self.debug)
         runner.run_tests(self.output_file, self.test_filter)
-
-    def report_test_results(self):
-        reporter = Reporter(self.output_file)
-        reporter.generate_html_report(self.output_file.replace('xml', 'html'))
 
     def cleanup(self):
         self.infra_controller.destroy_infra()

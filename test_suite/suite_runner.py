@@ -4,7 +4,7 @@ import os
 class SuiteRunner:
     max_processes = 40  # based on the number of threads used by ami-val
 
-    # rerun failed tests in case ssh times out or connection is refused by host
+    # Rerun failed tests in case ssh times out or connection is refused by host
     rerun_failing_tests_regex = r'refused|timeout|NoValidConnectionsError'
     max_reruns = 3
     rerun_delay_sec = 5
@@ -37,6 +37,7 @@ class SuiteRunner:
             f'--hosts={all_hosts}',
             f'--ssh-config {self.ssh_config}',
             f'--junit-xml {output_filepath}',
+            f'--html {output_filepath.replace("xml", "html")}',
         ]
 
         if test_filter:
