@@ -1,3 +1,4 @@
+import re
 import pytest
 
 from lib import test_lib
@@ -127,7 +128,7 @@ class TestsAWS:
         assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
 
     def test_rhui_pkg_is_installed(self, host):
-        if host.system_info.distribution('fedora'):
+        if host.system_info.distribution == 'fedora':
             pytest.skip('Fedora AMIs do not require rhui pkg')
 
         unwanted_rhui_pkgs = None
@@ -151,11 +152,60 @@ class TestsAWS:
         assert host.package(required_rhui_pkg).is_installed, \
             f'Package "{required_rhui_pkg}" should be present'
 
+    def test_amazon_timesync_service_is_used(self, host):
+        """
+        BugZilla 1679763
+        """
+        timesync_service_ipv4 = '169.254.169.123'
+        ntp_leap_lines = [
+            'leapsectz right/UTC',
+            'pool 2.rhel.pool.ntp.org iburst',
+        ]
+
+        with host.sudo():
+            chrony_conf_content = host.file('/etc/chrony.conf').content_string
+
+            for line in ntp_leap_lines:
+                commented_line_exists = re.match(f'#[ ]?{line}|#[ ]+{line}', chrony_conf_content) is not None
+
+                assert f'server {timesync_service_ipv4}' in chrony_conf_content, \
+                    f'chrony should point to Amazon Time Sync service IPv4 {timesync_service_ipv4}'
+
+                compatible_version = 8.5
+                if float(host.system_info.release) < compatible_version:
+                    assert line not in chrony_conf_content or commented_line_exists, \
+                        f'NTP leap smear incompatibility found in chrony conf file, ' \
+                        f'affecting RHEL lower than {compatible_version}'
+                else:
+                    assert line in chrony_conf_content and not commented_line_exists, \
+                        f'{line} must be enabled in RHEL {compatible_version} and above'
+
+            assert f'Selected source {timesync_service_ipv4}' in host.check_output('journalctl -u chronyd'), \
+                'Amazon Time Sync service is not in use'
+
+    def test_max_cstate_is_configured_in_cmdline(self, host):
+        """
+        BugZilla 1961225
+        """
+        cstate_setting_lines = [
+            'intel_idle.max_cstate=1',
+            'processor.max_cstate=1',
+        ]
+
+        with host.sudo():
+            for line in cstate_setting_lines:
+                if test_lib.is_rhel_sap(host):
+                    assert host.file('/proc/cmdline').contains(line), \
+                        f'{line} must be specified in SAP AMIs'
+                else:
+                    assert not host.file('/proc/cmdline').contains(line), \
+                        f'{line} must not be specified in AMIs that are not SAP'
+
 
 class TestsNetworkDrivers:
     def test_correct_network_driver_is_used(self, host):
         with host.sudo():
-            if not host.package('lshw').is_installed:
+            if host.system_info.distribution == 'fedora':
                 host.run_test('dnf install lshw -y')
 
             nic_name = host.check_output('lshw -C network')

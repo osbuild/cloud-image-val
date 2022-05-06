@@ -32,15 +32,16 @@ class TestsGeneric:
             pytest.skip('RHEL is 6.x')
 
         if product_release_version < 9.0:
-            expected_content = 'crashkernel=auto'
+            expected_content = ['crashkernel=auto']
         elif host.system_info.arch == 'x86_64':
-            expected_content = 'crashkernel=1G-4G:192M,4G-64G:256M,64G-:512M'
+            expected_content = ['crashkernel=1G-4G:192M', '4G-64G:256M', '64G-:512M']
         else:
-            expected_content = 'crashkernel=2G-:448M'
+            expected_content = ['crashkernel=2G-:448M']
 
         with host.sudo(host.user().name):
-            assert host.file('/proc/cmdline').contains(expected_content), \
-                'crashkernel must be enabled in RHEL 8.x and above'
+            for item in expected_content:
+                assert host.file('/proc/cmdline').contains(item), \
+                    'crashkernel must be enabled in RHEL 8.x and above'
 
     def test_cpu_flags_are_correct(self, host):
         """
@@ -50,19 +51,31 @@ class TestsGeneric:
         if host.system_info.arch == arch:
             pytest.skip(f'Not applicable to {arch}')
 
-        expected_flags = 'avx,xsave'
+        expected_flags = [
+            'avx',
+            'xsave',
+        ]
+
+        # TODO We may have a false positive here. The above flags are not applicable to ARM as per the thread below:
+        # https://unix.stackexchange.com/questions/43539/what-do-the-flags-in-proc-cpuinfo-mean
         with host.sudo():
-            assert host.file('/proc/cpuinfo').contains(expected_flags), \
-                f'Expected CPU flags "{expected_flags}" not set'
+            for flag in expected_flags:
+                assert host.file('/proc/cpuinfo').contains(flag), \
+                    f'Expected CPU flag "{flag}" not set'
 
     def test_rhgb_quiet_not_present_in_cmdline(self, host):
         """
         BugZilla 1122300
         """
-        rhgb_quiet = 'rhgb,quiet'
+        excluded_settings = [
+            'rhgb',
+            'quiet',
+        ]
+
         with host.sudo():
-            assert not host.file('/proc/cmdline').contains(rhgb_quiet), \
-                f'{rhgb_quiet} must not be present in cmdline'
+            for setting in excluded_settings:
+                assert not host.file('/proc/cmdline').contains(setting), \
+                    f'{setting} must not be present in cmdline'
 
     def test_numa_settings(self, host):
         with host.sudo():
@@ -78,7 +91,7 @@ class TestsGeneric:
 
     def test_no_avc_denials(self, host):
         with host.sudo():
-            assert 'no matches' in host.check_output('x=$(sudo ausearch -m avc 2>&1 &); echo $x'), \
+            assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
 
     def test_cert_product_version_is_correct(self, host):
@@ -114,7 +127,7 @@ class TestsCloudInit:
         """
         BugZilla 1549638
         """
-        assert host.file('/etc/cloud/cloud.cfg').contains('wheel'), \
+        assert not host.file('/etc/cloud/cloud.cfg').contains('wheel'), \
             'wheel should not be configured as default_user group'
 
 
