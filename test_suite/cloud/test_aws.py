@@ -201,6 +201,14 @@ class TestsAWS:
                     assert not host.file('/proc/cmdline').contains(line), \
                         f'{line} must not be specified in AMIs that are not SAP'
 
+    def test_hostkey_permissions(self, host):
+        """
+        bz:2013644
+        """
+        ssh_permissions = host.check_output('ls -l /etc/ssh/{ssh_host_ecdsa_key,ssh_host_ed25519_key,ssh_host_rsa_key}')
+        assert '-rw-------. 1 root root' not in ssh_permissions, \
+            'ssh files permissions are not set correctly'
+
 
 class TestsNetworkDrivers:
     def test_correct_network_driver_is_used(self, host):
