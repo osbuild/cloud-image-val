@@ -1,3 +1,5 @@
+import os
+
 from argparse import ArgumentParser, RawTextHelpFormatter
 from main.cloud_image_validator import CloudImageValidator
 
@@ -28,6 +30,9 @@ parser.add_argument('-d', '--debug',
 
 if __name__ == '__main__':
     args = parser.parse_args()
+
+    # Add current dir abspath to PYTHONPATH to avoid issues when importing modules
+    os.environ['PYTHONPATH'] = ':'.join([f'{os.path.dirname(__file__)}', os.environ['PYTHONPATH']])
 
     cloud_image_validator = CloudImageValidator(resources_file=args.resources_file,
                                                 output_file=args.output_file,

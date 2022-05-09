@@ -3,7 +3,6 @@ import pytest
 from main.cloud_image_validator import CloudImageValidator
 from cloud.terraform.terraform_configurator import TerraformConfigurator
 from cloud.terraform.terraform_controller import TerraformController
-from result.reporter import Reporter
 from test_suite.suite_runner import SuiteRunner
 
 
@@ -36,9 +35,6 @@ class TestCloudImageValidator:
         mock_run_tests_in_all_instances = mocker.MagicMock()
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
-        mock_report_test_results = mocker.MagicMock()
-        validator.report_test_results = mock_report_test_results
-
         mock_cleanup = mocker.MagicMock()
         validator.cleanup = mock_cleanup
 
@@ -51,7 +47,6 @@ class TestCloudImageValidator:
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
         mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
-        mock_report_test_results.assert_called_once()
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):
@@ -110,13 +105,6 @@ class TestCloudImageValidator:
         validator.run_tests_in_all_instances(self.test_instances)
 
         mock_run_tests.assert_called_once_with(validator.output_file, self.test_filter)
-
-    def test_report_test_results(self, mocker, validator):
-        mock_generate_html_report = mocker.patch.object(Reporter, 'generate_html_report')
-
-        validator.report_test_results()
-
-        mock_generate_html_report.assert_called_once_with(validator.output_file.replace('xml', 'html'))
 
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(TerraformController, 'destroy_infra')

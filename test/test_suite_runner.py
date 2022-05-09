@@ -42,20 +42,24 @@ class TestSuiteRunner:
         'test_filter, test_debug, test_parallel, expected_command_string',
         [(None, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
-          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath}'),
+          f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
+          f'--html {test_output_filepath.replace("xml", "html")}'),
          (test_filter, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
+          f'--html {test_output_filepath.replace("xml", "html")} '
           f'-k "{test_filter}"'),
          (None, False, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
+          f'--html {test_output_filepath.replace("xml", "html")} '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5'),
          (None, True, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
+          f'--html {test_output_filepath.replace("xml", "html")} '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5 '

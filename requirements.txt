@@ -4,6 +4,8 @@ pytest-cov
 pytest-testinfra
 pytest-xdist
 pytest-rerunfailures
+pytest-html
 sshconf
-junit2html
 flake8
+argparse
+py
