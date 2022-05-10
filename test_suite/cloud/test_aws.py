@@ -208,7 +208,7 @@ class TestsAWS:
         files_to_check = ['ssh_host_ecdsa_key', 'ssh_host_ed25519_key', 'ssh_host_rsa_key']
         for file in files_to_check:
             if host.file(f'/etc/ssh/{file}').exists:
-                assert host.file('/etc/ssh/').mode >= 0o640, \
+                assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
                     'ssh files permissions are not set correctly'
 
 

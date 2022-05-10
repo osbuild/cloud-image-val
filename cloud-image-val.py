@@ -32,6 +32,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Add current dir abspath to PYTHONPATH to avoid issues when importing modules
+    if 'PYTHONPATH' not in os.environ:
+        os.environ['PYTHONPATH'] = ''
     os.environ['PYTHONPATH'] = ':'.join([f'{os.path.dirname(__file__)}', os.environ['PYTHONPATH']])
 
     cloud_image_validator = CloudImageValidator(resources_file=args.resources_file,
