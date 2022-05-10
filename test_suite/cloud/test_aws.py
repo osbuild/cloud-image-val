@@ -203,11 +203,13 @@ class TestsAWS:
 
     def test_hostkey_permissions(self, host):
         """
-        bz:2013644
+        BugZilla 2013644
         """
-        ssh_permissions = host.check_output('ls -l /etc/ssh/{ssh_host_ecdsa_key,ssh_host_ed25519_key,ssh_host_rsa_key}')
-        assert '-rw-------. 1 root root' not in ssh_permissions, \
-            'ssh files permissions are not set correctly'
+        files_to_check = ['ssh_host_ecdsa_key', 'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+        for file in files_to_check:
+            if host.file(f'/etc/ssh/{file}').exists:
+                assert host.file('/etc/ssh/').mode >= 0o640, \
+                    'ssh files permissions are not set correctly'
 
 
 class TestsNetworkDrivers:

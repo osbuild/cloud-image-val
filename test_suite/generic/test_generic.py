@@ -141,7 +141,7 @@ class TestsNetworking:
         with host.sudo():
             for expected_host in expected_hosts:
                 assert host.file('/etc/hosts').contains(expected_host), \
-                    "/etc/hosts does not contain ipv4 or ipv6 localhost"
+                    '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
 
 class TestsSecurity:
