@@ -135,6 +135,14 @@ class TestsNetworking:
     def test_dns_resolving_works(self, host):
         host.run_test('ping -c 5 google-public-dns-a.google.com')
 
+    def test_ipv_localhost(self, host):
+        expected_hosts = ['127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4',
+                          '::1         localhost localhost.localdomain localhost6 localhost6.localdomain6']
+        with host.sudo():
+            for expected_host in expected_hosts:
+                assert host.file('/etc/hosts').contains(expected_host), \
+                    '/etc/hosts does not contain ipv4 or ipv6 localhost'
+
 
 class TestsSecurity:
     def test_firewalld_is_disabled(self, host):
