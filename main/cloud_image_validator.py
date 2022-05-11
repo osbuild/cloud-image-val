@@ -48,7 +48,7 @@ class CloudImageValidator:
         if self.debug:
             self.infra_configurator.print_configuration()
 
-        return TerraformController(self.infra_configurator)
+        return TerraformController(self.infra_configurator, self.debug)
 
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()
