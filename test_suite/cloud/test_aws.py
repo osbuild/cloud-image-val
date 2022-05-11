@@ -7,6 +7,9 @@ from lib import test_lib
 
 class TestsAWS:
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
+        """
+        Check that rh-cloud-firstboot is disabled.
+        """
         assert not host.service('rh-cloud-firstboot').is_enabled, \
             'rh-cloud-firstboot service must be disabled'
 
@@ -19,6 +22,7 @@ class TestsAWS:
 
     def test_iommu_strict_mode(self, host):
         """
+        Use "iommu.strict=0" in ARM AMIs to get better performance.
         BugZilla 1836058
         """
         option = 'iommu.strict=0'
@@ -38,6 +42,7 @@ class TestsAWS:
 
     def test_nouveau_is_blacklisted(self, host):
         """
+        Check that nouveau is disabled.
         BugZilla 1645772
         """
         product_version = float(host.system_info.release)
@@ -58,6 +63,9 @@ class TestsAWS:
             f'nouveau is not blacklisted in "{file_to_check}"'
 
     def test_unwanted_packages_are_not_present(self, host):
+        """
+        Some pkgs are not required in EC2.
+        """
         unwanted_pkgs = [
             'aic94xx-firmware', 'alsa-firmware', 'alsa-lib', 'alsa-tools-firmware',
             'ivtv-firmware', 'iwl1000-firmware', 'iwl100-firmware', 'iwl105-firmware',
@@ -82,6 +90,14 @@ class TestsAWS:
         assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
 
     def test_required_packages_are_installed(self, host):
+        """
+        Some pkgs are required in EC2.
+        https://kernel.googlesource.com/pub/scm/boot/dracut/dracut/+/18e61d3d41c8287467e2bc7178f32d188affc920%5E!/
+
+        dracut-nohostonly -> dracut-config-generic
+        dracut-norescue   -> dracut
+                          -> dracut-config-rescue
+        """
         required_pkgs = [
             'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
             'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',
@@ -186,6 +202,7 @@ class TestsAWS:
 
     def test_max_cstate_is_configured_in_cmdline(self, host):
         """
+        Check that intel_idle.max_cstate=1 processor.max_cstate=1 exists in SAP AMI's /proc/cmdline.
         BugZilla 1961225
         """
         cstate_setting_lines = [
@@ -204,6 +221,7 @@ class TestsAWS:
 
     def test_hostkey_permissions(self, host):
         """
+        Check that ssh files permission set are correct.
         BugZilla 2013644
         """
         files_to_check = ['ssh_host_ecdsa_key', 'ssh_host_ed25519_key', 'ssh_host_rsa_key']
@@ -213,6 +231,9 @@ class TestsAWS:
                     'ssh files permissions are not set correctly'
 
     def test_aws_instance_identity(self, host, instance_data):
+        """
+        Try to fetch instance identity from EC2 and compare with expectation
+        """
         instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
         instance_document_data = json.loads(host.check_output(f'curl -s {instance_document_url}'))
 
@@ -253,6 +274,12 @@ class TestsAWS:
 
 class TestsNetworkDrivers:
     def test_correct_network_driver_is_used(self, host):
+        """
+        If ena network device found, eth0 should use ena as default driver.
+        If vf network device found, eth0 should use ixgbevf as default driver.
+        If others, eth0 should use vif as default driver.
+        If it is not a xen instance, ena should be used.
+        """
         with host.sudo():
             if host.system_info.distribution == 'fedora':
                 host.run_test('dnf install lshw -y')
