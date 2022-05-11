@@ -81,6 +81,9 @@ class TestCloudImageValidator:
                                                  return_value=self.test_instances)
         mock_generate_instances_ssh_config = mocker.patch('lib.ssh_lib.generate_instances_ssh_config')
 
+        mock_write_instances_to_json = mocker.MagicMock()
+        validator._write_instances_to_json = mock_write_instances_to_json
+
         validator.infra_controller = TerraformController(TerraformConfigurator)
 
         # Act
@@ -91,6 +94,7 @@ class TestCloudImageValidator:
 
         mock_create_infra.assert_called_once()
         mock_get_instances.assert_called_once()
+        mock_write_instances_to_json.assert_called_once_with(self.test_instances)
         mock_generate_instances_ssh_config.assert_called_once_with(instances=self.test_instances,
                                                                    ssh_config_file=validator.ssh_config_file,
                                                                    ssh_key_path=validator.ssh_identity_file)
@@ -109,6 +113,7 @@ class TestCloudImageValidator:
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(TerraformController, 'destroy_infra')
         validator.infra_controller = TerraformController
+        validator.debug = False
 
         mock_os_remove = mocker.patch('os.remove')
 
@@ -116,8 +121,9 @@ class TestCloudImageValidator:
 
         mock_destroy_infra.assert_called_once()
 
-        calls = [
+        assert mock_os_remove.call_args_list == [
             mocker.call(validator.ssh_identity_file),
             mocker.call(validator.ssh_pub_key_file),
+            mocker.call(validator.ssh_config_file),
+            mocker.call(validator.instances_json),
         ]
-        assert mock_os_remove.call_args_list == calls

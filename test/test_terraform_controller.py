@@ -69,6 +69,7 @@ class TestTerraformController:
             {
                 'type': 'aws_instance',
                 'address': 'a.aws_instance_test',
+                'name': 'test_name',
                 'values': {
                     'id': 'test_id',
                     'public_ip': 'test_ip',
@@ -82,6 +83,7 @@ class TestTerraformController:
 
         instances_info_expected = {
             'a.aws_instance_test': {
+                'name': 'test_name',
                 'instance_id': 'test_id',
                 'public_ip': 'test_ip',
                 'public_dns': 'test_dns',
@@ -92,7 +94,7 @@ class TestTerraformController:
         }
 
         mock_get_username_by_instance_name = mocker.MagicMock(return_value='test_user')
-        self.tf_configurator.get_username_by_instance_name = (mock_get_username_by_instance_name)
+        self.tf_configurator.get_username_by_instance_name = mock_get_username_by_instance_name
 
         # Act
         result = tf_controller.get_instances_aws(resources)
@@ -103,6 +105,7 @@ class TestTerraformController:
 
     def test_get_instances_azure(self, mocker, tf_controller):
         # Arrange
+        test_name = 'test_name'
         test_computer_name = 'test_hostname'
         test_location = 'eastus'
         test_public_dns = f'{test_computer_name}.{test_location}.cloudapp.azure.com'
@@ -117,6 +120,7 @@ class TestTerraformController:
             {
                 'type': 'azurerm_linux_virtual_machine',
                 'address': test_resource_address,
+                'name': test_name,
                 'values': {
                     'id': test_id,
                     'computer_name': test_computer_name,
@@ -133,6 +137,7 @@ class TestTerraformController:
 
         instances_info_expected = {
             test_resource_address: {
+                'name': test_name,
                 'instance_id': test_id,
                 'public_ip': test_public_ip,
                 'public_dns': test_public_dns,

@@ -46,6 +46,7 @@ class TerraformController:
             username = self.tf_configurator.get_username_by_instance_name(resource['address'].split('.')[1])
 
             instances_info[resource['address']] = {
+                'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip'],
                 'public_dns': resource['values']['public_dns'],
@@ -69,6 +70,7 @@ class TerraformController:
             image = self._get_azure_image_data_from_resource(resource)
 
             instances_info[resource['address']] = {
+                'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip_address'],
                 'public_dns': public_dns,

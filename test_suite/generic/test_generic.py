@@ -13,10 +13,17 @@ class TestsGeneric:
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
     def test_console_is_redirected_to_ttys0(self, host):
+        """
+        Console output should be redirected to serial for HVM instances.
+        """
         assert host.file('/proc/cmdline').contains('console=ttyS0'), \
             'Serial console should be redirected to ttyS0'
 
     def test_crashkernel_is_enabled_rhel_6(self, host):
+        """
+        (deprecated)
+        Check that crashkernel is enabled in image (RHEL 6 and below).
+        """
         if float(host.system_info.release) < 7.0:
             with host.sudo():
                 host.run_test('service kdump status')
@@ -26,6 +33,9 @@ class TestsGeneric:
             pytest.skip('RHEL is 7.x or later')
 
     def test_crashkernel_is_enabled_rhel_7_and_above(self, host):
+        """
+        Check that crashkernel is enabled in image (RHEL 7 and above).
+        """
         product_release_version = float(host.system_info.release)
 
         if float(host.system_info.release) < 7.0:
@@ -45,6 +55,7 @@ class TestsGeneric:
 
     def test_cpu_flags_are_correct(self, host):
         """
+        Check various CPU flags.
         BugZilla 1061348
         """
         arch = 'x86_64'
@@ -65,6 +76,7 @@ class TestsGeneric:
 
     def test_rhgb_quiet_not_present_in_cmdline(self, host):
         """
+        Check that there is no "rhgb" or "quiet" in /proc/cmdline.
         BugZilla 1122300
         """
         excluded_settings = [
@@ -78,6 +90,9 @@ class TestsGeneric:
                     f'{setting} must not be present in cmdline'
 
     def test_numa_settings(self, host):
+        """
+        Check if NUMA is enabled on supported image.
+        """
         with host.sudo():
             assert host.run_test('dmesg | grep -i numa'), \
                 'There is no NUMA information available'
@@ -90,6 +105,9 @@ class TestsGeneric:
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
 
     def test_no_avc_denials(self, host):
+        """
+        Check there is no avc denials (selinux).
+        """
         with host.sudo():
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
@@ -114,10 +132,30 @@ class TestsGeneric:
             assert f'Version: {product_version}' in cert_version, \
                 'Inconsistent version in pki certificate'
 
+    def test_inittab_and_systemd(self, host):
+        """
+        Check default runlevel or systemd target.
+        """
+        kernel_release = host.check_output('uname -r')
+
+        with host.sudo():
+            if host.package('systemd').is_installed:
+                assert '/lib/systemd/system/multi-user.target' in \
+                       host.check_output('readlink -f /etc/systemd/system/default.target'), \
+                    'Unexpected systemd default target'
+            else:
+                assert 'id:3:initdefault' in host.check_output("grep '^id:' /etc/inittab"), \
+                    'Unexpected default inittab "id"'
+
+                if 'el5' in kernel_release:
+                    assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
+                        'Unexpected default inittab "id"'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
         """
+        Make sure there is growpart in cloud_init_modules group in "/etc/cloud/cloud.cfg".
         BugZilla 966888
         """
         assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
@@ -125,7 +163,9 @@ class TestsCloudInit:
 
     def test_wheel_group_not_set_to_default_user(self, host):
         """
+        Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
         BugZilla 1549638
+        Customer Case 01965459
         """
         assert not host.file('/etc/cloud/cloud.cfg').contains('wheel'), \
             'wheel should not be configured as default_user group'
@@ -133,9 +173,16 @@ class TestsCloudInit:
 
 class TestsNetworking:
     def test_dns_resolving_works(self, host):
-        host.run_test('ping -c 5 google-public-dns-a.google.com')
+        """
+        Check if DNS resolving works.
+        """
+        assert host.run_test('ping -c 5 google-public-dns-a.google.com'), \
+            'Public DNS resolution did not work'
 
     def test_ipv_localhost(self, host):
+        """
+        Check that localhost ipv6 and ipv4 are set in /etc/hosts.
+        """
         expected_hosts = ['127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4',
                           '::1         localhost localhost.localdomain localhost6 localhost6.localdomain6']
         with host.sudo():
@@ -146,6 +193,9 @@ class TestsNetworking:
 
 class TestsSecurity:
     def test_firewalld_is_disabled(self, host):
+        """
+        firewalld is not required in cloud because there are security groups or other security mechanisms.
+        """
         product_version = 7.0
         if float(host.system_info.release) < product_version:
             for s in ['iptables', 'ip6tables']:

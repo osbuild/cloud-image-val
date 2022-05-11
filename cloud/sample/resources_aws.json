@@ -6,42 +6,42 @@
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-name-RHEL-8.6"
+            "name": "rhel-8.6-nightly-x86_64"
         },
         {
             "ami": "ami-02aaa61ea41b30dae",
             "region": "us-west-2",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-name-3-RHEL-8.6"
+            "name": "CIV-rhel-8.6-nightly-x86_64"
         },
         {
             "ami": "ami-00ab5f025c8723717",
             "region": "us-east-1",
             "instance_type": "",
             "username": "cloud-user",
-            "name": "sample-Atomic-RHEL-7.8"
+            "name": "RHEL-Atomic_7.8_HVM_GA-20200805-x86_64-0-Access2-GP2"
         },
         {
             "ami": "ami-0a16d641d1d1f1e00",
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-SAP-RHEL-8.1"
+            "name": "SAP-8.1.0_HVM-20191029-x86_64-0-Hourly2-GP2"
         },
         {
             "ami": "ami-00bde567792a74481",
             "region": "us-east-1",
             "instance_type": "a1.medium",
             "username": "ec2-user",
-            "name": "sample-ARM-RHEL-8.5"
+            "name": "RHEL-8.5.0_HVM_BETA-20210902-arm64-5-Access2-GP2"
         },
         {
             "ami": "ami-098453baf108a57d0",
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "sample-HA-RHEL-8.5"
+            "name": "RHEL_HA-7.9_HVM-20210315-x86_64-2-Hourly2-GP2"
         }
     ]
 }
