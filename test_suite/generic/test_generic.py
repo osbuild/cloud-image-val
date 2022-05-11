@@ -114,6 +114,25 @@ class TestsGeneric:
             assert f'Version: {product_version}' in cert_version, \
                 'Inconsistent version in pki certificate'
 
+    def test_inittab_and_systemd(self, host):
+        """
+        Check default runlevel or systemd target
+        """
+        kernel_release = host.check_output('uname -r')
+
+        with host.sudo():
+            if host.package('systemd').is_installed:
+                assert '/lib/systemd/system/multi-user.target' in \
+                       host.check_output('readlink -f /etc/systemd/system/default.target'), \
+                    'Unexpected systemd default target'
+            else:
+                assert 'id:3:initdefault' in host.check_output("grep '^id:' /etc/inittab"), \
+                    'Unexpected default inittab "id"'
+
+                if 'el5' in kernel_release:
+                    assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
+                        'Unexpected default inittab "id"'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):

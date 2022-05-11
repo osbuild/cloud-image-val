@@ -1,3 +1,4 @@
+import json
 import re
 import pytest
 
@@ -210,6 +211,44 @@ class TestsAWS:
             if host.file(f'/etc/ssh/{file}').exists:
                 assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
                     'ssh files permissions are not set correctly'
+
+    def test_aws_instance_identity(self, host, instance_data):
+        instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
+        instance_document_data = json.loads(host.check_output(f'curl -s {instance_document_url}'))
+
+        assert instance_document_data['imageId'] == instance_data['ami'], \
+            'Unexpected AMI ID for deployed instance'
+
+        assert instance_document_data['region'] in instance_data['availability_zone'], \
+            'Unexpected region for deployed instance'
+
+        arch = instance_document_data['architecture']
+        if arch == 'arm64':
+            arch = 'aarch64'
+
+        assert arch == host.system_info.arch, \
+            'Unexpected architecture for deployed instance'
+
+        if host.system_info.distribution == 'fedora':
+            pytest.skip('No need to check billing codes in Fedora AMIs')
+
+        ami_name = instance_data['name']
+
+        billing_codes = []
+        if test_lib.is_rhel_high_availability(host) and 'Access2' not in ami_name:
+            # RHELDST-4222, on-demand (hourly) has the billing code for RHEL and for HA
+            billing_codes = ['bp-79a54010', 'bp-6fa54006']
+        elif 'Hourly2' in ami_name:
+            billing_codes = ['bp-6fa54006']
+        elif 'Access2' in ami_name:
+            # Cloud Access billing code, means don't charge for the OS (so it can apply to anything cloud Access)
+            billing_codes = ['bp-63a5400a']
+        else:
+            pytest.skip('Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
+
+        for code in billing_codes:
+            assert code in instance_document_data['billingProducts'], \
+                'Expected billing code not found in instance document data'
 
 
 class TestsNetworkDrivers:

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -12,6 +13,8 @@ class CloudImageValidator:
     ssh_identity_file = '/tmp/ssh_key'
     ssh_pub_key_file = f'{ssh_identity_file}.pub'
     ssh_config_file = '/tmp/ssh_config'
+
+    instances_json = '/tmp/instances.json'
 
     infra_controller = None
     infra_configurator = None
@@ -57,26 +60,34 @@ class CloudImageValidator:
         if self.debug:
             pprint(instances)
 
+        self._write_instances_to_json(instances)
+
         ssh_lib.generate_instances_ssh_config(instances=instances,
                                               ssh_config_file=self.ssh_config_file,
                                               ssh_key_path=self.ssh_identity_file)
 
         return instances
 
+    def _write_instances_to_json(self, instances):
+        with open(self.instances_json, 'w') as file:
+            json.dump(instances, file)
+
     def run_tests_in_all_instances(self, instances):
         time.sleep(5)
+
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
                              instances=instances,
                              ssh_config=self.ssh_config_file,
                              parallel=self.parallel,
                              debug=self.debug)
+
         runner.run_tests(self.output_file, self.test_filter)
 
     def cleanup(self):
         self.infra_controller.destroy_infra()
 
-        os.remove(self.ssh_identity_file)
-        os.remove(self.ssh_pub_key_file)
-
         if not self.debug:
+            os.remove(self.ssh_identity_file)
+            os.remove(self.ssh_pub_key_file)
             os.remove(self.ssh_config_file)
+            os.remove(self.instances_json)
