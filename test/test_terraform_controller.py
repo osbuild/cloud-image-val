@@ -20,8 +20,8 @@ class TestTerraformController:
     def test_create_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
-        tf_init = 'terraform init'
-        tf_apply = 'terraform apply -auto-approve'
+        tf_init = f'terraform init {tf_controller.debug_sufix}'
+        tf_apply = f'terraform apply -auto-approve {tf_controller.debug_sufix}'
 
         # Acts
         result = tf_controller.create_infra()
@@ -181,7 +181,7 @@ class TestTerraformController:
     def test_destroy_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
-        tf_destroy_infra = 'terraform destroy -auto-approve'
+        tf_destroy_infra = f'terraform destroy -auto-approve {tf_controller.debug_sufix}'
 
         # Act
         result = tf_controller.destroy_infra()
