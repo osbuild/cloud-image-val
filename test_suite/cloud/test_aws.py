@@ -5,6 +5,12 @@ import pytest
 from lib import test_lib
 
 
+@pytest.fixture
+def instance_data_aws(host):
+    instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
+    return json.loads(host.check_output(f'curl -s {instance_document_url}'))
+
+
 class TestsAWS:
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
         """
@@ -230,20 +236,17 @@ class TestsAWS:
                 assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
                     'ssh files permissions are not set correctly'
 
-    def test_aws_instance_identity(self, host, instance_data):
+    def test_aws_instance_identity(self, host, instance_data, instance_data_aws):
         """
         Try to fetch instance identity from EC2 and compare with expectation
         """
-        instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
-        instance_document_data = json.loads(host.check_output(f'curl -s {instance_document_url}'))
-
-        assert instance_document_data['imageId'] == instance_data['ami'], \
+        assert instance_data_aws['imageId'] == instance_data['ami'], \
             'Unexpected AMI ID for deployed instance'
 
-        assert instance_document_data['region'] in instance_data['availability_zone'], \
+        assert instance_data_aws['region'] in instance_data['availability_zone'], \
             'Unexpected region for deployed instance'
 
-        arch = instance_document_data['architecture']
+        arch = instance_data_aws['architecture']
         if arch == 'arm64':
             arch = 'aarch64'
 
@@ -268,11 +271,11 @@ class TestsAWS:
             pytest.skip('Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
 
         for code in billing_codes:
-            assert code in instance_document_data['billingProducts'], \
+            assert code in instance_data_aws['billingProducts'], \
                 'Expected billing code not found in instance document data'
 
 
-class TestsNetworkDrivers:
+class TestsAWSNetworking:
     def test_correct_network_driver_is_used(self, host):
         """
         If ena network device found, eth0 should use ena as default driver.
@@ -310,3 +313,40 @@ class TestsNetworkDrivers:
             nic_driver_name_filter = 'vif'
 
         return nic_name_filter, nic_driver_name_filter
+
+    def test_network_ipv6_setup(self, host):
+        """
+        Check for IPv6 networking setup.
+        """
+        mac_addresses_url = 'http://169.254.169.254/latest/meta-data/network/interfaces/macs'
+        registered_mac_address = host.check_output(f'curl -s {mac_addresses_url}').replace('/', '')
+        registered_ipv6 = host.check_output(f'curl -s {mac_addresses_url}/{registered_mac_address}/ipv6s')
+
+        if 'Not Found' in registered_ipv6:
+            pytest.skip('No IPv6 enabled in this Subnet')
+
+        assert registered_ipv6 in host.interface('eth0', 'inet6').addresses(), \
+            f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
+
+    def test_redhat_cds_hostnames(self, host, instance_data_aws):
+        """
+        Check all Red Hat CDS for the AMI's instance region.
+        """
+        region = instance_data_aws['region']
+
+        rhui_cds_hostnames = [
+            f'rhui2-cds01.{region}.aws.ce.redhat.com',
+            f'rhui2-cds02.{region}.aws.ce.redhat.com',
+            f'rhui3-cds01.{region}.aws.ce.redhat.com',
+            f'rhui3-cds02.{region}.aws.ce.redhat.com',
+            f'rhui3-cds03.{region}.aws.ce.redhat.com',
+        ]
+
+        with host.sudo():
+            for cds in rhui_cds_hostnames:
+                # There is no rhui in us-gov regions at all.
+                # All the content requests are redirected to the closest standard regions.
+                cds_name = cds.replace('-gov', '')
+
+                assert host.run_test(f'getent hosts {cds_name}'), \
+                    f'Error getting {cds_name} host entry'
