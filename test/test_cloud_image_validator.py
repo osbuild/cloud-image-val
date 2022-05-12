@@ -29,6 +29,8 @@ class TestCloudImageValidator:
         mock_initialize_infrastructure = mocker.MagicMock(return_value=test_controller)
         validator.initialize_infrastructure = mock_initialize_infrastructure
 
+        mock_print_divider = mocker.patch('lib.console_lib.print_divider')
+
         mock_deploy_infrastructure = mocker.MagicMock(return_value=self.test_instances)
         validator.deploy_infrastructure = mock_deploy_infrastructure
 
@@ -43,6 +45,11 @@ class TestCloudImageValidator:
 
         # Assert
         assert result is None
+        assert mock_print_divider.call_args_list == [
+            mocker.call('Deploying infrastructure'),
+            mocker.call('Running tests'),
+            mocker.call('Cleanup')
+        ]
 
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
