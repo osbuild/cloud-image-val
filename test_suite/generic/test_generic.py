@@ -201,6 +201,13 @@ class TestsGeneric:
         assert host.file('/etc/shells').contains('/bin/bash'), \
             '/bin/bash is not declared in /etc/shells'
 
+    def test_timezone_is_utc(self, host):
+        """
+        Check that the default timezone is set to UTC.
+        BugZilla 1187669
+        """
+        assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to bne UTC'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):

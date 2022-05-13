@@ -302,6 +302,45 @@ class TestsAWS:
             assert code in instance_data_aws['billingProducts'], \
                 'Expected billing code not found in instance document data'
 
+    def test_cmdline_nvme_io_timeout(self, host):
+        """
+        Check if default value of /sys/module/nvme_core/parameters/io_timeout is set to 4294967295.
+        BugZilla 1732506
+        """
+        expected_value = '4294967295'
+
+        if float(host.system_info.release) < 7.0:
+            pytest.skip('Not required in RHEL below 7.x')
+
+        with host.sudo():
+            assert host.file('/proc/cmdline').contains(f'nvme_core.io_timeout={expected_value}'), \
+                f'nvme_core.io_timeout should be set to {expected_value}'
+
+        if 'nvme' in host.check_output('lsblk'):
+            assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
+                f'Actual value in io_timeout is not {expected_value}'
+
+    def test_udev_kernel(self, host):
+        """
+        /etc/udev/rules.d/80-net-name-slot.rules link to /dev/null
+        ks ref:
+        For cloud images, 'eth0' _is_ the predictable device name, since
+        we don't want to be tied to specific virtual (!) hardware
+        rm -f /etc/udev/rules.d/70*
+        ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules
+        """
+        rules_file = '/etc/udev/rules.d/80-net-name-slot.rules'
+
+        with host.sudo():
+            if float(host.system_info.release) > 8.4:
+                # COMPOSER-844 - this set not required in rhel8+
+                assert not host.file(rules_file).exists, '80-net rules are not required in RHEL 8.4+'
+            else:
+                assert host.file(rules_file).exists, '80-net rules are required in RHEL lower than 8.5'
+
+            assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
+                '70-persistent-net rules are required'
+
 
 class TestsAWSNetworking:
     def test_correct_network_driver_is_used(self, host):
@@ -356,7 +395,7 @@ class TestsAWSNetworking:
         assert registered_ipv6 in host.interface('eth0', 'inet6').addresses(), \
             f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
 
-    def test_redhat_cds_hostnames(self, host, instance_data_aws):
+    def test_redhat_cds_hostnames(self, host, instance_data_aws, rhel_only):
         """
         Check all Red Hat CDS for the AMI's instance region.
         """
