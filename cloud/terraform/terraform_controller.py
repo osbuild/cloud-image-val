@@ -3,17 +3,22 @@ import json
 
 
 class TerraformController:
-    def __init__(self, tf_configurator):
+    def __init__(self, tf_configurator, debug=False):
         self.cloud_name = tf_configurator.cloud_name
         self.tf_configurator = tf_configurator
+        self.debug = debug
+
+        self.debug_sufix = ''
+        if not debug:
+            self.debug_sufix = '1> /dev/null'
 
     def create_infra(self):
-        cmd_output = os.system('terraform init')
+        cmd_output = os.system(f'terraform init {self.debug_sufix}')
         if cmd_output:
             print('terraform init command failed, check configuration')
             exit(1)
 
-        cmd_output = os.system('terraform apply -auto-approve')
+        cmd_output = os.system(f'terraform apply -auto-approve {self.debug_sufix}')
         if cmd_output:
             print('terraform apply command failed, check configuration')
             exit(1)
@@ -93,6 +98,6 @@ class TerraformController:
             raise Exception('terraform destroy specific resource command failed')
 
     def destroy_infra(self):
-        cmd_output = os.system('terraform destroy -auto-approve')
+        cmd_output = os.system(f'terraform destroy -auto-approve {self.debug_sufix}')
         if cmd_output:
             raise Exception('terraform destroy command failed')

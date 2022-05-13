@@ -6,6 +6,7 @@ from pprint import pprint
 from cloud.terraform.terraform_controller import TerraformController
 from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
+from lib import console_lib
 from test_suite.suite_runner import SuiteRunner
 
 
@@ -35,10 +36,13 @@ class CloudImageValidator:
         self.infra_controller = self.initialize_infrastructure()
 
         try:
+            console_lib.print_divider('Deploying infrastructure')
             instances = self.deploy_infrastructure()
 
+            console_lib.print_divider('Running tests')
             self.run_tests_in_all_instances(instances)
         finally:
+            console_lib.print_divider('Cleanup')
             self.cleanup()
 
     def initialize_infrastructure(self):
@@ -51,7 +55,7 @@ class CloudImageValidator:
         if self.debug:
             self.infra_configurator.print_configuration()
 
-        return TerraformController(self.infra_configurator)
+        return TerraformController(self.infra_configurator, self.debug)
 
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()
