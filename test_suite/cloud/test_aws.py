@@ -12,6 +12,34 @@ def instance_data_aws(host):
 
 
 class TestsAWS:
+    def test_ami_name(self, host, instance_data):
+        """
+        Check there is 'RHEL' in RHEL AMIs.
+        In the case of Red Hat SAP AMIs, check that they do not contain "Access2" in the AMI name.
+        In the case of Red Hat High Availability AMIs, check that they are not ARM and the name does not contain "arm64"
+        In the case of Fedora AMIs, check that it follows the right Fedora Cloud-Base name format.
+        """
+        distro = host.system_info.distribution
+        ami_name = instance_data['name']
+
+        if distro == 'rhel':
+            assert 'RHEL' in ami_name, 'Expected "RHEL" in AMI name for Red Hat image'
+
+            if test_lib.is_rhel_sap(host):
+                assert 'SAP' in ami_name, 'Expected "SAP" in Red Hat SAP AMI name'
+                assert 'Access2' not in ami_name, \
+                    'The Access2 images are not needed for this SAP image set (RHELDST-4739)'
+
+            if test_lib.is_rhel_high_availability(host):
+                assert 'HA' in ami_name, 'Expected "HA" in Red Hat High Availability AMI name'
+                assert host.system_info.arch != 'aarch64' and 'arm64' not in ami_name, \
+                    'ARM (aarch64/arm64) is not supported in Red Hat High Availability images'
+
+        elif distro == 'fedora':
+            fedora_ami_name_format = re.compile(r'Fedora-Cloud-Base-[\d]{2}-[\d]{8}.n.[\d].(?:aarch64|x86_64)')
+            assert re.match(fedora_ami_name_format, ami_name), \
+                'Unexpected AMI name for Fedora image'
+
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
         """
         Check that rh-cloud-firstboot is disabled.
