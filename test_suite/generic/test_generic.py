@@ -1,4 +1,5 @@
 import pytest
+from lib import test_lib
 
 
 class TestsGeneric:
@@ -150,6 +151,27 @@ class TestsGeneric:
                 if 'el5' in kernel_release:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
+
+    def test_release_version(self, host, instance_data):
+        """
+        Check if rhel provider matches /etc/redhat-release and ami name
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not run in atomic images')
+
+        cloud_image_name = instance_data['name']
+        product_version = host.system_info.release
+
+        release_file = 'redhat-release'
+        if host.system_info.distribution == 'fedora':
+            release_file = 'fedora-release'
+
+        with host.sudo():
+            package_release_version = host.check_output("rpm -q --qf '%{VERSION}' --whatprovides " + release_file)
+
+        assert product_version == package_release_version, \
+            f'product version ({product_version}) does not match package release version'
+        assert product_version.replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
 
 class TestsCloudInit:
