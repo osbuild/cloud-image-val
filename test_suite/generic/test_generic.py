@@ -173,6 +173,18 @@ class TestsGeneric:
             f'product version ({product_version}) does not match package release version'
         assert product_version.replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
+    def test_sshd(self, host):
+        """
+        sshd service shoud be on, password authentication shoud be disabled
+        """
+        with host.sudo():
+            sshd = host.service('sshd')
+            assert sshd.is_running, 'ssh.service is not active'
+
+            if not host.file('/etc/ssh/sshd_config').contains('PasswordAuthentication no') and \
+               not host.file('/etc/ssh/sshd_config').contains('#PasswordAuthentication yes'):
+                pytest.fail('password authentication should be disabled')
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
