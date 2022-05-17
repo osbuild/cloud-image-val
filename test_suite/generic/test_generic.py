@@ -1,5 +1,6 @@
 import pytest
 from lib import test_lib
+import re
 
 
 class TestsGeneric:
@@ -181,8 +182,12 @@ class TestsGeneric:
             sshd = host.service('sshd')
             assert sshd.is_running, 'ssh.service is not active'
 
-            if not host.file('/etc/ssh/sshd_config').contains('PasswordAuthentication no') and \
-               not host.file('/etc/ssh/sshd_config').contains('#PasswordAuthentication yes'):
+            sshd_config_string = host.file('/etc/ssh/sshd_config').content_string
+            pwdAuthNo = 'PasswordAuthentication no'
+            pwdAuthYes = 'PasswordAuthentication yes'
+
+            if not re.match(pwdAuthNo, sshd_config_string) and \
+               not re.match(f'#[ ]?{pwdAuthYes}|#[ ]+{pwdAuthYes}', sshd_config_string):
                 pytest.fail('password authentication should be disabled')
 
 
