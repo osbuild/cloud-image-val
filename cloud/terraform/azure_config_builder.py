@@ -1,6 +1,3 @@
-import random
-import string
-
 from cloud.terraform.base_config_builder import BaseConfigBuilder
 
 
@@ -46,7 +43,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
 
         for instance in self.resources_dict['instances']:
-            instance['hostname'] = f'az-{self.__generate_random_string(6)}-vm'.lower()
+            instance['hostname'] = f'az-{self.random_str}-vm'.lower()
             instance['location'] = instance['location'].lower().replace(' ', '')
 
             self.__new_azure_virtual_network(instance)
@@ -59,7 +56,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         return self.resources_tf
 
     def __new_azure_virtual_network(self, instance):
-        name = '{}-{}-network'.format(self.azure_resource_prefix, instance['location'])
+        name = '{}-{}-network{}'.format(self.azure_resource_prefix, instance['location'], self.random_str)
         instance['azurerm_virtual_network'] = name
 
         if self.__check_resource_exists_in_location(resource_name='azurerm_virtual_network',
@@ -82,7 +79,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         return False
 
     def __new_azure_subnet(self, instance):
-        name = '{}-{}-internal'.format(self.azure_resource_prefix, instance['location'])
+        name = '{}-{}-internal{}'.format(self.azure_resource_prefix, instance['location'], self.random_str)
         instance['azurerm_subnet'] = name
 
         if self.__check_resource_exists_in_location(resource_name='azurerm_subnet',
@@ -102,7 +99,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_subnet'][instance['location']] = new_subnet
 
     def __new_azure_public_ip(self, instance):
-        name = '{}-{}-public-ip'.format(self.azure_resource_prefix, instance['hostname'])
+        name = '{}-{}-public-ip{}'.format(self.azure_resource_prefix, instance['hostname'], self.random_str)
         instance['azurerm_public_ip'] = name
 
         new_public_ip = {
@@ -116,7 +113,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_public_ip'][instance['hostname']] = new_public_ip
 
     def __new_azure_nic(self, instance):
-        name = '{}-{}-nic'.format(self.azure_resource_prefix, instance['hostname'])
+        name = '{}-{}-nic{}'.format(self.azure_resource_prefix, instance['hostname'], self.random_str)
         instance['azurerm_network_interface'] = name
 
         ip_configuration = {
@@ -165,7 +162,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         }
 
         new_instance = {
-            'name': f'{instance_hostname}',
+            'name': f'{instance_hostname}{self.random_str}',
             'location': instance['location'],
             'admin_username': instance_user,
             'size': instance['instance_type'],
@@ -188,9 +185,6 @@ class AzureConfigBuilder(BaseConfigBuilder):
             new_instance['source_image_reference'] = instance['image_definition']
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
-
-    def __generate_random_string(self, length):
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
     def __get_azure_image_uri(self, name):
         return '{}/Microsoft.Compute/images/{}'.format(self.azure_resource_id_base, name)

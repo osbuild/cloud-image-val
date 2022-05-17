@@ -1,3 +1,6 @@
+import random
+
+
 class BaseConfigBuilder:
     cloud_name = None
     cloud_provider_definition = None
@@ -12,6 +15,8 @@ class BaseConfigBuilder:
 
         self.resources_tf = {'resource': {}}
         self.providers_tf = {'provider': {self.cloud_providers[self.cloud_name]: []}}
+
+        self.random_str = f'-{random.randrange(1, 10**5):03}'
 
     def build_resources(self) -> dict:
         pass

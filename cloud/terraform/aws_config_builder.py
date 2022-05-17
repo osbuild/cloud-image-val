@@ -41,7 +41,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
         return self.resources_tf
 
     def __new_aws_key_pair(self, region):
-        key_name = f'{region}-key'
+        key_name = f'{region}-key{self.random_str}'
 
         new_key_pair = {
             'provider': f'aws.{region}',
@@ -56,6 +56,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
             instance['instance_type'] = 't2.micro'
 
         name = instance['name'].replace('.', '-')
+        name.join(self.random_str)
 
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
         if instance['region'] not in aliases:
