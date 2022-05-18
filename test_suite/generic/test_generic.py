@@ -1,6 +1,5 @@
 import pytest
 from lib import test_lib
-import re
 
 
 class TestsGeneric:
@@ -175,20 +174,14 @@ class TestsGeneric:
         assert product_version.replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
     def test_sshd(self, host):
-        """
-        sshd service shoud be on, password authentication shoud be disabled
-        """
         with host.sudo():
             sshd = host.service('sshd')
             assert sshd.is_running, 'ssh.service is not active'
 
-            sshd_config_string = host.file('/etc/ssh/sshd_config').content_string
-            pwdAuthNo = 'PasswordAuthentication no'
-            pwdAuthYes = 'PasswordAuthentication yes'
+            pass_auth_config_name = 'PasswordAuthentication'
 
-            if not re.match(pwdAuthNo, sshd_config_string) and \
-               not re.match(f'#[ ]?{pwdAuthYes}|#[ ]+{pwdAuthYes}', sshd_config_string):
-                pytest.fail('password authentication should be disabled')
+            assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
+                f'{pass_auth_config_name} should be disabled (set to "no")'
 
 
 class TestsCloudInit:
