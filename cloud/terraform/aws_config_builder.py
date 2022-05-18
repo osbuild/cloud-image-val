@@ -62,7 +62,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
         if instance['region'] not in aliases:
             raise Exception('Cannot add an instance if region provider is not set up')
 
-        key_name = f'{instance["region"]}-key'
+        key_name = f'{instance["region"]}-key{self.random_str}'
 
         new_instance = {
             'instance_type': instance['instance_type'],
