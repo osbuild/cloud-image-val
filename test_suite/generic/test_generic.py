@@ -183,6 +183,24 @@ class TestsGeneric:
             assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
                 f'{pass_auth_config_name} should be disabled (set to "no")'
 
+    def test_root_is_locked(self, host):
+        """
+        Check if root account is locked
+        """
+        with host.sudo():
+            if test_lib.is_rhel_atomic_host(host):
+                result = host.run('passwd -S root | grep -q Alternate').rc
+            else:
+                result = host.run('passwd -S root | grep -q LK').rc
+        assert result == 0, 'Root account should be locked'
+
+    def test_bash_in_shell_config(self, host):
+        """
+        Check for bash/nologin shells in /etc/shells
+        """
+        assert host.file('/etc/shells').contains('/bin/bash'), \
+            '/bin/bash is not declared in /etc/shells'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
