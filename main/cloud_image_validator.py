@@ -23,11 +23,15 @@ class CloudImageValidator:
                  resources_file,
                  output_file,
                  test_filter=None,
+                 include_markers=None,
                  parallel=False,
                  debug=False):
         self.resources_file = resources_file
         self.output_file = output_file
+
         self.test_filter = test_filter
+        self.include_markers = include_markers
+
         self.parallel = parallel
         self.debug = debug
 
@@ -82,7 +86,9 @@ class CloudImageValidator:
                              parallel=self.parallel,
                              debug=self.debug)
 
-        runner.run_tests(self.output_file, self.test_filter)
+        runner.run_tests(self.output_file,
+                         self.test_filter,
+                         self.include_markers)
 
     def cleanup(self):
         self.infra_controller.destroy_infra()

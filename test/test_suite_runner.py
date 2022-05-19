@@ -9,6 +9,7 @@ class TestSuiteRunner:
     test_ssh_config = '/path/to/ssh_config'
     test_output_filepath = 'test/output/filepath.xml'
     test_filter = 'test_test_name'
+    test_marker = 'pub'
 
     @pytest.fixture
     def suite_runner(self):
@@ -29,34 +30,37 @@ class TestSuiteRunner:
         mock_os_system = mocker.patch('os.system')
 
         # Act
-        suite_runner.run_tests(test_output_filepath, self.test_filter)
+        suite_runner.run_tests(test_output_filepath, self.test_filter, self.test_marker)
 
         # Assert
         mock_os_path_exists.assert_called_once_with(test_output_filepath)
         mock_os_remove.assert_called_once_with(test_output_filepath)
 
         mock_os_system.assert_called_once_with(test_composed_command)
-        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath, self.test_filter)
+        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath,
+                                                               self.test_filter,
+                                                               self.test_marker)
 
     @pytest.mark.parametrize(
-        'test_filter, test_debug, test_parallel, expected_command_string',
-        [(None, False, False,
+        'test_filter, test_marker, test_debug, test_parallel, expected_command_string',
+        [(None, None, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")}'),
-         (test_filter, False, False,
+         (test_filter, test_marker, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
-          f'-k "{test_filter}"'),
-         (None, False, True,
+          f'-k "{test_filter}" '
+          f'-m "{test_marker}"'),
+         (None, None, False, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5'),
-         (None, True, True,
+         (None, None, True, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
@@ -69,6 +73,7 @@ class TestSuiteRunner:
                                        mocker,
                                        suite_runner,
                                        test_filter,
+                                       test_marker,
                                        test_debug,
                                        test_parallel,
                                        expected_command_string):
@@ -87,7 +92,8 @@ class TestSuiteRunner:
 
         # Act, Assert
         assert suite_runner.compose_testinfra_command(self.test_output_filepath,
-                                                      test_filter) == expected_command_string
+                                                      test_filter,
+                                                      test_marker) == expected_command_string
 
         mock_get_all_instances_hosts_with_users.assert_called_once()
 

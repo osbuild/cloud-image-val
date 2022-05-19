@@ -12,6 +12,7 @@ def instance_data_aws(host):
 
 
 class TestsAWS:
+    @pytest.mark.pub
     def test_ami_name(self, host, instance_data):
         """
         Check there is 'RHEL' in RHEL AMIs.
@@ -40,7 +41,7 @@ class TestsAWS:
             assert re.match(fedora_ami_name_format, ami_name), \
                 'Unexpected AMI name for Fedora image'
 
-    def test_rh_cloud_firstboot_service_is_disabled(self, host):
+    def test_rh_cloud_firstboot_service_is_disabled(self, host, rhel_only):
         """
         Check that rh-cloud-firstboot is disabled.
         """
@@ -54,7 +55,7 @@ class TestsAWS:
                 assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
                     'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
 
-    def test_iommu_strict_mode(self, host):
+    def test_iommu_strict_mode(self, host, rhel_only):
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
         BugZilla 1836058
@@ -74,7 +75,7 @@ class TestsAWS:
                 else:
                     assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
-    def test_nouveau_is_blacklisted(self, host):
+    def test_nouveau_is_blacklisted(self, host, rhel_only):
         """
         Check that nouveau is disabled.
         BugZilla 1645772
@@ -96,7 +97,7 @@ class TestsAWS:
         assert host.file(file_to_check).contains('blacklist nouveau'), \
             f'nouveau is not blacklisted in "{file_to_check}"'
 
-    def test_unwanted_packages_are_not_present(self, host):
+    def test_unwanted_packages_are_not_present(self, host, rhel_only):
         """
         Some pkgs are not required in EC2.
         """
@@ -123,7 +124,7 @@ class TestsAWS:
 
         assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
 
-    def test_required_packages_are_installed(self, host):
+    def test_required_packages_are_installed(self, host, rhel_only):
         """
         Some pkgs are required in EC2.
         https://kernel.googlesource.com/pub/scm/boot/dracut/dracut/+/18e61d3d41c8287467e2bc7178f32d188affc920%5E!/
@@ -178,10 +179,8 @@ class TestsAWS:
 
         assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
 
-    def test_rhui_pkg_is_installed(self, host):
-        if host.system_info.distribution == 'fedora':
-            pytest.skip('Fedora AMIs do not require rhui pkg')
-
+    @pytest.mark.pub
+    def test_rhui_pkg_is_installed(self, host, rhel_only):
         unwanted_rhui_pkgs = None
 
         if test_lib.is_rhel_high_availability(host):
@@ -203,7 +202,7 @@ class TestsAWS:
         assert host.package(required_rhui_pkg).is_installed, \
             f'Package "{required_rhui_pkg}" should be present'
 
-    def test_amazon_timesync_service_is_used(self, host):
+    def test_amazon_timesync_service_is_used(self, host, rhel_only):
         """
         BugZilla 1679763
         """
@@ -234,7 +233,7 @@ class TestsAWS:
             assert f'Selected source {timesync_service_ipv4}' in host.check_output('journalctl -u chronyd'), \
                 'Amazon Time Sync service is not in use'
 
-    def test_max_cstate_is_configured_in_cmdline(self, host):
+    def test_max_cstate_is_configured_in_cmdline(self, host, rhel_only):
         """
         Check that intel_idle.max_cstate=1 processor.max_cstate=1 exists in SAP AMI's /proc/cmdline.
         BugZilla 1961225
@@ -264,7 +263,7 @@ class TestsAWS:
                 assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
                     'ssh files permissions are not set correctly'
 
-    def test_aws_instance_identity(self, host, instance_data, instance_data_aws):
+    def test_aws_instance_identity(self, host, instance_data, instance_data_aws, rhel_only):
         """
         Try to fetch instance identity from EC2 and compare with expectation
         """
@@ -280,9 +279,6 @@ class TestsAWS:
 
         assert arch == host.system_info.arch, \
             'Unexpected architecture for deployed instance'
-
-        if host.system_info.distribution == 'fedora':
-            pytest.skip('No need to check billing codes in Fedora AMIs')
 
         ami_name = instance_data['name']
 
@@ -302,7 +298,7 @@ class TestsAWS:
             assert code in instance_data_aws['billingProducts'], \
                 'Expected billing code not found in instance document data'
 
-    def test_cmdline_nvme_io_timeout(self, host):
+    def test_cmdline_nvme_io_timeout(self, host, rhel_only):
         """
         Check if default value of /sys/module/nvme_core/parameters/io_timeout is set to 4294967295.
         BugZilla 1732506
@@ -320,7 +316,7 @@ class TestsAWS:
             assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
                 f'Actual value in io_timeout is not {expected_value}'
 
-    def test_udev_kernel(self, host):
+    def test_udev_kernel(self, host, rhel_only):
         """
         This is from ks file definition before migrating to ImageBuilder.
         There is "70-persistent-net.rules" in all AMis and "80-net-name-slot.rules" in AMIs earlier than RHEL-8.4.
@@ -338,7 +334,7 @@ class TestsAWS:
             assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
                 '70-persistent-net rules are required'
 
-    def test_libc6_xen_conf_file_does_not_exist(self, host):
+    def test_libc6_xen_conf_file_does_not_exist(self, host, rhel_only):
         """
         Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
         """
@@ -400,7 +396,7 @@ class TestsAWSNetworking:
         assert registered_ipv6 in host.interface('eth0', 'inet6').addresses(), \
             f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
 
-    def test_redhat_cds_hostnames(self, host, instance_data_aws):
+    def test_redhat_cds_hostnames(self, host, instance_data_aws, rhel_only):
         """
         Check all Red Hat CDS for the AMI's instance region.
         """

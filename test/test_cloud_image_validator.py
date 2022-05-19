@@ -10,6 +10,7 @@ class TestCloudImageValidator:
     test_resources_file = '/fake/test/resources_file.json'
     test_output_file = '/fake/test/output_file.xml'
     test_filter = 'test_test_name'
+    test_markers = 'pub'
     test_parallel = True
     test_debug = True
     test_instances = ['test-instance-1', 'test-instance-2']
@@ -19,6 +20,7 @@ class TestCloudImageValidator:
         return CloudImageValidator(resources_file=self.test_resources_file,
                                    output_file=self.test_output_file,
                                    test_filter=self.test_filter,
+                                   include_markers=self.test_markers,
                                    parallel=self.test_parallel,
                                    debug=self.test_debug)
 
@@ -114,7 +116,7 @@ class TestCloudImageValidator:
 
         validator.run_tests_in_all_instances(self.test_instances)
 
-        mock_run_tests.assert_called_once_with(validator.output_file, self.test_filter)
+        mock_run_tests.assert_called_once_with(validator.output_file, self.test_filter, self.test_markers)
 
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(TerraformController, 'destroy_infra')
