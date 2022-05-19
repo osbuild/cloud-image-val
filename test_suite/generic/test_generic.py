@@ -251,6 +251,20 @@ class TestsServices:
         else:
             return {}
 
+    def test_sysconfig_kernel(self, host):
+        """
+        UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not run in atomic images')
+
+        kernel_config = '/etc/sysconfig/kernel'
+        with host.sudo():
+            assert host.file(kernel_config).contains('UPDATEDEFAULT=yes'), \
+                f'UPDATEDEFAULT should be set to `yes` in {kernel_config}'
+            assert host.file(kernel_config).contains('DEFAULTKERNEL=kernel'), \
+                f'DEFAULTKERNEL should be set to `kernel` in {kernel_config}'
+
 
 class TestsCloudInit:
     def test_growpart_is_present_in_config(self, host):
