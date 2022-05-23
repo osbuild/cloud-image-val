@@ -167,21 +167,12 @@ class TestsGeneric:
             release_file = 'fedora-release'
 
         with host.sudo():
-            package_release_version = float(host.check_output("rpm -q --qf '%{VERSION}' --whatprovides " + release_file))
+            command_to_run = "rpm -q --qf '%{VERSION}' --whatprovides " + release_file
+            package_release_version = float(host.check_output(command_to_run))
 
         assert product_version == package_release_version, \
             f'product version ({product_version}) does not match package release version'
         assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
-
-    def test_sshd(self, host):
-        with host.sudo():
-            sshd = host.service('sshd')
-            assert sshd.is_running, 'ssh.service is not active'
-
-            pass_auth_config_name = 'PasswordAuthentication'
-
-            assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
-                f'{pass_auth_config_name} should be disabled (set to "no")'
 
     def test_root_is_locked(self, host):
         """
@@ -206,7 +197,59 @@ class TestsGeneric:
         Check that the default timezone is set to UTC.
         BugZilla 1187669
         """
-        assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to bne UTC'
+        assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
+
+
+class TestsServices:
+    def test_sshd(self, host):
+        with host.sudo():
+            sshd = host.service('sshd')
+            assert sshd.is_running, 'ssh.service is not active'
+
+            pass_auth_config_name = 'PasswordAuthentication'
+
+            assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
+                f'{pass_auth_config_name} should be disabled (set to "no")'
+
+    def test_auditd(self, host):
+        """
+        - Service should be running
+        - Config files should have the correct MD5 checksums
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to Atomic hosts')
+
+        auditd_service = 'auditd'
+
+        assert host.service(auditd_service).is_running, f'{auditd_service} expected to be running'
+
+        rhel_version = float(host.system_info.release)
+        checksums = self.__get_auditd_checksums_by_rhel_major_version(int(rhel_version))
+
+        with host.sudo():
+            for path, md5 in checksums.items():
+                assert md5 == host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
+
+    def __get_auditd_checksums_by_rhel_major_version(self, major_version):
+        checksums_by_version = {
+            '18': {
+                '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            '17': {
+                '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
+                '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
+            },
+            '16': {
+                '/etc/audit/auditd.conf': '306e13910db5267ffd9887406d43a3f7',
+                '/etc/sysconfig/auditd': '0825f77b49a82c5d75bcd347f30407ab'
+            }
+        }
+
+        if major_version in checksums_by_version:
+            return checksums_by_version[major_version]
+        else:
+            return {}
 
 
 class TestsCloudInit:

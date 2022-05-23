@@ -322,12 +322,9 @@ class TestsAWS:
 
     def test_udev_kernel(self, host):
         """
-        /etc/udev/rules.d/80-net-name-slot.rules link to /dev/null
-        ks ref:
-        For cloud images, 'eth0' _is_ the predictable device name, since
-        we don't want to be tied to specific virtual (!) hardware
-        rm -f /etc/udev/rules.d/70*
-        ln -s /dev/null /etc/udev/rules.d/80-net-name-slot.rules
+        This is from ks file definition before migrating to ImageBuilder.
+        There is "70-persistent-net.rules" in all AMis and "80-net-name-slot.rules" in AMIs earlier than RHEL-8.4.
+        "80-net-name-slot.rules" is not actually required after migrating the build tool to ImageBuilder.
         """
         rules_file = '/etc/udev/rules.d/80-net-name-slot.rules'
 
@@ -340,6 +337,14 @@ class TestsAWS:
 
             assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
                 '70-persistent-net rules are required'
+
+    def test_libc6_xen_conf_file_does_not_exist(self, host):
+        """
+        Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
+        """
+        with host.sudo():
+            file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
+            assert not host.file(file_to_check).exists, f'{file_to_check} should not be present in AMI'
 
 
 class TestsAWSNetworking:
@@ -395,7 +400,7 @@ class TestsAWSNetworking:
         assert registered_ipv6 in host.interface('eth0', 'inet6').addresses(), \
             f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
 
-    def test_redhat_cds_hostnames(self, host, instance_data_aws, rhel_only):
+    def test_redhat_cds_hostnames(self, host, instance_data_aws):
         """
         Check all Red Hat CDS for the AMI's instance region.
         """
