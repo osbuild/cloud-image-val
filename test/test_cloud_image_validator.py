@@ -110,7 +110,6 @@ class TestCloudImageValidator:
         mocker.patch.object(TerraformConfigurator, 'cloud_name', create=True)
         validator.infra_configurator = TerraformConfigurator
 
-        mocker.patch('time.sleep')
         mock_run_tests = mocker.patch.object(SuiteRunner, 'run_tests')
 
         validator.run_tests_in_all_instances(self.test_instances)

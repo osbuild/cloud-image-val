@@ -20,6 +20,7 @@ class TestTerraformController:
     def test_create_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
+        mocker.patch('time.sleep')
         tf_init = f'terraform init {tf_controller.debug_sufix}'
         tf_apply = f'terraform apply -auto-approve {tf_controller.debug_sufix}'
 

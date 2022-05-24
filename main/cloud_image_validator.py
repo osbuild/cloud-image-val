@@ -1,6 +1,5 @@
 import json
 import os
-import time
 
 from pprint import pprint
 from cloud.terraform.terraform_controller import TerraformController
@@ -77,8 +76,6 @@ class CloudImageValidator:
             json.dump(instances, file)
 
     def run_tests_in_all_instances(self, instances):
-        time.sleep(5)
-
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
                              instances=instances,
                              ssh_config=self.ssh_config_file,
