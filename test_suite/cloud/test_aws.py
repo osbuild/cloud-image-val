@@ -302,6 +302,50 @@ class TestsAWS:
             assert code in instance_data_aws['billingProducts'], \
                 'Expected billing code not found in instance document data'
 
+    def test_cmdline_nvme_io_timeout(self, host):
+        """
+        Check if default value of /sys/module/nvme_core/parameters/io_timeout is set to 4294967295.
+        BugZilla 1732506
+        """
+        expected_value = '4294967295'
+
+        if float(host.system_info.release) < 7.0:
+            pytest.skip('Not required in RHEL below 7.x')
+
+        with host.sudo():
+            assert host.file('/proc/cmdline').contains(f'nvme_core.io_timeout={expected_value}'), \
+                f'nvme_core.io_timeout should be set to {expected_value}'
+
+        if 'nvme' in host.check_output('lsblk'):
+            assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
+                f'Actual value in io_timeout is not {expected_value}'
+
+    def test_udev_kernel(self, host):
+        """
+        This is from ks file definition before migrating to ImageBuilder.
+        There is "70-persistent-net.rules" in all AMis and "80-net-name-slot.rules" in AMIs earlier than RHEL-8.4.
+        "80-net-name-slot.rules" is not actually required after migrating the build tool to ImageBuilder.
+        """
+        rules_file = '/etc/udev/rules.d/80-net-name-slot.rules'
+
+        with host.sudo():
+            if float(host.system_info.release) > 8.4:
+                # COMPOSER-844 - this set not required in rhel8+
+                assert not host.file(rules_file).exists, '80-net rules are not required in RHEL 8.4+'
+            else:
+                assert host.file(rules_file).exists, '80-net rules are required in RHEL lower than 8.5'
+
+            assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
+                '70-persistent-net rules are required'
+
+    def test_libc6_xen_conf_file_does_not_exist(self, host):
+        """
+        Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
+        """
+        with host.sudo():
+            file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
+            assert not host.file(file_to_check).exists, f'{file_to_check} should not be present in AMI'
+
 
 class TestsAWSNetworking:
     def test_correct_network_driver_is_used(self, host):
