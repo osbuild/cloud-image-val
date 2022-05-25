@@ -199,6 +199,29 @@ class TestsGeneric:
         """
         assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
 
+    @pytest.mark.pub
+    def test_pkg_signature_and_gpg_keys(self, host):
+        """
+        Check that "no pkg signature" is disabled
+        Check that specified gpg keys are installed
+        """
+        if host.system_info.distribution == 'fedora':
+            num_of_gpg_keys = 1
+        else:
+            num_of_gpg_keys = 2
+
+        with host.sudo():
+            gpg_pubkey_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n' | grep -v gpg-pubkey"
+            gpg_pubkey_content = host.check_output(gpg_pubkey_cmd)
+
+            assert 'none' not in gpg_pubkey_content, 'No pkg signature must be disabled'
+
+            num_of_key_ids = host.check_output(gpg_pubkey_cmd + " | awk -F' ' '{print $NF}'|sort|uniq|wc -l")
+            assert int(num_of_key_ids) == 1, 'Number of key IDs should be 1'
+
+            assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
+                f'There should be {num_of_gpg_keys} gpg key(s) installed'
+
 
 class TestsServices:
     def test_sshd(self, host):

@@ -46,17 +46,20 @@ class TestSuiteRunner:
         [(None, None, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
-          f'--html {test_output_filepath.replace("xml", "html")}'),
+          f'--html {test_output_filepath.replace("xml", "html")} '
+          f'--self-contained-html'),
          (test_filter, test_marker, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
+          f'--self-contained-html '
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
          (None, None, False, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
+          f'--self-contained-html '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5'),
@@ -64,6 +67,7 @@ class TestSuiteRunner:
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
+          f'--self-contained-html '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
           '--only-rerun="refused|timeout|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5 '
@@ -112,7 +116,7 @@ class TestSuiteRunner:
     @pytest.mark.parametrize(
         'test_instances, exception',
         [(dict(instance_1={'wrong_key_for_username': 'user1', 'public_dns': 'host1'}),
-         pytest.raises(KeyError))]
+          pytest.raises(KeyError))]
     )
     def test_get_all_instances_hosts_with_users_exception(self, suite_runner, test_instances, exception):
         suite_runner.instances = test_instances
