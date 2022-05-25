@@ -21,19 +21,26 @@ class SuiteRunner:
         self.parallel = parallel
         self.debug = debug
 
-    def run_tests(self, output_filepath, test_filter=None):
+    def run_tests(self,
+                  output_filepath,
+                  test_filter=None,
+                  include_markers=None):
         if os.path.exists(output_filepath):
             os.remove(output_filepath)
 
-        os.system(self.compose_testinfra_command(output_filepath, test_filter))
+        os.system(self.compose_testinfra_command(output_filepath,
+                                                 test_filter,
+                                                 include_markers))
 
-    def compose_testinfra_command(self, output_filepath, test_filter):
+    def compose_testinfra_command(self,
+                                  output_filepath,
+                                  test_filter,
+                                  include_markers):
         all_hosts = self.get_all_instances_hosts_with_users()
-        test_suite_paths = self.get_test_suite_paths()
 
         command_with_args = [
             'py.test',
-            ' '.join(test_suite_paths),
+            ' '.join(self.get_test_suite_paths()),
             f'--hosts={all_hosts}',
             f'--ssh-config {self.ssh_config}',
             f'--junit-xml {output_filepath}',
@@ -42,6 +49,9 @@ class SuiteRunner:
 
         if test_filter:
             command_with_args.append(f'-k "{test_filter}"')
+
+        if include_markers:
+            command_with_args.append(f'-m "{include_markers}"')
 
         if self.parallel:
             command_with_args.append(f'--numprocesses={len(self.instances)}')
@@ -56,12 +66,6 @@ class SuiteRunner:
 
         return ' '.join(command_with_args)
 
-    def get_all_instances_hosts_with_users(self):
-        """
-        :return: A string with comma-separated items in the form of '<user1>@<host1>,<user2>@<host2>'
-        """
-        return ','.join(['{0}@{1}'.format(inst['username'], inst['public_dns']) for inst in self.instances.values()])
-
     def get_test_suite_paths(self):
         """
         :return: A String array of test file absolute paths that will be executed in the cloud instances
@@ -72,3 +76,9 @@ class SuiteRunner:
             test_suites_to_run.append('cloud/test_aws.py')
 
         return [os.path.join(os.path.dirname(__file__), p) for p in test_suites_to_run]
+
+    def get_all_instances_hosts_with_users(self):
+        """
+        :return: A string with comma-separated items in the form of '<user1>@<host1>,<user2>@<host2>'
+        """
+        return ','.join(['{0}@{1}'.format(inst['username'], inst['public_dns']) for inst in self.instances.values()])

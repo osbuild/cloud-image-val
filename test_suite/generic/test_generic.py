@@ -20,7 +20,7 @@ class TestsGeneric:
         assert host.file('/proc/cmdline').contains('console=ttyS0'), \
             'Serial console should be redirected to ttyS0'
 
-    def test_crashkernel_is_enabled_rhel_6(self, host):
+    def test_crashkernel_is_enabled_rhel_6(self, host, rhel_only):
         """
         (deprecated)
         Check that crashkernel is enabled in image (RHEL 6 and below).
@@ -33,7 +33,7 @@ class TestsGeneric:
         else:
             pytest.skip('RHEL is 7.x or later')
 
-    def test_crashkernel_is_enabled_rhel_7_and_above(self, host):
+    def test_crashkernel_is_enabled_rhel_7_and_above(self, host, rhel_only):
         """
         Check that crashkernel is enabled in image (RHEL 7 and above).
         """
@@ -113,7 +113,7 @@ class TestsGeneric:
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
 
-    def test_cert_product_version_is_correct(self, host):
+    def test_cert_product_version_is_correct(self, host, rhel_only):
         """
         BugZilla 1938930
         Issue RHELPLAN-60817
@@ -152,7 +152,7 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    def test_release_version(self, host, instance_data):
+    def test_release_version(self, host, instance_data, rhel_only):
         """
         Check if rhel provider matches /etc/redhat-release and ami name
         """
@@ -174,7 +174,7 @@ class TestsGeneric:
             f'product version ({product_version}) does not match package release version'
         assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
-    def test_root_is_locked(self, host):
+    def test_root_is_locked(self, host, rhel_only):
         """
         Check if root account is locked
         """
@@ -211,7 +211,7 @@ class TestsServices:
             assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
                 f'{pass_auth_config_name} should be disabled (set to "no")'
 
-    def test_auditd(self, host):
+    def test_auditd(self, host, rhel_only):
         """
         - Service should be running
         - Config files should have the correct MD5 checksums
@@ -306,7 +306,7 @@ class TestsNetworking:
 
 
 class TestsSecurity:
-    def test_firewalld_is_disabled(self, host):
+    def test_firewalld_is_disabled(self, host, rhel_only):
         """
         firewalld is not required in cloud because there are security groups or other security mechanisms.
         """
