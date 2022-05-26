@@ -152,14 +152,13 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    def test_release_version(self, host, instance_data, rhel_only):
+    def test_release_version(self, host, rhel_only):
         """
-        Check if rhel provider matches /etc/redhat-release and ami name
+        Check if rhel provider matches /etc/redhat-release
         """
         if test_lib.is_rhel_atomic_host(host):
             pytest.skip('Not run in atomic images')
 
-        cloud_image_name = instance_data['name']
         product_version = float(host.system_info.release)
 
         release_file = 'redhat-release'
@@ -172,6 +171,18 @@ class TestsGeneric:
 
         assert product_version == package_release_version, \
             f'product version ({product_version}) does not match package release version'
+
+    @pytest.mark.pub
+    def test_release_version_in_image_name(self, host, instance_data):
+        """
+        Check if release version is on the image name
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not run in atomic images')
+
+        cloud_image_name = instance_data['name']
+        product_version = float(host.system_info.release)
+
         assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
     def test_root_is_locked(self, host, rhel_only):
@@ -298,7 +309,7 @@ class TestsCloudInit:
         assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
             'growpart must be present in cloud_init_modules'
 
-    def test_wheel_group_not_set_to_default_user(self, host):
+    def test_wheel_group_not_set_to_default_user(self, host, rhel_only):
         """
         Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
         BugZilla 1549638
