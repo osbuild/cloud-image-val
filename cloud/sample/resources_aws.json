@@ -23,11 +23,11 @@
             "name": "RHEL-Atomic_7.8_HVM_GA-20200805-x86_64-0-Access2-GP2"
         },
         {
-            "ami": "ami-0a16d641d1d1f1e00",
+            "ami": "ami-0a352ed8597816014",
             "region": "us-east-1",
             "instance_type": "",
             "username": "ec2-user",
-            "name": "SAP-8.1.0_HVM-20191029-x86_64-0-Hourly2-GP2"
+            "name": "RHEL-SAP-9.0.0_HVM-20220513-x86_64-0-Hourly2-GP2"
         },
         {
             "ami": "ami-00bde567792a74481",

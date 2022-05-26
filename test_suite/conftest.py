@@ -4,11 +4,19 @@ import pytest
 from py.xml import html
 from pytest_html import extras
 
+from lib import test_lib
+
 
 @pytest.fixture
 def rhel_only(host):
     if host.system_info.distribution != 'rhel':
         pytest.skip('Image is not RHEL')
+
+
+@pytest.fixture
+def rhel_sap_only(host, rhel_only):
+    if not test_lib.is_rhel_sap(host):
+        pytest.skip('Image is not SAP RHEL')
 
 
 @pytest.fixture(autouse=True)
