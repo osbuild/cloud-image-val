@@ -309,7 +309,7 @@ class TestsCloudInit:
         assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
             'growpart must be present in cloud_init_modules'
 
-    def test_wheel_group_not_set_to_default_user(self, host):
+    def test_wheel_group_not_set_to_default_user(self, host, rhel_only):
         """
         Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
         BugZilla 1549638
