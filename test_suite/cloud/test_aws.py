@@ -45,15 +45,16 @@ class TestsAWS:
         """
         Check that rh-cloud-firstboot is disabled.
         """
-        assert not host.service('rh-cloud-firstboot').is_enabled, \
-            'rh-cloud-firstboot service must be disabled'
+        if host.service('rh-cloud-firstboot').is_valid:
+            assert not host.service('rh-cloud-firstboot').is_enabled, \
+                'rh-cloud-firstboot service must be disabled'
 
-        with host.sudo():
-            cloud_firstboot_file = host.file('/etc/sysconfig/rh-cloud-firstboot')
-            # TODO: Confirm if test should fail when this file does not exist
-            if cloud_firstboot_file.exists:
-                assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
-                    'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
+            with host.sudo():
+                cloud_firstboot_file = host.file('/etc/sysconfig/rh-cloud-firstboot')
+                # TODO: Confirm if test should fail when this file does not exist
+                if cloud_firstboot_file.exists:
+                    assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
+                        'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
 
     def test_iommu_strict_mode(self, host, rhel_only):
         """
