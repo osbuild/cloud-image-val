@@ -233,6 +233,17 @@ class TestsGeneric:
             assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
                 f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
+    def test_grub_config(self, host, rhel_only):
+        grub2_file = '/boot/grub2/grubenv'
+        linked_to = grub2_file
+
+        with host.sudo():
+            if host.file('/sys/firmware/efi').exists:
+                if float(host.system_info.release) < 8.0:
+                    linked_to = '/boot/efi/EFI/redhat/grubenv'
+
+            assert host.file(grub2_file).linked_to == linked_to
+
 
 class TestsServices:
     def test_sshd(self, host):
