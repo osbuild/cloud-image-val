@@ -45,7 +45,7 @@ class TestsAWS:
         """
         Check that rh-cloud-firstboot is disabled.
         """
-        if host.service('rh-cloud-firstboot').is_valid:
+        if host.check_output('systemctl status rh-cloud-firstboot || echo false') != 'false':
             assert not host.service('rh-cloud-firstboot').is_enabled, \
                 'rh-cloud-firstboot service must be disabled'
 
