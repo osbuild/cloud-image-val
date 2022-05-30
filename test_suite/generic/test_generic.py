@@ -3,6 +3,7 @@ from lib import test_lib
 
 
 class TestsGeneric:
+    # TODO
     def test_bash_history_is_empty(self, host):
         users = [host.user().name, 'root']
 
@@ -13,6 +14,7 @@ class TestsGeneric:
                 file_content_length = len(bash_history_file.content_string)
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
+    # TODO
     def test_console_is_redirected_to_ttys0(self, host):
         """
         Console output should be redirected to serial for HVM instances.
@@ -20,7 +22,9 @@ class TestsGeneric:
         assert host.file('/proc/cmdline').contains('console=ttyS0'), \
             'Serial console should be redirected to ttyS0'
 
-    def test_crashkernel_is_enabled_rhel_6(self, host, rhel_only):
+    # TODO
+    @pytest.mark.run_on(['rhel'])
+    def test_crashkernel_is_enabled_rhel_6(self, host):
         """
         (deprecated)
         Check that crashkernel is enabled in image (RHEL 6 and below).
@@ -33,7 +37,9 @@ class TestsGeneric:
         else:
             pytest.skip('RHEL is 7.x or later')
 
-    def test_crashkernel_is_enabled_rhel_7_and_above(self, host, rhel_only):
+    # TODO
+    @pytest.mark.run_on(['rhel'])
+    def test_crashkernel_is_enabled_rhel_7_and_above(self, host):
         """
         Check that crashkernel is enabled in image (RHEL 7 and above).
         """
@@ -54,6 +60,7 @@ class TestsGeneric:
                 assert host.file('/proc/cmdline').contains(item), \
                     'crashkernel must be enabled in RHEL 8.x and above'
 
+    # TODO
     def test_cpu_flags_are_correct(self, host):
         """
         Check various CPU flags.
@@ -75,6 +82,7 @@ class TestsGeneric:
                 assert host.file('/proc/cpuinfo').contains(flag), \
                     f'Expected CPU flag "{flag}" not set'
 
+    # TODO
     def test_rhgb_quiet_not_present_in_cmdline(self, host):
         """
         Check that there is no "rhgb" or "quiet" in /proc/cmdline.
@@ -90,6 +98,7 @@ class TestsGeneric:
                 assert not host.file('/proc/cmdline').contains(setting), \
                     f'{setting} must not be present in cmdline'
 
+    # TODO
     def test_numa_settings(self, host):
         """
         Check if NUMA is enabled on supported image.
@@ -105,6 +114,7 @@ class TestsGeneric:
                 assert dmesg_numa_nodes > 1, \
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
 
+    # TODO
     def test_no_avc_denials(self, host):
         """
         Check there is no avc denials (selinux).
@@ -113,7 +123,8 @@ class TestsGeneric:
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
 
-    def test_cert_product_version_is_correct(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_cert_product_version_is_correct(self, host):
         """
         BugZilla 1938930
         Issue RHELPLAN-60817
@@ -133,6 +144,7 @@ class TestsGeneric:
             assert f'Version: {product_version}' in cert_version, \
                 'Inconsistent version in pki certificate'
 
+    # TODO
     def test_inittab_and_systemd(self, host):
         """
         Check default runlevel or systemd target.
@@ -152,7 +164,8 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    def test_release_version(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_release_version(self, host):
         """
         Check if rhel provider matches /etc/redhat-release
         """
@@ -172,6 +185,7 @@ class TestsGeneric:
         assert product_version == package_release_version, \
             f'product version ({product_version}) does not match package release version'
 
+    # TODO
     @pytest.mark.pub
     def test_release_version_in_image_name(self, host, instance_data):
         """
@@ -185,7 +199,8 @@ class TestsGeneric:
 
         assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
-    def test_root_is_locked(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_root_is_locked(self, host):
         """
         Check if root account is locked
         """
@@ -196,6 +211,7 @@ class TestsGeneric:
                 result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
 
+    # TODO
     def test_bash_in_shell_config(self, host):
         """
         Check for bash/nologin shells in /etc/shells
@@ -203,6 +219,7 @@ class TestsGeneric:
         assert host.file('/etc/shells').contains('/bin/bash'), \
             '/bin/bash is not declared in /etc/shells'
 
+    # TODO
     def test_timezone_is_utc(self, host):
         """
         Check that the default timezone is set to UTC.
@@ -210,6 +227,7 @@ class TestsGeneric:
         """
         assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
 
+    # TODO
     @pytest.mark.pub
     def test_pkg_signature_and_gpg_keys(self, host):
         """
@@ -235,6 +253,7 @@ class TestsGeneric:
 
 
 class TestsServices:
+    # TODO
     def test_sshd(self, host):
         with host.sudo():
             sshd = host.service('sshd')
@@ -245,7 +264,8 @@ class TestsServices:
             assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
                 f'{pass_auth_config_name} should be disabled (set to "no")'
 
-    def test_auditd(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_auditd(self, host):
         """
         - Service should be running
         - Config files should have the correct MD5 checksums
@@ -285,6 +305,7 @@ class TestsServices:
         else:
             return {}
 
+    # TODO
     def test_sysconfig_kernel(self, host):
         """
         UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
@@ -301,6 +322,7 @@ class TestsServices:
 
 
 class TestsCloudInit:
+    # TODO
     def test_growpart_is_present_in_config(self, host):
         """
         Make sure there is growpart in cloud_init_modules group in "/etc/cloud/cloud.cfg".
@@ -309,7 +331,8 @@ class TestsCloudInit:
         assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
             'growpart must be present in cloud_init_modules'
 
-    def test_wheel_group_not_set_to_default_user(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_wheel_group_not_set_to_default_user(self, host):
         """
         Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
         BugZilla 1549638
@@ -320,6 +343,7 @@ class TestsCloudInit:
 
 
 class TestsNetworking:
+    # TODO
     def test_dns_resolving_works(self, host):
         """
         Check if DNS resolving works.
@@ -327,6 +351,7 @@ class TestsNetworking:
         assert host.run_test('ping -c 5 google-public-dns-a.google.com'), \
             'Public DNS resolution did not work'
 
+    # TODO
     def test_ipv_localhost(self, host):
         """
         Check that localhost ipv6 and ipv4 are set in /etc/hosts.
@@ -340,7 +365,8 @@ class TestsNetworking:
 
 
 class TestsSecurity:
-    def test_firewalld_is_disabled(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_firewalld_is_disabled(self, host):
         """
         firewalld is not required in cloud because there are security groups or other security mechanisms.
         """

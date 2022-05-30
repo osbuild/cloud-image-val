@@ -12,9 +12,11 @@ def check_run_on(host, request):
     # This fixture checks the list of combinations of distro-version
     # each test has. If the host doesn't meet any of the combinations,
     # the test will be skipped
-    fedora_versions = ['f34', 'f35', 'f36']
-    rhel_versions = ['rhel8.5', 'rhel8.6', 'rhel9.0']
-    centos_versions = ['cs8', 'cs9']
+    supported_product_versions = {
+        'fedora': ['34', '35', '36'],
+        'rhel': ['8.5', '8.6', '9.0'],
+        'centos': ['8', '9']
+    }
 
     distro_version_list = [m.args for m in request.node.own_markers if m.name == 'run_on'][0][0]
 
@@ -22,17 +24,10 @@ def check_run_on(host, request):
     host_version = host.system_info.release
 
     if host_distro not in distro_version_list:
-        if (host_distro == 'fedora' and f'f{host_version}' not in fedora_versions) \
-            or (host_distro == 'rhel' and f'rhel{host_version}' not in rhel_versions) \
-                or (host_distro == 'centos' and f'cs{host_version}' not in centos_versions):
-
-            pytest.skip(f'This test does not apply to {host_distro} - {host_version}')
-
-
-@pytest.fixture
-def rhel_only(host):
-    if host.system_info.distribution != 'rhel':
-        pytest.skip('Image is not RHEL')
+        if host_version not in supported_product_versions[host_distro]:
+            pytest.skip(f"This test doesn't apply to {host_distro}-{host_version}")
+    else:
+        pytest.skip(f"This test doesn't apply to {host_distro}")
 
 
 @pytest.fixture
