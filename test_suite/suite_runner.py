@@ -28,9 +28,9 @@ class SuiteRunner:
         if os.path.exists(output_filepath):
             os.remove(output_filepath)
 
-        os.system(self.compose_testinfra_command(output_filepath,
-                                                 test_filter,
-                                                 include_markers))
+        return os.system(self.compose_testinfra_command(output_filepath,
+                                                        test_filter,
+                                                        include_markers))
 
     def compose_testinfra_command(self,
                                   output_filepath,

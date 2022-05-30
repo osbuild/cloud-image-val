@@ -51,4 +51,4 @@ if __name__ == '__main__':
                                                 include_markers=args.include_markers,
                                                 parallel=args.parallel,
                                                 debug=args.debug)
-    cloud_image_validator.main()
+    exit(cloud_image_validator.main())
