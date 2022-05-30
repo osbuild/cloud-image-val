@@ -42,7 +42,6 @@ class TestCloudImageValidator:
         mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
-        # mock_os_waitstatus_to_exitcode = mocker.patch('os.waitstatus_to_exitcode', return_value=exit_code_test)
         mock_os_waitstatus_to_exitcode = mocker.MagicMock(return_value=exit_code_test)
         os.waitstatus_to_exitcode = mock_os_waitstatus_to_exitcode
 
