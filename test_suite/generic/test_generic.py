@@ -349,6 +349,23 @@ class TestsNetworking:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
+    def test_eth0_network_adapter_setup(self, host):
+        """
+        Make sure that eht0 default adapter is correctly setup:
+            1. NETWORKING=yes in /etc/sysconfig/network
+            2. DEVICE=eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+        """
+        device_name = 'eth0'
+
+        with host.sudo():
+            assert host.file('/etc/sysconfig/network').contains('^NETWORKING=yes'), \
+                'Invalid networking setup'
+
+            device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+
+            assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
+                f'Unexpected device name. Expected: "{device_name}"'
+
 
 class TestsSecurity:
     def test_firewalld_is_disabled(self, host, rhel_only):
