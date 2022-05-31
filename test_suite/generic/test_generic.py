@@ -233,6 +233,17 @@ class TestsGeneric:
             assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
                 f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
+    def test_grub_config(self, host, rhel_only):
+        grub2_file = '/boot/grub2/grubenv'
+        linked_to = grub2_file
+
+        with host.sudo():
+            if host.file('/sys/firmware/efi').exists:
+                if float(host.system_info.release) < 8.0:
+                    linked_to = '/boot/efi/EFI/redhat/grubenv'
+
+            assert host.file(grub2_file).linked_to == linked_to
+
 
 class TestsServices:
     def test_sshd(self, host):
@@ -337,6 +348,23 @@ class TestsNetworking:
             for expected_host in expected_hosts:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
+
+    def test_eth0_network_adapter_setup(self, host):
+        """
+        Make sure that eht0 default adapter is correctly setup:
+            1. NETWORKING=yes in /etc/sysconfig/network
+            2. DEVICE=eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+        """
+        device_name = 'eth0'
+
+        with host.sudo():
+            assert host.file('/etc/sysconfig/network').contains('^NETWORKING=yes'), \
+                'Invalid networking setup'
+
+            device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+
+            assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
+                f'Unexpected device name. Expected: "{device_name}"'
 
 
 class TestsSecurity:

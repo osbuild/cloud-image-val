@@ -343,6 +343,49 @@ class TestsAWS:
             file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
             assert not host.file(file_to_check).exists, f'{file_to_check} should not be present in AMI'
 
+    def test_ena_support_correctly_set(self, host, instance_data_aws, rhel_only):
+        """
+        Check that Elastic Network Adapter support is enabled or disabled accordingly.
+        """
+        query_to_run = 'Reservations[].Instances[].EnaSupport'
+
+        command_to_run = [
+            'aws ec2 describe-instances',
+            '--profile aws',
+            '--instance-id {0}'.format(instance_data_aws['instanceId']),
+            '--region {0}'.format(instance_data_aws['region']),
+            f'--query "{query_to_run}"'
+        ]
+
+        command_output = host.backend.run_local(' '.join(command_to_run)).stdout
+
+        if float(host.system_info.release) < 7.4:
+            assert command_output.lower() == '', \
+                'ENA support expected to be disabled in RHEL older than 7.4'
+        else:
+            assert 'true' in command_output.lower(), \
+                'ENA support expected to be enabled in RHEL 7.4 and later'
+
+    def test_yum_plugins(self, host):
+        """
+        BugZilla 1932802
+        Earlier than RHEL-8.4, yum plugin product-id and subscription-manager should be disabled by default.
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to RHEL Atomic Host AMIs')
+
+        if float(host.system_info.release) < 8.4:
+            expect_config = "enabled=0"
+        else:
+            expect_config = "enabled=1"
+
+        with host.sudo():
+            assert host.file('/etc/yum/pluginconf.d/product-id.conf').contains(expect_config), \
+                'Unexpected yum "product-id" plugin status'
+
+            assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
+                'Unexpected yum "subscription-manager" plugin status'
+
 
 @pytest.mark.usefixtures('rhel_sap_only')
 class TestsAWSSAP:
