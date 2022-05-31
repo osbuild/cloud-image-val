@@ -3,6 +3,7 @@ from lib import test_lib
 
 
 class TestsGeneric:
+    @pytest.mark.run_on(['all'])
     def test_bash_history_is_empty(self, host):
         users = [host.user().name, 'root']
 
@@ -13,6 +14,7 @@ class TestsGeneric:
                 file_content_length = len(bash_history_file.content_string)
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
+    @pytest.mark.run_on(['all'])
     def test_console_is_redirected_to_ttys0(self, host):
         """
         Console output should be redirected to serial for HVM instances.
@@ -20,27 +22,13 @@ class TestsGeneric:
         assert host.file('/proc/cmdline').contains('console=ttyS0'), \
             'Serial console should be redirected to ttyS0'
 
-    def test_crashkernel_is_enabled_rhel_6(self, host, rhel_only):
+    # TODO: does this apply to fedora and centos
+    @pytest.mark.run_on(['rhel'])
+    def test_crashkernel_is_enabled_rhel(self, host):
         """
-        (deprecated)
-        Check that crashkernel is enabled in image (RHEL 6 and below).
-        """
-        if float(host.system_info.release) < 7.0:
-            with host.sudo():
-                host.run_test('service kdump status')
-                assert not host.file('/proc/cmdline').contains('crashkernel'), \
-                    'crashkernel is not required as xen kdump is  not supported on RHEL 6.x'
-        else:
-            pytest.skip('RHEL is 7.x or later')
-
-    def test_crashkernel_is_enabled_rhel_7_and_above(self, host, rhel_only):
-        """
-        Check that crashkernel is enabled in image (RHEL 7 and above).
+        Check that crashkernel is enabled in image.
         """
         product_release_version = float(host.system_info.release)
-
-        if float(host.system_info.release) < 7.0:
-            pytest.skip('RHEL is 6.x')
 
         if product_release_version < 9.0:
             expected_content = ['crashkernel=auto']
@@ -52,8 +40,9 @@ class TestsGeneric:
         with host.sudo(host.user().name):
             for item in expected_content:
                 assert host.file('/proc/cmdline').contains(item), \
-                    'crashkernel must be enabled in RHEL 8.x and above'
+                    'crashkernel must be enabled'
 
+    @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host):
         """
         Check various CPU flags.
@@ -75,6 +64,7 @@ class TestsGeneric:
                 assert host.file('/proc/cpuinfo').contains(flag), \
                     f'Expected CPU flag "{flag}" not set'
 
+    @pytest.mark.run_on(['all'])
     def test_rhgb_quiet_not_present_in_cmdline(self, host):
         """
         Check that there is no "rhgb" or "quiet" in /proc/cmdline.
@@ -90,6 +80,7 @@ class TestsGeneric:
                 assert not host.file('/proc/cmdline').contains(setting), \
                     f'{setting} must not be present in cmdline'
 
+    @pytest.mark.run_on(['all'])
     def test_numa_settings(self, host):
         """
         Check if NUMA is enabled on supported image.
@@ -105,6 +96,7 @@ class TestsGeneric:
                 assert dmesg_numa_nodes > 1, \
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
 
+    @pytest.mark.run_on(['all'])
     def test_no_avc_denials(self, host):
         """
         Check there is no avc denials (selinux).
@@ -113,7 +105,8 @@ class TestsGeneric:
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
 
-    def test_cert_product_version_is_correct(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_cert_product_version_is_correct(self, host):
         """
         BugZilla 1938930
         Issue RHELPLAN-60817
@@ -133,6 +126,7 @@ class TestsGeneric:
             assert f'Version: {product_version}' in cert_version, \
                 'Inconsistent version in pki certificate'
 
+    @pytest.mark.run_on(['all'])
     def test_inittab_and_systemd(self, host):
         """
         Check default runlevel or systemd target.
@@ -152,7 +146,10 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    def test_release_version(self, host, rhel_only):
+    # TODO: does this apply to centos
+    # TODO: fix docstring
+    @pytest.mark.run_on(['rhel', 'fedora'])
+    def test_release_version(self, host):
         """
         Check if rhel provider matches /etc/redhat-release
         """
@@ -173,6 +170,7 @@ class TestsGeneric:
             f'product version ({product_version}) does not match package release version'
 
     @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
     def test_release_version_in_image_name(self, host, instance_data):
         """
         Check if release version is on the image name
@@ -185,7 +183,8 @@ class TestsGeneric:
 
         assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
 
-    def test_root_is_locked(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_root_is_locked(self, host):
         """
         Check if root account is locked
         """
@@ -196,6 +195,7 @@ class TestsGeneric:
                 result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
 
+    @pytest.mark.run_on(['all'])
     def test_bash_in_shell_config(self, host):
         """
         Check for bash/nologin shells in /etc/shells
@@ -203,6 +203,7 @@ class TestsGeneric:
         assert host.file('/etc/shells').contains('/bin/bash'), \
             '/bin/bash is not declared in /etc/shells'
 
+    @pytest.mark.run_on(['all'])
     def test_timezone_is_utc(self, host):
         """
         Check that the default timezone is set to UTC.
@@ -211,6 +212,7 @@ class TestsGeneric:
         assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
 
     @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
     def test_pkg_signature_and_gpg_keys(self, host):
         """
         Check that "no pkg signature" is disabled
@@ -246,6 +248,7 @@ class TestsGeneric:
 
 
 class TestsServices:
+    @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
         with host.sudo():
             sshd = host.service('sshd')
@@ -256,7 +259,9 @@ class TestsServices:
             assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
                 f'{pass_auth_config_name} should be disabled (set to "no")'
 
-    def test_auditd(self, host, rhel_only):
+    # TODO: verify logic, think if we should divide
+    @pytest.mark.run_on(['rhel'])
+    def test_auditd(self, host):
         """
         - Service should be running
         - Config files should have the correct MD5 checksums
@@ -277,25 +282,20 @@ class TestsServices:
 
     def __get_auditd_checksums_by_rhel_major_version(self, major_version):
         checksums_by_version = {
-            '18': {
+            '8': {
                 '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
             },
-            '17': {
+            '7': {
                 '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
                 '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
-            },
-            '16': {
-                '/etc/audit/auditd.conf': '306e13910db5267ffd9887406d43a3f7',
-                '/etc/sysconfig/auditd': '0825f77b49a82c5d75bcd347f30407ab'
             }
         }
 
-        if major_version in checksums_by_version:
-            return checksums_by_version[major_version]
-        else:
-            return {}
+        return checksums_by_version[major_version]
 
+    # TODO: Verify logic
+    @pytest.mark.run_on(['all'])
     def test_sysconfig_kernel(self, host):
         """
         UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
@@ -312,6 +312,7 @@ class TestsServices:
 
 
 class TestsCloudInit:
+    @pytest.mark.run_on(['all'])
     def test_growpart_is_present_in_config(self, host):
         """
         Make sure there is growpart in cloud_init_modules group in "/etc/cloud/cloud.cfg".
@@ -320,7 +321,8 @@ class TestsCloudInit:
         assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
             'growpart must be present in cloud_init_modules'
 
-    def test_wheel_group_not_set_to_default_user(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_wheel_group_not_set_to_default_user(self, host):
         """
         Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
         BugZilla 1549638
@@ -331,6 +333,8 @@ class TestsCloudInit:
 
 
 class TestsNetworking:
+    # TODO: redo test with test infra module
+    @pytest.mark.run_on(['all'])
     def test_dns_resolving_works(self, host):
         """
         Check if DNS resolving works.
@@ -338,6 +342,7 @@ class TestsNetworking:
         assert host.run_test('ping -c 5 google-public-dns-a.google.com'), \
             'Public DNS resolution did not work'
 
+    @pytest.mark.run_on(['all'])
     def test_ipv_localhost(self, host):
         """
         Check that localhost ipv6 and ipv4 are set in /etc/hosts.
@@ -368,15 +373,10 @@ class TestsNetworking:
 
 
 class TestsSecurity:
-    def test_firewalld_is_disabled(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_firewalld_is_disabled(self, host):
         """
         firewalld is not required in cloud because there are security groups or other security mechanisms.
         """
-        product_version = 7.0
-        if float(host.system_info.release) < product_version:
-            for s in ['iptables', 'ip6tables']:
-                assert not host.service(s).is_enabled, \
-                    f'{s} service should be disabled in RHEL below {product_version}'
-        else:
-            assert not host.package('firewalld').is_installed, \
-                f'firewalld should not be installed in cloud images for RHEL {product_version} and above'
+        assert not host.package('firewalld').is_installed, \
+            'firewalld should not be installed in RHEL cloud images'
