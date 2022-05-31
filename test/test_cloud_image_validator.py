@@ -1,4 +1,5 @@
 import pytest
+import os  # noqa: F401
 
 from main.cloud_image_validator import CloudImageValidator
 from cloud.terraform.terraform_configurator import TerraformConfigurator
@@ -27,6 +28,8 @@ class TestCloudImageValidator:
     def test_main(self, mocker, validator):
         # Arrange
         test_controller = 'test controller'
+        wait_status_test = 32512
+        exit_code_test = 127
 
         mock_initialize_infrastructure = mocker.MagicMock(return_value=test_controller)
         validator.initialize_infrastructure = mock_initialize_infrastructure
@@ -36,8 +39,12 @@ class TestCloudImageValidator:
         mock_deploy_infrastructure = mocker.MagicMock(return_value=self.test_instances)
         validator.deploy_infrastructure = mock_deploy_infrastructure
 
-        mock_run_tests_in_all_instances = mocker.MagicMock()
+        mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
+
+        # mock_os_waitstatus_to_exitcode = mocker.patch('os.waitstatus_to_exitcode', return_value=exit_code_test)
+        mock_os_waitstatus_to_exitcode = mocker.MagicMock(return_value=exit_code_test)
+        os.waitstatus_to_exitcode = mock_os_waitstatus_to_exitcode
 
         mock_cleanup = mocker.MagicMock()
         validator.cleanup = mock_cleanup
@@ -46,7 +53,7 @@ class TestCloudImageValidator:
         result = validator.main()
 
         # Assert
-        assert result is None
+        assert result == exit_code_test
         assert mock_print_divider.call_args_list == [
             mocker.call('Deploying infrastructure'),
             mocker.call('Running tests'),
@@ -56,6 +63,7 @@ class TestCloudImageValidator:
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
         mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
+        mock_os_waitstatus_to_exitcode.assert_called_once_with(wait_status_test)
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):

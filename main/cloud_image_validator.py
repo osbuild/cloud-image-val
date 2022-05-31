@@ -37,16 +37,24 @@ class CloudImageValidator:
 
     def main(self):
         self.infra_controller = self.initialize_infrastructure()
+        exit_code = 0
 
         try:
             console_lib.print_divider('Deploying infrastructure')
             instances = self.deploy_infrastructure()
 
             console_lib.print_divider('Running tests')
-            self.run_tests_in_all_instances(instances)
+            wait_status = self.run_tests_in_all_instances(instances)
+            exit_code = os.waitstatus_to_exitcode(wait_status)
+
+        except Exception as e:
+            print(e)
+            exit_code = 1
+
         finally:
             console_lib.print_divider('Cleanup')
             self.cleanup()
+            return exit_code
 
     def initialize_infrastructure(self):
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
@@ -86,9 +94,9 @@ class CloudImageValidator:
                              parallel=self.parallel,
                              debug=self.debug)
 
-        runner.run_tests(self.output_file,
-                         self.test_filter,
-                         self.include_markers)
+        return runner.run_tests(self.output_file,
+                                self.test_filter,
+                                self.include_markers)
 
     def cleanup(self):
         self.infra_controller.destroy_infra()
