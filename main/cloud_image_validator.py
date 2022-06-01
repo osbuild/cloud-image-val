@@ -25,7 +25,8 @@ class CloudImageValidator:
                  test_filter=None,
                  include_markers=None,
                  parallel=False,
-                 debug=False):
+                 debug=False,
+                 stop_cleanup=False):
         self.resources_file = resources_file
         self.output_file = output_file
 
@@ -34,6 +35,7 @@ class CloudImageValidator:
 
         self.parallel = parallel
         self.debug = debug
+        self.stop_cleanup = stop_cleanup
 
     def main(self):
         self.infra_controller = self.initialize_infrastructure()
@@ -52,6 +54,8 @@ class CloudImageValidator:
             exit_code = 1
 
         finally:
+            if self.stop_cleanup:
+                input('Proceed with cleanup?')
             console_lib.print_divider('Cleanup')
             self.cleanup()
             return exit_code

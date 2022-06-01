@@ -36,6 +36,12 @@ parser.add_argument('-d', '--debug',
                     default=False,
                     action='store_true',
                     required=False)
+parser.add_argument('-s', '--stop-cleanup',
+                    help='Use this option to enable stop cleanup process until a key is pressed. \n'
+                         'Helpful when you need to connect through ssh to an instance. Default is DISABLED',
+                    default=False,
+                    action='store_true',
+                    required=False)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -50,5 +56,6 @@ if __name__ == '__main__':
                                                 test_filter=args.test_filter,
                                                 include_markers=args.include_markers,
                                                 parallel=args.parallel,
-                                                debug=args.debug)
+                                                debug=args.debug,
+                                                stop_cleanup=args.stop_cleanup)
     exit(cloud_image_validator.main())
