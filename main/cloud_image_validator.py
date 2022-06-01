@@ -47,7 +47,7 @@ class CloudImageValidator:
 
             console_lib.print_divider('Running tests')
             wait_status = self.run_tests_in_all_instances(instances)
-            exit_code = os.waitstatus_to_exitcode(wait_status)
+            exit_code = wait_status >> 8
 
         except Exception as e:
             print(e)
