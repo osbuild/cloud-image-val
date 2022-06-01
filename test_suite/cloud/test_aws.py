@@ -365,7 +365,7 @@ class TestsAWS:
             assert 'true' in command_output.lower(), \
                 'ENA support expected to be enabled in RHEL 7.4 and later'
 
-    @pytest.mark.run_on(['all'])
+    @pytest.mark.run_on(['rhel'])
     def test_yum_plugins(self, host):
         """
         BugZilla 1932802

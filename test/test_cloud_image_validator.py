@@ -42,9 +42,6 @@ class TestCloudImageValidator:
         mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
-        mock_os_waitstatus_to_exitcode = mocker.MagicMock(return_value=exit_code_test)
-        os.waitstatus_to_exitcode = mock_os_waitstatus_to_exitcode
-
         mock_cleanup = mocker.MagicMock()
         validator.cleanup = mock_cleanup
 
@@ -62,7 +59,6 @@ class TestCloudImageValidator:
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
         mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
-        mock_os_waitstatus_to_exitcode.assert_called_once_with(wait_status_test)
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):
