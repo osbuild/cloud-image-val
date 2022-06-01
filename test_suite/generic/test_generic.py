@@ -235,7 +235,8 @@ class TestsGeneric:
             assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
                 f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
-    def test_grub_config(self, host, rhel_only):
+    @pytest.mark.run_on(['rhel'])
+    def test_grub_config(self, host):
         grub2_file = '/boot/grub2/grubenv'
         linked_to = grub2_file
 
@@ -354,6 +355,7 @@ class TestsNetworking:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
+    @pytest.mark.run_on(['all'])
     def test_eth0_network_adapter_setup(self, host):
         """
         Make sure that eht0 default adapter is correctly setup:
