@@ -295,8 +295,7 @@ class TestsServices:
 
         return checksums_by_version[major_version]
 
-    # TODO: Verify logic
-    @pytest.mark.run_on(['all'])
+    @pytest.mark.run_on(['rhel', 'centos'])
     def test_sysconfig_kernel(self, host):
         """
         UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
