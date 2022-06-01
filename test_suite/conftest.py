@@ -7,16 +7,45 @@ from pytest_html import extras
 from lib import test_lib
 
 
-@pytest.fixture
-def rhel_only(host):
-    if host.system_info.distribution != 'rhel':
-        pytest.skip('Image is not RHEL')
+@pytest.fixture(autouse=True)
+def check_run_on(host, request):
+    # This fixture checks the list of combinations of distro-version
+    # each test has. If the host doesn't meet any of the combinations,
+    # the test will be skipped
+    supported_distros_and_versions = [
+        'fedora', 'fedora34', 'fedora35', 'fedora36',
+        'rhel', 'rhel7.9', 'rhel8.5', 'rhel8.6', 'rhel9.0',
+        'centos', 'centos8', 'centos9'
+    ]
+
+    host_distro = host.system_info.distribution
+    host_version = host.system_info.release
+    distro_version = f'{host_distro}{host_version}'
+
+    run_on_markers = [m.args for m in request.node.own_markers if m.name == 'run_on'][0][0]
+
+    if 'all' in run_on_markers:
+        return
+
+    if not set(run_on_markers) <= set(supported_distros_and_versions):
+        pytest.fail('One or more run_on markers are not supported')
+
+    if distro_version not in run_on_markers:
+        pytest.skip(f"This test doesn't apply to {distro_version}")
 
 
+@pytest.mark.run_on(['rhel'])
 @pytest.fixture
-def rhel_sap_only(host, rhel_only):
+def rhel_sap_only(host):
     if not test_lib.is_rhel_sap(host):
         pytest.skip('Image is not SAP RHEL')
+
+
+@pytest.mark.run_on(['rhel'])
+@pytest.fixture
+def rhel_atomic_only(host):
+    if not test_lib.is_rhel_atomic_host(host):
+        pytest.skip('Image is not atomic RHEL')
 
 
 @pytest.fixture(autouse=True)
