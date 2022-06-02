@@ -1,6 +1,8 @@
 import os
 import json
-import time
+
+from threading import Thread
+from lib import ssh_lib
 
 
 class TerraformController:
@@ -24,9 +26,21 @@ class TerraformController:
             print('terraform apply command failed, check configuration')
             exit(1)
 
-        # TODO: Use something similar to what osbuild-composer uses instead of waiting 2m
-        print('waiting 2 minutes for the ssh servers in the instances to be ready')
-        time.sleep(120)
+        print('Waiting for the ssh server in the instance(s) to be ready...')
+        self.wait_for_all_instances_ssh_up()
+
+    def wait_for_all_instances_ssh_up(self):
+        seconds_to_wait = 120
+        instances = self.get_instances()
+
+        threads = []
+        for inst in instances.values():
+            t = Thread(target=ssh_lib.wait_for_host_ssh_up,
+                       args=[inst['public_dns'], seconds_to_wait])
+            t.start()
+            threads.append(t)
+
+        [t.join() for t in threads]
 
     def get_instances(self):
         output = os.popen('terraform show --json')
