@@ -94,14 +94,14 @@ class TestTerraformController:
             }
         }
 
-        mock_get_username_by_instance_name = mocker.MagicMock(return_value='test_user')
-        self.tf_configurator.get_username_by_instance_name = mock_get_username_by_instance_name
+        mock_get_aws_username_by_ami_name = mocker.MagicMock(return_value='test_user')
+        self.tf_configurator.get_aws_username_by_ami_name = mock_get_aws_username_by_ami_name
 
         # Act
         result = tf_controller.get_instances_aws(resources)
 
         # Assert
-        mock_get_username_by_instance_name.assert_called_once_with('aws_instance_test')
+        mock_get_aws_username_by_ami_name.assert_called_once_with('test_ami')
         assert result == instances_info_expected
 
     def test_get_instances_azure(self, mocker, tf_controller):

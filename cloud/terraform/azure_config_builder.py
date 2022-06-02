@@ -5,7 +5,6 @@ class AzureConfigBuilder(BaseConfigBuilder):
     cloud_name = 'azure'
     cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.0.2'}}
 
-    azure_resource_prefix = 'cloudimgval'
     default_vm_size = 'Standard_DS1_v2'
     default_admin_username = 'azure'
 
@@ -20,7 +19,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
                                       f'{self.resource_group}/providers'
 
     def build_providers(self):
-        self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]\
+        self.providers_tf['provider'][self.cloud_providers[self.cloud_name]] \
             .append(self.__new_azure_provider())
 
         return self.providers_tf
@@ -33,17 +32,15 @@ class AzureConfigBuilder(BaseConfigBuilder):
         }
 
     def build_resources(self):
-        # Location specific resources
         self.resources_tf['resource']['azurerm_virtual_network'] = {}
         self.resources_tf['resource']['azurerm_subnet'] = {}
 
-        # VM specific resources
         self.resources_tf['resource']['azurerm_public_ip'] = {}
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
 
         for instance in self.resources_dict['instances']:
-            instance['hostname'] = f'az-{self.random_str}-vm'.lower()
+            instance['hostname'] = self.create_resource_name(['vm'])
             instance['location'] = instance['location'].lower().replace(' ', '')
 
             self.__new_azure_virtual_network(instance)
@@ -56,12 +53,8 @@ class AzureConfigBuilder(BaseConfigBuilder):
         return self.resources_tf
 
     def __new_azure_virtual_network(self, instance):
-        name = '{}-{}-network{}'.format(self.azure_resource_prefix, instance['location'], self.random_str)
+        name = self.create_resource_name([instance['location'], 'network'])
         instance['azurerm_virtual_network'] = name
-
-        if self.__check_resource_exists_in_location(resource_name='azurerm_virtual_network',
-                                                    location=instance['location']):
-            return
 
         new_virtual_network = {
             'name': name,
@@ -70,21 +63,11 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'resource_group_name': self.resource_group,
         }
 
-        self.resources_tf['resource']['azurerm_virtual_network'][instance['location']] = new_virtual_network
-
-    def __check_resource_exists_in_location(self, resource_name, location):
-        if resource_name in self.resources_tf['resource']:
-            return location in self.resources_tf['resource'][resource_name]
-
-        return False
+        self.resources_tf['resource']['azurerm_virtual_network'][name] = new_virtual_network
 
     def __new_azure_subnet(self, instance):
-        name = '{}-{}-internal{}'.format(self.azure_resource_prefix, instance['location'], self.random_str)
+        name = self.create_resource_name([instance['location'], 'subnet'])
         instance['azurerm_subnet'] = name
-
-        if self.__check_resource_exists_in_location(resource_name='azurerm_subnet',
-                                                    location=instance['location']):
-            return
 
         new_subnet = {
             'name': name,
@@ -92,14 +75,14 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'virtual_network_name': instance['azurerm_virtual_network'],
             'address_prefixes': ['10.0.2.0/24'],
             'depends_on': [
-                'azurerm_virtual_network.{}'.format(instance['location']),
+                'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
             ]
         }
 
-        self.resources_tf['resource']['azurerm_subnet'][instance['location']] = new_subnet
+        self.resources_tf['resource']['azurerm_subnet'][name] = new_subnet
 
     def __new_azure_public_ip(self, instance):
-        name = '{}-{}-public-ip{}'.format(self.azure_resource_prefix, instance['hostname'], self.random_str)
+        name = self.create_resource_name([instance['hostname'], 'public-ip'])
         instance['azurerm_public_ip'] = name
 
         new_public_ip = {
@@ -110,20 +93,22 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'domain_name_label': instance['hostname'],
         }
 
-        self.resources_tf['resource']['azurerm_public_ip'][instance['hostname']] = new_public_ip
+        self.resources_tf['resource']['azurerm_public_ip'][name] = new_public_ip
 
     def __new_azure_nic(self, instance):
-        name = '{}-{}-nic{}'.format(self.azure_resource_prefix, instance['hostname'], self.random_str)
+        name = self.create_resource_name([instance['hostname'], 'nic'])
         instance['azurerm_network_interface'] = name
 
         ip_configuration = {
-            'name': f'{self.azure_resource_prefix}-ip-config',
-            'subnet_id': self.__get_azure_network_resource_uri(terraform_resource_type='azurerm_subnet',
-                                                               azure_resource_name=instance['azurerm_subnet'],
-                                                               azure_virtual_network_name=instance['azurerm_virtual_network']),
+            'name': self.create_resource_name(['ip-config']),
+            'subnet_id': self.__get_azure_network_resource_uri(
+                terraform_resource_type='azurerm_subnet',
+                azure_resource_name=instance['azurerm_subnet'],
+                azure_virtual_network_name=instance['azurerm_virtual_network']),
             'private_ip_address_allocation': 'Dynamic',
-            'public_ip_address_id': self.__get_azure_network_resource_uri(terraform_resource_type='azurerm_public_ip',
-                                                                          azure_resource_name=instance['azurerm_public_ip'])
+            'public_ip_address_id': self.__get_azure_network_resource_uri(
+                terraform_resource_type='azurerm_public_ip',
+                azure_resource_name=instance['azurerm_public_ip'])
         }
 
         new_nic = {
@@ -132,13 +117,13 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'resource_group_name': self.resource_group,
             'ip_configuration': ip_configuration,
             'depends_on': [
-                'azurerm_virtual_network.{}'.format(instance['location']),
-                'azurerm_subnet.{}'.format(instance['location']),
-                'azurerm_public_ip.{}'.format(instance['hostname']),
+                'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
+                'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
+                'azurerm_public_ip.{}'.format(instance['azurerm_public_ip']),
             ]
         }
 
-        self.resources_tf['resource']['azurerm_network_interface'][instance['hostname']] = new_nic
+        self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
     def __new_azure_vm(self, instance):
         if 'instance_type' not in instance or not instance['instance_type']:
@@ -162,7 +147,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         }
 
         new_instance = {
-            'name': f'{instance_hostname}{self.random_str}',
+            'name': instance_hostname,
             'location': instance['location'],
             'admin_username': instance_user,
             'size': instance['instance_type'],
@@ -173,9 +158,9 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'os_disk': os_disk,
             'admin_ssh_key': admin_ssh_key,
             'depends_on': [
-                'azurerm_virtual_network.{}'.format(instance['location']),
-                'azurerm_subnet.{}'.format(instance['location']),
-                'azurerm_network_interface.{}'.format(instance['hostname']),
+                'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
+                'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
+                'azurerm_network_interface.{}'.format(instance['azurerm_network_interface']),
             ]
         }
 
@@ -197,7 +182,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         :param terraform_resource_type: The Terraform resource type
         :param azure_resource_name: The resource name as created in Azure
         :param azure_virtual_network_name: (Optional) The Virtual Network name as created in Azure.
-                                     Needed for 'azurerm_subnet' resource type
+                                                      Needed for 'azurerm_subnet' resource type.
         :return: (String) Azure resource URI
         """
         resource = 'Microsoft.Network'

@@ -73,9 +73,9 @@ class TerraformConfigurator:
             if os.path.exists(file):
                 os.remove(file)
 
-    def get_username_by_instance_name(self, name):
+    def get_aws_username_by_ami_name(self, ami_name):
         for instance in self.resources_dict['instances']:
-            if instance['name'].replace('.', '-') == name:
+            if instance['ami'] == ami_name:
                 return instance['username']
 
-        raise Exception(f'ERROR: No instance with name "{name}" was found')
+        raise Exception(f'ERROR: No instance with name "{ami_name}" was found')

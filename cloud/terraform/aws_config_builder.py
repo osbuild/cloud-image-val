@@ -35,13 +35,15 @@ class AWSConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['aws_instance'] = {}
 
         for instance in self.resources_dict['instances']:
-            self.__new_aws_key_pair(instance['region'])
+            self.__new_aws_key_pair(instance)
             self.__new_aws_instance(instance)
 
         return self.resources_tf
 
-    def __new_aws_key_pair(self, region):
-        key_name = f'{region}-key{self.random_str}'
+    def __new_aws_key_pair(self, instance):
+        region = instance['region']
+        key_name = self.create_resource_name([instance['region'], 'key'])
+        instance['aws_key_pair'] = key_name
 
         new_key_pair = {
             'provider': f'aws.{region}',
@@ -55,22 +57,22 @@ class AWSConfigBuilder(BaseConfigBuilder):
         if not instance['instance_type']:
             instance['instance_type'] = 't2.micro'
 
-        name = instance['name'].replace('.', '-')
-        name.join(self.random_str)
+        name_tag = instance['name'].replace('.', '-')
+        name = self.create_resource_name([name_tag])
 
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
         if instance['region'] not in aliases:
             raise Exception('Cannot add an instance if region provider is not set up')
 
-        key_name = f'{instance["region"]}-key{self.random_str}'
-
         new_instance = {
             'instance_type': instance['instance_type'],
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
-            'key_name': key_name,
-            'tags': {'name': name},
-            'depends_on': [f'aws_key_pair.{key_name}']
+            'key_name': instance['aws_key_pair'],
+            'tags': {'name': name_tag},
+            'depends_on': [
+                'aws_key_pair.{}'.format(instance['aws_key_pair'])
+            ]
         }
 
         self.resources_tf['resource']['aws_instance'][name] = new_instance
