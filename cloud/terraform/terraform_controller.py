@@ -53,7 +53,8 @@ class TerraformController:
             if resource['type'] != 'aws_instance':
                 continue
 
-            username = self.tf_configurator.get_username_by_instance_name(resource['address'].split('.')[1])
+            ami_name = resource['values']['ami']
+            username = self.tf_configurator.get_aws_username_by_ami_name(ami_name)
 
             instances_info[resource['address']] = {
                 'name': resource['name'],
@@ -61,7 +62,7 @@ class TerraformController:
                 'public_ip': resource['values']['public_ip'],
                 'public_dns': resource['values']['public_dns'],
                 'availability_zone': resource['values']['availability_zone'],
-                'ami': resource['values']['ami'],
+                'ami': ami_name,
                 'username': username,
             }
 

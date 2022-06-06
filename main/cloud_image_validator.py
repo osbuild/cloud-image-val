@@ -41,6 +41,7 @@ class CloudImageValidator:
         self.infra_controller = self.initialize_infrastructure()
         exit_code = 0
 
+        instances = None
         try:
             console_lib.print_divider('Deploying infrastructure')
             instances = self.deploy_infrastructure()
@@ -55,10 +56,23 @@ class CloudImageValidator:
 
         finally:
             if self.stop_cleanup:
-                input('Proceed with cleanup?')
+                self.print_ssh_commands_for_instances(instances)
+                input('Press ENTER to proceed with cleanup:')
+
             console_lib.print_divider('Cleanup')
             self.cleanup()
+
             return exit_code
+
+    def print_ssh_commands_for_instances(self, instances):
+        if instances:
+            for inst in instances.values():
+                ssh_command = 'ssh -i {0} {1}@{2}'.format(self.ssh_identity_file,
+                                                          inst['username'],
+                                                          inst['public_dns'])
+                instance_name = inst['name']
+                print(f'{instance_name}:')
+                print(f'\t{ssh_command}')
 
     def initialize_infrastructure(self):
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)

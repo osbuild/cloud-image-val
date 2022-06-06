@@ -25,7 +25,10 @@ def check_run_on(host, request):
     run_on_markers = [m.args for m in request.node.own_markers if m.name == 'run_on'][0][0]
 
     if 'all' in run_on_markers:
-        return
+        if host_distro in supported_distros_and_versions:
+            return
+        else:
+            pytest.skip('Distro not supported')
 
     if not set(run_on_markers) <= set(supported_distros_and_versions):
         pytest.fail('One or more run_on markers are not supported')
