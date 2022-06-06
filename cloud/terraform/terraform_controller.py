@@ -3,6 +3,7 @@ import json
 
 from threading import Thread
 from lib import ssh_lib
+from pprint import pprint
 
 
 class TerraformController:
@@ -45,7 +46,10 @@ class TerraformController:
     def get_instances(self):
         output = os.popen('terraform show --json')
         output = output.read()
-        print(output)
+
+        if self.debug:
+            pprint(output)
+
         json_output = json.loads(output)
 
         resources = json_output['values']['root_module']['resources']

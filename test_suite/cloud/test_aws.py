@@ -314,6 +314,17 @@ class TestsAWS:
                 f'Actual value in io_timeout is not {expected_value}'
 
     @pytest.mark.run_on(['rhel'])
+    def test_cmdline_ifnames(self, host):
+        """
+        BugZilla 1859926
+        ifnames should be specified
+        https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking-ena.html
+        """
+        with host.sudo():
+            assert host.file('/proc/cmdline').contains('net.ifnames=0'), \
+                'ifnames expected to be specified'
+
+    @pytest.mark.run_on(['rhel'])
     def test_udev_kernel(self, host):
         """
         This is from ks file definition before migrating to ImageBuilder.
