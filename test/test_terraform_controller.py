@@ -152,6 +152,10 @@ class TestTerraformController:
             }
         }
 
+        mock_get_azure_vm_fqdn_from_resources_json = mocker.patch.object(tf_controller,
+                                                                         '_get_azure_vm_fqdn_from_resources_json',
+                                                                         return_value=test_public_dns)
+
         mock_get_azure_image_data_from_resource = mocker.patch.object(tf_controller,
                                                                       '_get_azure_image_data_from_resource',
                                                                       return_value=test_image)
@@ -161,6 +165,8 @@ class TestTerraformController:
 
         # Assert
         assert result == instances_info_expected
+
+        mock_get_azure_vm_fqdn_from_resources_json.assert_called_once_with(resources[0]['name'], resources)
         mock_get_azure_image_data_from_resource.assert_called_once_with(resources[0])
 
     @pytest.mark.parametrize(
