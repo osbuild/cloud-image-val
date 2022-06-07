@@ -48,6 +48,15 @@ def wait_for_host_ssh_up(host, timeout_seconds):
                 time.sleep(1)
                 count_seconds += 1
             else:
-                count_seconds += time_diff_seconds
+    for i in range(timeout_seconds):
+        tick = time.time()
+        if (os.system(f'ssh-keyscan "{host}" > /dev/null 2>&1') >> 8) == 0:
+            print(f'{host} SSH is up! ({count_seconds} seconds)')
+            return
+        else:
+            time_diff_seconds = int(time.time() - tick)
+            time.sleep(max(0, (1 - time_diff_seconds)))
+            
+        print(f'Timeout while waiting for {host} to be SSH-ready ({timeout_seconds} seconds).')
 
     print(f'Timeout while waiting for {host} to be SSH-ready ({timeout_seconds} seconds).')
