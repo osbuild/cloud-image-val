@@ -247,6 +247,16 @@ class TestsGeneric:
 
             assert host.file(grub2_file).linked_to == linked_to
 
+    @pytest.mark.run_on(['rhel'])
+    def test_tty0_config(self, host):
+        """
+        BugZilla 1103344
+        Check that "/etc/init/ttyS0.conf" and its backup file do not exist.
+        """
+        with host.sudo():
+            assert not host.file('/etc/init/ttyS0.conf').exists, 'ttyS0.conf file should not exist'
+            assert not host.file('/etc/init/ttyS0.bak').exists, 'ttyS0.conf backup file should not exist'
+
 
 class TestsServices:
     @pytest.mark.run_on(['all'])

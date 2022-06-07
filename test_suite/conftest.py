@@ -22,18 +22,25 @@ def check_run_on(host, request):
     host_version = host.system_info.release
     distro_version = f'{host_distro}{host_version}'
 
-    run_on_markers = [m.args for m in request.node.own_markers if m.name == 'run_on'][0][0]
+    run_on_marker = request.node.get_closest_marker('run_on')
 
-    if 'all' in run_on_markers:
-        if host_distro in supported_distros_and_versions:
-            return
-        else:
-            pytest.skip('Distro not supported')
+    # Make the test fail if the mandatory "run_on" marker is not present
+    if not run_on_marker:
+        pytest.fail('All test cases have to be marked with "run_on" marker')
 
-    if not set(run_on_markers) <= set(supported_distros_and_versions):
+    run_on_marker_list = run_on_marker.args[0]
+
+    if 'all' in run_on_marker_list:
+        return
+
+    # Make the test fail if one or more items in "run_on" marker are incorrect
+    if not set(run_on_marker_list) <= set(supported_distros_and_versions):
         pytest.fail('One or more run_on markers are not supported')
 
-    if distro_version not in run_on_markers:
+    if host_distro in supported_distros_and_versions \
+            or distro_version in run_on_marker_list:
+        return
+    else:
         pytest.skip(f"This test doesn't apply to {distro_version}")
 
 

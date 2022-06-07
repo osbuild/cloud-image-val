@@ -3,6 +3,7 @@ import json
 
 from threading import Thread
 from lib import ssh_lib
+from pprint import pprint
 
 
 class TerraformController:
@@ -45,7 +46,10 @@ class TerraformController:
     def get_instances(self):
         output = os.popen('terraform show --json')
         output = output.read()
-        print(output)
+
+        if self.debug:
+            pprint(output)
+
         json_output = json.loads(output)
 
         resources = json_output['values']['root_module']['resources']
@@ -89,8 +93,8 @@ class TerraformController:
             if resource['type'] != 'azurerm_linux_virtual_machine':
                 continue
 
-            public_dns = '{}.{}.cloudapp.azure.com'.format(resource['values']['computer_name'],
-                                                           resource['values']['location'])
+            public_dns = self._get_azure_vm_fqdn_from_resources_json(resource['name'],
+                                                                     resources)
 
             image = self._get_azure_image_data_from_resource(resource)
 
@@ -105,6 +109,12 @@ class TerraformController:
             }
 
         return instances_info
+
+    def _get_azure_vm_fqdn_from_resources_json(self, vm_name, resources_json):
+        for r in resources_json:
+            if r['type'] == 'azurerm_public_ip' and \
+                    r['values']['domain_name_label'] == vm_name:
+                return r['values']['fqdn']
 
     def _get_azure_image_data_from_resource(self, resource):
         if 'source_image_reference' in resource['values']:
