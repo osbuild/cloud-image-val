@@ -24,12 +24,16 @@ class TestTerraformController:
         tf_init = f'terraform init {tf_controller.debug_sufix}'
         tf_apply = f'terraform apply -auto-approve {tf_controller.debug_sufix}'
 
+        mock_wait_for_all_instances_ssh_up = mocker.patch.object(tf_controller,
+                                                                 'wait_for_all_instances_ssh_up')
+
         # Acts
         result = tf_controller.create_infra()
 
         # Assert
         assert result is None
         mock_os_system.assert_has_calls([mocker.call(tf_init), mocker.call(tf_apply)])
+        mock_wait_for_all_instances_ssh_up.assert_called_once()
 
     @pytest.mark.parametrize(
         'cloud, test_instance',
