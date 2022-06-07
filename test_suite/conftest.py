@@ -37,7 +37,7 @@ def check_run_on(host, request):
     if not set(run_on_marker_list) <= set(supported_distros_and_versions):
         pytest.fail('One or more run_on markers are not supported')
 
-    if host_distro in supported_distros_and_versions \
+    if host_distro in run_on_marker_list \
             or distro_version in run_on_marker_list:
         return
     else:
