@@ -42,6 +42,13 @@
             "instance_type": "",
             "username": "ec2-user",
             "name": "RHEL_HA-7.9_HVM-20210315-x86_64-2-Hourly2-GP2"
+        },
+        {
+            "ami": "ami-08f924ece9cd165d3",
+            "region": "us-east-1",
+            "instance_type": "",
+            "username": "fedora",
+            "name": "fedora-35-x86_64-PR-2654-2472050630"
         }
     ]
 }

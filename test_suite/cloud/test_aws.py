@@ -397,6 +397,54 @@ class TestsAWS:
             assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
                 'Unexpected yum "subscription-manager" plugin status'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_dracut_conf_sgdisk(self, host):
+        """
+        Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"
+        """
+        assert host.package('gdisk').is_installed, 'Package "gdisk" is expected to be installed'
+
+        if float(host.system_info.release) < 8.5:
+            file_to_check = '/etc/dracut.conf.d/sgdisk.conf'
+        else:
+            file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
+
+        with host.sudo():
+            assert host.file(file_to_check).contains('install_items+=" sgdisk "'), \
+                f'Expected configuration was not found in "{file_to_check}"'
+
+    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    def test_dracut_conf_xen(self, host):
+        """
+        BugZilla 1849082
+        Add ' xen-netfront xen-blkfront ' to '/etc/dracut.conf.d/xen.conf' in x86 AMIs prior RHEL-8.4.
+        Using image builder from RHEL-8.5, add ' nvme xen-blkfront ' to '/usr/lib/dracut/dracut.conf.d/ec2.conf'.
+        This is not required in arm AMIs.
+        """
+        file_to_check = '/usr/lib/dracut/dracut.conf.d/ec2.conf'
+        expected_config = ' nvme xen-blkfront '
+
+        with host.sudo():
+            if host.system_info.arch == 'aarch64':
+                assert not host.file(file_to_check).exists, \
+                    f'Unexpected configuration file found in "{file_to_check}".'
+            else:
+                assert host.file(file_to_check).contains(expected_config), \
+                    f'Expected configuration was not found in "{file_to_check}"'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_yum_group_install(self, host):
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to Atomic host AMIs')
+
+        with host.sudo():
+            assert host.run_test('yum -y groupinstall "Development tools"'), \
+                'Error while installing Development tools group'
+
+            package_to_check = 'glibc-devel'
+            assert host.package(package_to_check).is_installed, \
+                f'{package_to_check} is not installed'
+
 
 @pytest.mark.usefixtures('rhel_sap_only')
 class TestsAWSSAP:
