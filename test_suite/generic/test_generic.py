@@ -257,6 +257,42 @@ class TestsGeneric:
             assert not host.file('/etc/init/ttyS0.conf').exists, 'ttyS0.conf file should not exist'
             assert not host.file('/etc/init/ttyS0.bak').exists, 'ttyS0.conf backup file should not exist'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_selinux_mode(self, host):
+        """
+        BugZilla 1960628
+        SELinux should be in enforcing/targeted mode
+        """
+        if test_lib.is_rhel_sap(host):
+            expected_mode = 'Permissive'
+        else:
+            expected_mode = 'Enforcing'
+
+        expected_file_config = [
+            f'SELINUX={expected_mode.lower()}',
+            'SELINUXTYPE=targeted'
+        ]
+
+        selinux_config_file = '/etc/sysconfig/selinux'
+
+        with host.sudo():
+            assert host.check_output('getenforce') == expected_mode, \
+                f'SELinux should be in {expected_mode} mode'
+
+            for conf in expected_file_config:
+                assert host.file(selinux_config_file).contains(conf), \
+                    f'Expected "{conf}" to be in {selinux_config_file}'
+
+    @pytest.mark.run_on(['all'])
+    def test_rpm_v_unsatisfied_dependencies(self, host):
+        """
+        Check unsatisfied dependencies of pkgs.
+        """
+
+        with host.sudo():
+            assert 'Unsatisfied' not in host.run('rpm -Va').stdout, \
+                'There are unsatisfied dependencies'
+
 
 class TestsServices:
     @pytest.mark.run_on(['all'])
@@ -340,6 +376,40 @@ class TestsCloudInit:
         """
         assert not host.file('/etc/cloud/cloud.cfg').contains('wheel'), \
             'wheel should not be configured as default_user group'
+
+
+@pytest.mark.pub
+class TestsYum:
+    # TODO: confirm if this test needs to be deprecated
+    @pytest.mark.run_on(['rhel', 'fedora'])
+    def test_yum_repoinfo(self, host):
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to RHEL Atomic host')
+
+        yum_command = 'yum repoinfo'
+
+        with host.sudo():
+            assert host.run_test(yum_command), 'Error while getting repo info'
+
+        if host.system_info.distribution != 'fedora':
+            assert 'Repo-pkgs          : 0' not in host.check_output(yum_command), \
+                'Unexpected number of repo pkgs (0)'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_yum_package_install(self, host):
+        with host.sudo():
+            if not host.package('rhui').is_installed:
+                pytest.skip('Not applicable to non-RHUI images')
+
+            assert \
+                host.run_test('yum clean all') and \
+                host.run_test('yum repolist') and \
+                host.run_test('yum check-update') and \
+                host.run_test('yum search zsh') and \
+                host.run_test('yum -y install zsh') and \
+                host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
+                host.run_test('rpm -e zsh'), \
+                'yum packages installation failed'
 
 
 class TestsNetworking:
