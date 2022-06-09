@@ -283,6 +283,16 @@ class TestsGeneric:
                 assert host.file(selinux_config_file).contains(conf), \
                     f'Expected "{conf}" to be in {selinux_config_file}'
 
+    @pytest.mark.run_on(['all'])
+    def test_rpm_v_unsatisfied_dependencies(self, host):
+        """
+        Check unsatisfied dependencies of pkgs.
+        """
+
+        with host.sudo():
+            assert 'Unsatisfied' not in host.run('rpm -Va').stdout, \
+                'There are unsatisfied dependencies'
+
 
 class TestsServices:
     @pytest.mark.run_on(['all'])
@@ -368,6 +378,7 @@ class TestsCloudInit:
             'wheel should not be configured as default_user group'
 
 
+@pytest.mark.pub
 class TestsYum:
     # TODO: confirm if this test needs to be deprecated
     @pytest.mark.run_on(['rhel', 'fedora'])
