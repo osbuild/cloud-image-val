@@ -1,4 +1,5 @@
 import pytest
+
 from lib import test_lib
 
 
@@ -13,6 +14,15 @@ class TestsGeneric:
             if bash_history_file.exists:
                 file_content_length = len(bash_history_file.content_string)
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
+
+    # TODO: Confirm if this test should be run in non-RHEL images
+    @pytest.mark.run_on(['rhel'])
+    def test_username(self, host, instance_data):
+        for user in ['fedora', 'cloud-user']:
+            with host.sudo():
+                assert not host.user(user).exists, 'Unexpected username in instance'
+
+            assert host.check_output('whoami') == instance_data['username']
 
     @pytest.mark.run_on(['all'])
     def test_console_is_redirected_to_ttys0(self, host):
@@ -45,20 +55,19 @@ class TestsGeneric:
     @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host):
         """
-        Check various CPU flags.
+        Check various CPU flags for x86_64 instances.
         BugZilla 1061348
         """
-        arch = 'x86_64'
-        if host.system_info.arch == arch:
-            pytest.skip(f'Not applicable to {arch}')
+        current_arch = host.system_info.arch
+
+        if current_arch != 'x86_64':
+            pytest.skip(f'Not applicable to {current_arch}')
 
         expected_flags = [
             'avx',
             'xsave',
         ]
 
-        # TODO We may have a false positive here. The above flags are not applicable to ARM as per the thread below:
-        # https://unix.stackexchange.com/questions/43539/what-do-the-flags-in-proc-cpuinfo-mean
         with host.sudo():
             for flag in expected_flags:
                 assert host.file('/proc/cpuinfo').contains(flag), \
@@ -218,19 +227,27 @@ class TestsGeneric:
         Check that "no pkg signature" is disabled
         Check that specified gpg keys are installed
         """
-        if host.system_info.distribution == 'fedora':
-            num_of_gpg_keys = 1
-        else:
-            num_of_gpg_keys = 2
-
         with host.sudo():
-            gpg_pubkey_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n' | grep -v gpg-pubkey"
-            gpg_pubkey_content = host.check_output(gpg_pubkey_cmd)
+            if host.system_info.distribution == 'fedora':
+                num_of_gpg_keys = 1
+            elif 'rhui' in host.check_output('rpm -qa'):
+                num_of_gpg_keys = 3
+            else:
+                num_of_gpg_keys = 2
+
+            gpg_pubkey_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
+
+            gpg_pubkey_content = host.check_output(gpg_pubkey_cmd + '| grep -v gpg-pubkey')
 
             assert 'none' not in gpg_pubkey_content, 'No pkg signature must be disabled'
 
-            num_of_key_ids = host.check_output(gpg_pubkey_cmd + " | awk -F' ' '{print $NF}'|sort|uniq|wc -l")
-            assert int(num_of_key_ids) == 1, 'Number of key IDs should be 1'
+            key_ids_command = ' '.join([gpg_pubkey_cmd,
+                                        "| grep -vE '(gpg-pubkey|rhui)'",
+                                        "| awk -F' ' '{print $NF}'|sort|uniq|wc -l"])
+
+            num_of_key_ids = host.check_output(key_ids_command)
+
+            assert int(num_of_key_ids) == 1, 'Number of key IDs for rhui pkgs should be 1'
 
             assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
                 f'There should be {num_of_gpg_keys} gpg key(s) installed'
@@ -325,15 +342,15 @@ class TestsServices:
 
         with host.sudo():
             for path, md5 in checksums.items():
-                assert md5 == host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
+                assert md5 in host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
 
     def __get_auditd_checksums_by_rhel_major_version(self, major_version):
         checksums_by_version = {
-            '8': {
+            8: {
                 '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
             },
-            '7': {
+            7: {
                 '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
                 '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
             }
@@ -398,18 +415,24 @@ class TestsYum:
     @pytest.mark.run_on(['rhel'])
     def test_yum_package_install(self, host):
         with host.sudo():
-            if not host.package('rhui').is_installed:
+            if 'rhui' not in host.check_output('rpm -qa'):
                 pytest.skip('Not applicable to non-RHUI images')
 
-            assert \
-                host.run_test('yum clean all') and \
-                host.run_test('yum repolist') and \
-                host.run_test('yum check-update') and \
-                host.run_test('yum search zsh') and \
-                host.run_test('yum -y install zsh') and \
-                host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
-                host.run_test('rpm -e zsh'), \
-                'yum packages installation failed'
+        assert \
+            host.run('yum clean all') and \
+            host.run_test('yum repolist'), \
+            'Could not get repo list correctly'
+
+        return_code = host.run('yum check-update').rc
+        assert return_code == 0 or return_code == 100, \
+            'Could not check for yum updates'
+
+        assert \
+            host.run_test('yum search zsh') and \
+            host.run_test('yum -y install zsh') and \
+            host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
+            host.run_test('rpm -e zsh'), \
+            'yum packages installation failed'
 
 
 class TestsNetworking:

@@ -504,6 +504,23 @@ class TestsAWS:
                 print(f'Waiting {interval}s for auto-registration to succeed...')
                 time.sleep(interval)
 
+    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    def test_network_manager_cloud_setup(self, host):
+        """
+        BugZilla 1822853
+        Check NetworkManager-cloud-setup is installed and nm-cloud-setup is enabled
+        """
+        with host.sudo():
+            assert host.package('NetworkManager-cloud-setup').is_installed, \
+                'Expected cloud networking package is not installed'
+
+            assert host.service('nm-cloud-setup').is_enabled, 'Expected cloud service is not enabled'
+
+            file_to_check = '/usr/lib/systemd/system/nm-cloud-setup.service.d/10-rh-enable-for-ec2.conf'
+            expect_config = 'Environment=NM_CLOUD_SETUP_EC2=yes'
+
+            assert host.file(file_to_check).contains(expect_config), f'{expect_config} config is not set'
+
 
 @pytest.mark.usefixtures('rhel_sap_only')
 class TestsAWSSAP:
