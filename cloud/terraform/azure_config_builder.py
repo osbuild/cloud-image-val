@@ -35,6 +35,8 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_virtual_network'] = {}
         self.resources_tf['resource']['azurerm_subnet'] = {}
 
+        # VM specific resources
+        self.resources_tf['resource']['azurerm_image'] = {}
         self.resources_tf['resource']['azurerm_public_ip'] = {}
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
@@ -46,11 +48,34 @@ class AzureConfigBuilder(BaseConfigBuilder):
             self.__new_azure_virtual_network(instance)
             self.__new_azure_subnet(instance)
 
+            if 'vhd_uri' in instance:
+                self.__new_azure_image(instance)
+
             self.__new_azure_public_ip(instance)
             self.__new_azure_nic(instance)
             self.__new_azure_vm(instance)
 
         return self.resources_tf
+
+    def __new_azure_image(self, instance):
+        name = self.create_resource_name([instance['location'], 'image'])
+
+        instance['image_from_vhd'] = name
+
+        os_disk = {
+            'os_type': 'Linux',
+            'os_state': 'Generalized',
+            'blob_uri': instance['vhd_uri']
+        }
+
+        new_image = {
+            'name': name,
+            'location': instance['location'],
+            'resource_group_name': self.resource_group,
+            'os_disk': os_disk,
+        }
+
+        self.resources_tf['resource']['azurerm_image'][name] = new_image
 
     def __new_azure_virtual_network(self, instance):
         name = self.create_resource_name([instance['location'], 'network'])
@@ -168,11 +193,19 @@ class AzureConfigBuilder(BaseConfigBuilder):
             new_instance['source_image_id'] = instance['image_uri']
         elif 'image_definition' in instance:
             new_instance['source_image_reference'] = instance['image_definition']
+        elif 'vhd_uri' in instance:
+            new_instance['depends_on'].append('azurerm_image.{}'.format(instance['image_from_vhd']))
+            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['image_from_vhd'])
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
 
-    def __get_azure_image_uri(self, name):
-        return '{}/Microsoft.Compute/images/{}'.format(self.azure_resource_id_base, name)
+    def __get_azure_image_uri(self, azure_image_name):
+        """
+        Returns a composed string URI that belongs to a specific Azure image, from its name
+        :param azure_image_name: The name of the image as it was created in Azure
+        :return: String
+        """
+        return '{}/Microsoft.Compute/images/{}'.format(self.azure_resource_id_base, azure_image_name)
 
     def __get_azure_network_resource_uri(self,
                                          terraform_resource_type,
