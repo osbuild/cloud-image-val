@@ -408,9 +408,9 @@ class TestsYum:
         with host.sudo():
             assert host.run_test(yum_command), 'Error while getting repo info'
 
-        if host.system_info.distribution != 'fedora':
-            assert 'Repo-pkgs          : 0' not in host.check_output(yum_command), \
-                'Unexpected number of repo pkgs (0)'
+            if host.system_info.distribution != 'fedora':
+                assert 'Repo-pkgs          : 0' not in host.check_output(yum_command), \
+                    'Unexpected number of repo pkgs (0)'
 
     @pytest.mark.run_on(['rhel'])
     def test_yum_package_install(self, host):
@@ -418,21 +418,21 @@ class TestsYum:
             if 'rhui' not in host.check_output('rpm -qa'):
                 pytest.skip('Not applicable to non-RHUI images')
 
-        assert \
-            host.run('yum clean all') and \
-            host.run_test('yum repolist'), \
-            'Could not get repo list correctly'
+            assert \
+                host.run('yum clean all') and \
+                host.run_test('yum repolist'), \
+                'Could not get repo list correctly'
 
-        return_code = host.run('yum check-update').rc
-        assert return_code == 0 or return_code == 100, \
-            'Could not check for yum updates'
+            return_code = host.run('yum check-update').rc
+            assert return_code == 0 or return_code == 100, \
+                'Could not check for yum updates'
 
-        assert \
-            host.run_test('yum search zsh') and \
-            host.run_test('yum -y install zsh') and \
-            host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
-            host.run_test('rpm -e zsh'), \
-            'yum packages installation failed'
+            assert \
+                host.run_test('yum search zsh') and \
+                host.run_test('yum -y install zsh') and \
+                host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
+                host.run_test('rpm -e zsh'), \
+                'yum packages installation failed'
 
 
 class TestsNetworking:

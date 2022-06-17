@@ -3,7 +3,6 @@ import json
 
 from threading import Thread
 from lib import ssh_lib
-from pprint import pprint
 
 
 class TerraformController:
@@ -47,9 +46,6 @@ class TerraformController:
         output = os.popen('terraform show --json')
         output = output.read()
 
-        if self.debug:
-            pprint(output)
-
         json_output = json.loads(output)
 
         resources = json_output['values']['root_module']['resources']
@@ -58,6 +54,8 @@ class TerraformController:
             instances_info = self.get_instances_aws(resources)
         elif self.cloud_name == 'azure':
             instances_info = self.get_instances_azure(resources)
+        elif self.cloud_name == 'gcloud':
+            instances_info = self.get_instances_gcloud(resources)
         else:
             raise Exception(f'Unsupported cloud provider: {self.cloud_name}')
 
@@ -106,6 +104,28 @@ class TerraformController:
                 'location': resource['values']['location'],
                 'image': image,
                 'username': resource['values']['admin_username'],
+            }
+
+        return instances_info
+
+    def get_instances_gcloud(self, resources):
+        instances_info = {}
+
+        # 'address' key corresponds to the tf resource id
+        for resource in resources:
+            if resource['type'] != 'google_compute_instance':
+                continue
+
+            public_ip = resource['values']['network_interface'][0]['access_config'][0]['nat_ip']
+
+            instances_info[resource['address']] = {
+                'name': resource['name'],
+                'instance_id': resource['values']['id'],
+                'public_ip': public_ip,
+                'public_dns': public_ip,
+                'zone': resource['values']['zone'],
+                'image': resource['values']['metadata']['image'],
+                'username': resource['values']['metadata']['username'],
             }
 
         return instances_info

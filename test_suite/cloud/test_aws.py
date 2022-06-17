@@ -87,10 +87,10 @@ class TestsAWS:
             assert host.file('/proc/cmdline').contains('rd.blacklist=nouveau'), \
                 'nouveau must be blacklisted in cmdline'
 
-        file_to_check = '/usr/lib/modprobe.d/blacklist-nouveau.conf'
+            file_to_check = '/usr/lib/modprobe.d/blacklist-nouveau.conf'
 
-        assert host.file(file_to_check).contains('blacklist nouveau'), \
-            f'nouveau is not blacklisted in "{file_to_check}"'
+            assert host.file(file_to_check).contains('blacklist nouveau'), \
+                f'nouveau is not blacklisted in "{file_to_check}"'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):

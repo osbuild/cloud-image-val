@@ -1,0 +1,14 @@
+{
+    "provider": "gcloud",
+    "project": "redhat-marketplace-dev",
+    "instances": [
+        {
+            "image": "rhel-9-v20220524",
+            "region": "us-east1",
+            "zone": "us-east1-c",
+            "instance_type": "",
+            "username": "google",
+            "name": "rhel-9.0-x86_64"
+        }
+    ]
+}
