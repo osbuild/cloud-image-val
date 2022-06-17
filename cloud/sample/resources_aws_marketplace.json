@@ -1,0 +1,12 @@
+{
+    "provider": "aws",
+    "instances": [
+        {
+            "ami": "ami-00e69c1911063647b",
+            "region": "us-east-1",
+            "instance_type": "",
+            "username": "ec2-user",
+            "name": "RHEL_HA-9.0.0_HVM_BETA-20211026-x86_64-10-Hourly2-GP2"
+        }
+    ]
+}
