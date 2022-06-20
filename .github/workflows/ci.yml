@@ -3,9 +3,10 @@ on:
   push:
     branches:
       - main
-  pull_request:
+  pull_request_target:
     branches:
       - main
+      - develop
 
 jobs:
   build:
@@ -31,3 +32,37 @@ jobs:
 
       - name: Python linter
         run: flake8 --ignore=E501
+
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Python 3
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+
+      - name: AWS
+        run: |
+          mkdir ~/.aws/
+          tee ~/.aws/credentials > /dev/null << EOF
+          [aws]
+          accessKeyID = "${AWS_ACCESS_KEY_ID}"
+          secretAccessKey = "${AWS_SECRET_ACCESS_KEY}"
+          region = "${AWS_REGION}"
+          EOF
+          python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -o report.xml
+          #AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" AWS_DEFAULT_REGION="${AWS_REGION}"
+
+      - name: Save report as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: report
+          path: report.html
