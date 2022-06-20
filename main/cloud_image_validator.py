@@ -16,7 +16,7 @@ class CloudImageValidator:
 
     instances_json = '/tmp/instances.json'
 
-    infra_controller = None
+    infra_controller = None 
     infra_configurator = None
 
     def __init__(self,
