@@ -78,4 +78,9 @@ jobs:
           touch ~/.ssh/known_hosts
           ssh-keyscan -t rsa gitlab.com >> ~/.ssh/known_hosts
           git remote add ci git@gitlab.com:redhat/services/products/image-builder/ci/cloud-image-val-ci.git
+<<<<<<< HEAD
           git push -f ci 
+=======
+          SKIP_CI=$(cat SKIP_CI.txt)
+            git push -f ci 
+>>>>>>> 6dbec9c (add trigger gitlab workflow)
