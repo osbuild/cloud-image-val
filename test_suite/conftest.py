@@ -1,4 +1,5 @@
 import json
+import time
 import pytest
 
 from py.xml import html
@@ -7,11 +8,21 @@ from pytest_html import extras
 from lib import test_lib
 
 
-@pytest.fixture(autouse=True)
-def check_run_on(host, request):
-    # This fixture checks the list of combinations of distro-version
-    # each test has. If the host doesn't meet any of the combinations,
-    # the test will be skipped
+@pytest.fixture(autouse=True, scope='function')
+def check_markers(host, request):
+    # Check if test needs to wait before being run
+    wait_marker = request.node.get_closest_marker('wait')
+    if wait_marker:
+        seconds_to_wait = int(wait_marker.args[0])
+        print(f'Waiting {seconds_to_wait} seconds before running test...')
+        time.sleep(seconds_to_wait)
+
+    # This part checks the list of combinations of distro-version each test has.
+    # If the host doesn't meet any of the combinations, the test will be skipped.
+    run_on_marker = request.node.get_closest_marker('run_on')
+    if not run_on_marker:
+        pytest.fail('All test cases have to be marked with "run_on" marker')
+
     supported_distros_and_versions = [
         'fedora', 'fedora34', 'fedora35', 'fedora36',
         'rhel', 'rhel7.9', 'rhel8.5', 'rhel8.6', 'rhel9.0',
@@ -21,12 +32,6 @@ def check_run_on(host, request):
     host_distro = host.system_info.distribution
     host_version = host.system_info.release
     distro_version = f'{host_distro}{host_version}'
-
-    run_on_marker = request.node.get_closest_marker('run_on')
-
-    # Make the test fail if the mandatory "run_on" marker is not present
-    if not run_on_marker:
-        pytest.fail('All test cases have to be marked with "run_on" marker')
 
     run_on_marker_list = run_on_marker.args[0]
 
