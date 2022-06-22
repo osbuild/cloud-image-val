@@ -53,6 +53,13 @@ def rhel_sap_only(host):
 
 @pytest.mark.run_on(['rhel'])
 @pytest.fixture
+def rhel_high_availability_only(host):
+    if not test_lib.is_rhel_high_availability(host):
+        pytest.skip('Image is not HA (High Availability)')
+
+
+@pytest.mark.run_on(['rhel'])
+@pytest.fixture
 def rhel_atomic_only(host):
     if not test_lib.is_rhel_atomic_host(host):
         pytest.skip('Image is not atomic RHEL')

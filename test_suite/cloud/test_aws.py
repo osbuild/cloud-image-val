@@ -631,6 +631,15 @@ class TestsAWSSAP:
             assert expected_cfg in host.check_output('tuned-adm active'), \
                 'tuned-adm command returned unexpected active setting'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_ha_specific_script(self, host, rhel_high_availability_only):
+        # TODO: This script does not run correctly on RHEL-9.0 since awscli is not present in the repo.
+        local_file_path = 'scripts/aws/rhel-ha-aws-check.sh'
+
+        result = test_lib.run_local_script_in_host(host, local_file_path)
+
+        assert result.exit_status == 0
+
 
 class TestsAWSNetworking:
     @pytest.mark.run_on(['all'])
