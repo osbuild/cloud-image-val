@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: Basic Tests
+=======
+name: Basic Tests 
+>>>>>>> ecbbd3a (remove run tests on github ci)
 on:
   push:
     branches:
@@ -31,3 +35,7 @@ jobs:
 
       - name: Python linter
         run: flake8 --ignore=E501
+<<<<<<< HEAD
+=======
+
+>>>>>>> ecbbd3a (remove run tests on github ci)
