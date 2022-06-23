@@ -1,5 +1,5 @@
 # cloud-image-val
-Multi-cloud image validation tool. Right now it supports AWS and Azure.
+Multi-cloud image validation tool. Right now it supports AWS and Azure.  
 
 # Dependencies
 Apart from the python dependencies that can be found in `requirements.txt`, the environment where you will run this tool must have the following packages installed:
