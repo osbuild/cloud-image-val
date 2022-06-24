@@ -1,0 +1,20 @@
+{
+  "subscription_id": "1be3e85f-1b24-400e-87ca-daec1140cc88",
+  "resource_group": "cloud-experience",
+  "provider": "azure",
+  "instances": [
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel8",
+        "version": "8.5.2022030600"
+      },
+      "plan": {
+        "name": "rh-rhel8",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
+    }
+  ]
+}

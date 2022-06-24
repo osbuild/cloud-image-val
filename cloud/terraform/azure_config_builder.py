@@ -7,6 +7,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
 
     default_vm_size = 'Standard_DS1_v2'
     default_admin_username = 'azure'
+    default_location = 'eastus'
 
     def __init__(self, resources_dict, ssh_key_path):
         super().__init__(resources_dict)
@@ -43,7 +44,11 @@ class AzureConfigBuilder(BaseConfigBuilder):
 
         for instance in self.resources_dict['instances']:
             instance['hostname'] = self.create_resource_name(['vm'])
-            instance['location'] = instance['location'].lower().replace(' ', '')
+
+            if 'location' in instance:
+                instance['location'] = instance['location'].lower().replace(' ', '')
+            else:
+                instance['location'] = self.default_location
 
             self.__new_azure_virtual_network(instance)
             self.__new_azure_subnet(instance)
@@ -54,6 +59,9 @@ class AzureConfigBuilder(BaseConfigBuilder):
             self.__new_azure_public_ip(instance)
             self.__new_azure_nic(instance)
             self.__new_azure_vm(instance)
+
+        if not self.resources_tf['resource']['azurerm_image']:
+            del self.resources_tf['resource']['azurerm_image']
 
         return self.resources_tf
 
@@ -193,6 +201,8 @@ class AzureConfigBuilder(BaseConfigBuilder):
             new_instance['source_image_id'] = instance['image_uri']
         elif 'image_definition' in instance:
             new_instance['source_image_reference'] = instance['image_definition']
+            if 'plan' in instance:
+                new_instance['plan'] = instance['plan']
         elif 'vhd_uri' in instance:
             new_instance['depends_on'].append('azurerm_image.{}'.format(instance['image_from_vhd']))
             new_instance['source_image_id'] = self.__get_azure_image_uri(instance['image_from_vhd'])
