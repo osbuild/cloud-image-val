@@ -1,6 +1,7 @@
 stages:
   - init
   - test
+  - finish
 
 .deps:
   image: python:3.8
@@ -28,3 +29,8 @@ aws:
     paths:
       - report.html
     when: always
+  
+finish:
+  stage: finish
+  script:
+    - schutzbot/update_github_status.sh finish
