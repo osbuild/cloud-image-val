@@ -310,6 +310,16 @@ class TestsGeneric:
             assert 'Unsatisfied' not in host.run('rpm -Va').stdout, \
                 'There are unsatisfied dependencies'
 
+    @pytest.mark.run_on(['all'])
+    def test_no_sshkeys_knownhosts(self, host):
+        """
+        Verify no extra files under /root/.ssh/ except authorized_keys
+        """
+        with host.sudo():
+            ssh_files = host.file('/root/.ssh/').listdir()
+            assert 'authorized_keys' in ssh_files, 'authorized_keys is not in /root/.ssh/'
+            assert len(ssh_files) == 1, 'there are extra files in /root/.ssh/'
+
 
 class TestsServices:
     @pytest.mark.run_on(['all'])
