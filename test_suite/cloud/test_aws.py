@@ -8,13 +8,33 @@ from lib import test_lib
 
 
 @pytest.fixture
-def instance_data_aws(host):
+def instance_data_aws_web(host):
     instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
     return json.loads(host.check_output(f'curl -s {instance_document_url}'))
 
 
+@pytest.fixture
+def instance_data_aws_cli(host, instance_data_aws_web):
+    # TODO: read AWS profile from somewhere, instead of being hardcoded
+    profile = 'aws'
+    query_to_run = 'Reservations[].Instances[]'
+
+    command_to_run = [
+        'aws ec2 describe-instances',
+        f'--profile {profile}',
+        '--instance-id {0}'.format(instance_data_aws_web['instanceId']),
+        '--region {0}'.format(instance_data_aws_web['region']),
+        f'--query "{query_to_run}"'
+    ]
+
+    command_output = host.backend.run_local(' '.join(command_to_run)).stdout
+
+    return json.loads(command_output)[0]
+
+
 @pytest.mark.order(2)
 class TestsAWS:
+    @pytest.mark.run_on(['all'])
     def test_first_boot_time(self, host):
         max_boot_time_aws = 50.0
 
@@ -229,11 +249,11 @@ class TestsAWS:
 
                 compatible_version = 8.5
                 if float(host.system_info.release) < compatible_version:
-                    assert line not in chrony_conf_content or commented_line_exists, \
+                    assert line in chrony_conf_content and not commented_line_exists, \
                         f'NTP leap smear incompatibility found in chrony conf file, ' \
                         f'affecting RHEL lower than {compatible_version}'
                 else:
-                    assert line in chrony_conf_content and not commented_line_exists, \
+                    assert line not in chrony_conf_content or commented_line_exists, \
                         f'{line} must be enabled in RHEL {compatible_version} and above'
 
             assert f'Selected source {timesync_service_ipv4}' in host.check_output('journalctl -u chronyd'), \
@@ -272,17 +292,17 @@ class TestsAWS:
                     'ssh files permissions are not set correctly'
 
     @pytest.mark.run_on(['rhel'])
-    def test_aws_instance_identity(self, host, instance_data, instance_data_aws):
+    def test_aws_instance_identity(self, host, instance_data, instance_data_aws_web):
         """
         Try to fetch instance identity from EC2 and compare with expectation
         """
-        assert instance_data_aws['imageId'] == instance_data['ami'], \
+        assert instance_data_aws_web['imageId'] == instance_data['ami'], \
             'Unexpected AMI ID for deployed instance'
 
-        assert instance_data_aws['region'] in instance_data['availability_zone'], \
+        assert instance_data_aws_web['region'] in instance_data['availability_zone'], \
             'Unexpected region for deployed instance'
 
-        arch = instance_data_aws['architecture']
+        arch = instance_data_aws_web['architecture']
         if arch == 'arm64':
             arch = 'aarch64'
 
@@ -304,7 +324,7 @@ class TestsAWS:
             pytest.skip('Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
 
         for code in billing_codes:
-            assert code in instance_data_aws['billingProducts'], \
+            assert code in instance_data_aws_web['billingProducts'], \
                 'Expected billing code not found in instance document data'
 
     @pytest.mark.run_on(['rhel'])
@@ -363,27 +383,17 @@ class TestsAWS:
             assert not host.file(file_to_check).exists, f'{file_to_check} should not be present in AMI'
 
     @pytest.mark.run_on(['rhel'])
-    def test_ena_support_correctly_set(self, host, instance_data_aws):
+    def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
         """
         Check that Elastic Network Adapter support is enabled or disabled accordingly.
         """
-        query_to_run = 'Reservations[].Instances[].EnaSupport'
-
-        command_to_run = [
-            'aws ec2 describe-instances',
-            '--profile aws',
-            '--instance-id {0}'.format(instance_data_aws['instanceId']),
-            '--region {0}'.format(instance_data_aws['region']),
-            f'--query "{query_to_run}"'
-        ]
-
-        command_output = host.backend.run_local(' '.join(command_to_run)).stdout
+        ena_support = bool(instance_data_aws_cli['EnaSupport'])
 
         if float(host.system_info.release) < 7.4:
-            assert command_output.lower() == '', \
+            assert not ena_support, \
                 'ENA support expected to be disabled in RHEL older than 7.4'
         else:
-            assert 'true' in command_output.lower(), \
+            assert ena_support, \
                 'ENA support expected to be enabled in RHEL 7.4 and later'
 
     @pytest.mark.run_on(['rhel'])
@@ -528,6 +538,54 @@ class TestsAWS:
             expect_config = 'Environment=NM_CLOUD_SETUP_EC2=yes'
 
             assert host.file(file_to_check).contains(expect_config), f'{expect_config} config is not set'
+
+    @pytest.mark.run_on(['all'])
+    def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
+        """
+        Check that the number of cpu cores available match the cpus obtained from AWS instance data
+        """
+
+        with host.sudo():
+            cpu_cores = int(host.check_output('grep "^processor" /proc/cpuinfo | wc -l'))
+
+        aws_cli_cup_data = instance_data_aws_cli['CpuOptions']
+
+        total_v_cpus = aws_cli_cup_data['CoreCount'] * aws_cli_cup_data['ThreadsPerCore']
+
+        assert total_v_cpus == cpu_cores
+
+    @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
+    def test_pkg_signature_and_gpg_keys(self, host):
+        """
+        Check that "no pkg signature" is disabled
+        Check that specified gpg keys are installed
+        """
+        with host.sudo():
+            # print the gpg public keys installed
+            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+
+            if host.system_info.distribution == 'fedora':
+                num_of_gpg_keys = 1
+            else:
+                num_of_gpg_keys = 2
+
+            gpg_pubkey_base_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
+
+            # check no pkg signature is none
+            assert 'none' not in host.check_output(gpg_pubkey_base_cmd + '| grep -v gpg-pubkey'), \
+                'No pkg signature must be disabled'
+
+            # check use only one keyid
+            key_ids_command = ' '.join([gpg_pubkey_base_cmd,
+                                        "| grep -vE '(gpg-pubkey|rhui)'",
+                                        "| awk -F' ' '{print $NF}' | sort | uniq | wc -l"])
+            assert int(host.check_output(key_ids_command)) == 1, \
+                'Number of key IDs for rhui pkgs should be 1'
+
+            # check correct number of gpg keys installed
+            assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
+                f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
 
 @pytest.mark.order(2)
@@ -707,11 +765,11 @@ class TestsAWSNetworking:
             f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
 
     @pytest.mark.run_on(['rhel'])
-    def test_redhat_cds_hostnames(self, host, instance_data_aws):
+    def test_redhat_cds_hostnames(self, host, instance_data_aws_web):
         """
         Check all Red Hat CDS for the AMI's instance region.
         """
-        region = instance_data_aws['region']
+        region = instance_data_aws_web['region']
 
         rhui_cds_hostnames = [
             f'rhui2-cds01.{region}.aws.ce.redhat.com',

@@ -221,38 +221,6 @@ class TestsGeneric:
         """
         assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
 
-    @pytest.mark.pub
-    @pytest.mark.run_on(['all'])
-    def test_pkg_signature_and_gpg_keys(self, host):
-        """
-        Check that "no pkg signature" is disabled
-        Check that specified gpg keys are installed
-        """
-        with host.sudo():
-            if host.system_info.distribution == 'fedora':
-                num_of_gpg_keys = 1
-            elif 'rhui' in host.check_output('rpm -qa'):
-                num_of_gpg_keys = 3
-            else:
-                num_of_gpg_keys = 2
-
-            gpg_pubkey_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
-
-            gpg_pubkey_content = host.check_output(gpg_pubkey_cmd + '| grep -v gpg-pubkey')
-
-            assert 'none' not in gpg_pubkey_content, 'No pkg signature must be disabled'
-
-            key_ids_command = ' '.join([gpg_pubkey_cmd,
-                                        "| grep -vE '(gpg-pubkey|rhui)'",
-                                        "| awk -F' ' '{print $NF}'|sort|uniq|wc -l"])
-
-            num_of_key_ids = host.check_output(key_ids_command)
-
-            assert int(num_of_key_ids) == 1, 'Number of key IDs for rhui pkgs should be 1'
-
-            assert int(host.check_output('rpm -q gpg-pubkey|wc -l')) == num_of_gpg_keys, \
-                f'There should be {num_of_gpg_keys} gpg key(s) installed'
-
     @pytest.mark.run_on(['rhel'])
     def test_grub_config(self, host):
         grub2_file = '/boot/grub2/grubenv'
