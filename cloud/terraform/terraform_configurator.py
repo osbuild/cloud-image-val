@@ -4,10 +4,11 @@ from pprint import pprint
 
 from cloud.terraform.aws_config_builder import AWSConfigBuilder
 from cloud.terraform.azure_config_builder import AzureConfigBuilder
+from cloud.terraform.gcloud_config_builder import GCloudConfigBuilder
 
 
 class TerraformConfigurator:
-    supported_providers = ('aws', 'azure')
+    supported_providers = ('aws', 'azure', 'gcloud')
 
     main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
     providers_tf = None
@@ -53,6 +54,10 @@ class TerraformConfigurator:
             return AWSConfigBuilder(self.resources_dict, self.ssh_key_path)
         elif cloud_name == 'azure':
             return AzureConfigBuilder(self.resources_dict, self.ssh_key_path)
+        elif cloud_name == 'gcloud':
+            return GCloudConfigBuilder(self.resources_dict, self.ssh_key_path)
+        else:
+            raise Exception(f'Could not find any suitable configurator for "{cloud_name}" cloud provider')
 
     def save_configuration_to_json(self):
         self.__dump_to_json(self.main_tf, 'main.tf.json')

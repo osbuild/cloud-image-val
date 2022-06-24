@@ -169,6 +169,57 @@ class TestTerraformController:
         mock_get_azure_vm_fqdn_from_resources_json.assert_called_once_with(resources[0]['name'], resources)
         mock_get_azure_image_data_from_resource.assert_called_once_with(resources[0])
 
+    def test_get_instances_gcloud(self, tf_controller):
+        # Arrange
+        test_name = 'test_name'
+        test_zone = 'us-east1-c'
+        test_public_ip = '10.11.12.13'
+        test_public_dns = test_public_ip
+        test_resource_address = 'a.test_google_resource_address'
+        test_id = 'test-google-resource-id'
+        test_username = 'user'
+        test_image_type = 'test_image_resource_type'
+        test_image = 'test_image_data'
+
+        resources = [
+            {
+                'type': 'google_compute_instance',
+                'address': test_resource_address,
+                'name': test_name,
+                'values': {
+                    'id': test_id,
+                    'zone': test_zone,
+                    'metadata': {
+                        'image': test_image,
+                        'username': test_username,
+                    },
+                    'network_interface': [{'access_config': [{'nat_ip': test_public_ip}]}],
+                    test_image_type: test_image,
+                },
+            },
+            {
+                'type': 'not_an_instance_resource_type'
+            },
+        ]
+
+        instances_info_expected = {
+            test_resource_address: {
+                'name': test_name,
+                'instance_id': test_id,
+                'public_ip': test_public_ip,
+                'public_dns': test_public_dns,
+                'zone': test_zone,
+                'image': test_image,
+                'username': test_username,
+            }
+        }
+
+        # Act
+        result = tf_controller.get_instances_gcloud(resources)
+
+        # Assert
+        assert result == instances_info_expected
+
     @pytest.mark.parametrize(
         'test_image_type, test_image',
         [('source_image_reference', {'publisher': 'Canonical'}),

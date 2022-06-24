@@ -8,6 +8,7 @@ class BaseConfigBuilder:
     cloud_providers = {
         'aws': 'aws',
         'azure': 'azurerm',
+        'gcloud': 'google',
     }
 
     resource_name_prefix = 'civ'
