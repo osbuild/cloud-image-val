@@ -23,6 +23,7 @@ aws:
     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
   after_script:
     - schutzbot/update_github_status.sh update || true
+    - echo https://redhat.gitlab.io/-/services/products/image-builder/ci/cloud-image-val-ci/-/jobs/${CI_JOB_ID}/artifacts/report.html
   artifacts:
     paths:
       - report.html
