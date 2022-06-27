@@ -47,3 +47,18 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
             time.sleep(max(0, (1 - time_diff_seconds)))
 
     print(f'Timeout while waiting for {host_address} to be SSH-ready ({timeout_seconds} seconds).')
+
+
+def copy_file_to_host(host, local_file_path, destination_path):
+    """
+    Copies a local file to the remote host, in a given destination path.
+    This test only works with testinfra's Paramiko backend.
+    :param host: The host object from the pytest test case.
+    :param local_file_path: The path of the local file that will be copied.
+    :param destination_path: The destination path where the local file will be placed in the remote host.
+    :return: None
+    """
+    sftp = host.backend.client.open_sftp()
+
+    sftp.put(local_file_path, destination_path)
+    sftp.close()
