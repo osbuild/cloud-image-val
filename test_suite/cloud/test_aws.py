@@ -13,8 +13,16 @@ def instance_data_aws(host):
     return json.loads(host.check_output(f'curl -s {instance_document_url}'))
 
 
+@pytest.mark.order(2)
 class TestsAWS:
-    # TODO: divide test. analize centos
+    def test_first_boot_time(self, host):
+        max_boot_time_aws = 50.0
+
+        boot_time = test_lib.get_host_last_boot_time(host)
+
+        assert boot_time < max_boot_time_aws, f'First boot took more than {max_boot_time_aws} seconds'
+
+    # TODO: Divide test. Analyze centos
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_ami_name(self, host, instance_data):
@@ -522,6 +530,7 @@ class TestsAWS:
             assert host.file(file_to_check).contains(expect_config), f'{expect_config} config is not set'
 
 
+@pytest.mark.order(2)
 @pytest.mark.usefixtures('rhel_sap_only')
 class TestsAWSSAP:
     @pytest.mark.run_on(['rhel'])
@@ -641,6 +650,7 @@ class TestsAWSSAP:
         assert result.exit_status == 0
 
 
+@pytest.mark.order(2)
 class TestsAWSNetworking:
     @pytest.mark.run_on(['all'])
     def test_correct_network_driver_is_used(self, host):

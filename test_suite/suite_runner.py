@@ -5,7 +5,13 @@ class SuiteRunner:
     max_processes = 40  # based on the number of threads used by ami-val
 
     # Rerun failed tests in case ssh times out or connection is refused by host
-    rerun_failing_tests_regex = r'refused|timeout|NoValidConnectionsError'
+    rerun_failing_tests_regex = '|'.join([
+        'refused',
+        'ConnectionResetError',
+        'TimeoutError: timed out',
+        'SSHException: SSH session not active',
+        'NoValidConnectionsError'
+    ])
     max_reruns = 3
     rerun_delay_sec = 5
 
