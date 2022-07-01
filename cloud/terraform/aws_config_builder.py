@@ -49,7 +49,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'provider': f'aws.{region}',
             'key_name': key_name,
             'public_key': f'${{file("{self.ssh_key_path}")}}',
-            'tags': {self.ci_tag_key: 'true'},
+            'tags': {self.ci_tag_key: self.ci_test_value},
         }
 
         self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
@@ -70,7 +70,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
             'key_name': instance['aws_key_pair'],
-            'tags': {'name': name_tag, self.ci_tag_key: 'true'},
+            'tags': {'name': name_tag, self.ci_tag_key: self.ci_tag_key},
             'depends_on': [
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]

@@ -81,6 +81,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'os_disk': os_disk,
+            'tags': {self.ci_tag_key: self.ci_test_value}
         }
 
         self.resources_tf['resource']['azurerm_image'][name] = new_image
@@ -94,6 +95,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'address_space': ['10.0.0.0/16'],
             'location': instance['location'],
             'resource_group_name': self.resource_group,
+            'tags': {self.ci_tag_key: self.ci_test_value}
         }
 
         self.resources_tf['resource']['azurerm_virtual_network'][name] = new_virtual_network
@@ -124,6 +126,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'location': instance['location'],
             'allocation_method': 'Static',
             'domain_name_label': instance['hostname'],
+            'tags': {self.ci_tag_key: self.ci_test_value}
         }
 
         self.resources_tf['resource']['azurerm_public_ip'][name] = new_public_ip
@@ -149,6 +152,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'ip_configuration': ip_configuration,
+            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
@@ -190,6 +194,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
                 azure_resource_name=instance['azurerm_network_interface'])],
             'os_disk': os_disk,
             'admin_ssh_key': admin_ssh_key,
+            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
