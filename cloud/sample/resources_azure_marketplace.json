@@ -15,6 +15,71 @@
         "publisher": "redhat",
         "product": "rh-rhel"
       }
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel8-gen1",
+        "version": "8.5.2022030600"
+      },
+      "plan": {
+        "name": "rh-rhel8-gen1",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel8",
+        "version": "8.6.2022061000"
+      },
+      "plan": {
+        "name": "rh-rhel8",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel8-gen1",
+        "version": "8.6.2022061000"
+      },
+      "plan": {
+        "name": "rh-rhel8-gen1",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel9",
+        "version": "9.0.2022061000"
+      },
+      "plan": {
+        "name": "rh-rhel9",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel9-gen1",
+        "version": "9.0.2022061000"
+      },
+      "plan": {
+        "name": "rh-rhel9-gen1",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      }
     }
   ]
 }

@@ -6,13 +6,22 @@ stages:
 .deps:
   image: python:3.8
   before_script:
+    - echo "Install apt and packages utilities"
     - apt-get update && apt-get install -y gnupg software-properties-common ca-certificates apt-transport-https lsb-release
+    - echo "Install Terraform"
     - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
     - apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+    - apt-get update && apt-get install terraform
+    - echo "Install Azure cli tool"
     - curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
     - AZ_REPO=$(lsb_release -cs)
     - echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | tee /etc/apt/sources.list.d/azure-cli.list
-    - apt-get update && apt-get install terraform azure-cli
+    - apt-get update && apt-get install azure-cli
+    - echo "Install AWS cli tool"
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip awscliv2.zip
+    - chmod +x aws/install && ./aws/install
+    - echo "Install pip dependencies"
     - pip install -r requirements.txt
 
 .tests:
@@ -34,15 +43,15 @@ aws:
   stage: test
   extends: .tests
   script:
-    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
-  
+    - AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
+
 azure:
   stage: test
   extends: .tests
-  script: 
-    - ARM_CLIENT_ID=${AZURE_CLIENT_ID} ARM_CLIENT_SECRET=${AZURE_CLIENT_SECRET} ARM_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID} ARM_TENANT_ID=${AZURE_TENANT_ID} python3 cloud-image-val.py -r cloud/sample/resources_azure.json -d -p -m 'not pub' -o report.xml
+  script:
+    - ARM_CLIENT_ID="${AZURE_CLIENT_ID}" ARM_CLIENT_SECRET="${AZURE_CLIENT_SECRET}" ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" ARM_TENANT_ID="${AZURE_TENANT_ID}" python3 cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o report.xml
 
-  
+
 finish:
   stage: finish
   script:
