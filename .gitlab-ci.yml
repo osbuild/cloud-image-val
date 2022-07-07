@@ -6,11 +6,24 @@ stages:
 .deps:
   image: python:3.8
   before_script:
-    - apt-get update && apt-get install -y gnupg software-properties-common
+    - apt-get update && apt-get install -y gnupg software-properties-common ca-certificates apt-transport-https lsb-release
     - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
     - apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-    - apt-get update && apt-get install terraform
+    - curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
+    - AZ_REPO=$(lsb_release -cs)
+    - echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | tee /etc/apt/sources.list.d/azure-cli.list
+    - apt-get update && apt-get install terraform azure-cli
     - pip install -r requirements.txt
+
+.tests:
+  extends: .deps
+  after_script:
+    - schutzbot/update_github_status.sh update || true
+    - echo https://redhat.gitlab.io/-/services/products/image-builder/ci/cloud-image-val-ci/-/jobs/${CI_JOB_ID}/artifacts/report.html
+ artifacts:
+   paths:
+     - report.html
+   when: always
 
 init:
   stage: init
@@ -19,16 +32,16 @@ init:
 
 aws:
   stage: test
-  extends: .deps
+  extends: .tests
   script:
     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
-  after_script:
-    - schutzbot/update_github_status.sh update || true
-    - echo https://redhat.gitlab.io/-/services/products/image-builder/ci/cloud-image-val-ci/-/jobs/${CI_JOB_ID}/artifacts/report.html
-  artifacts:
-    paths:
-      - report.html
-    when: always
+  
+azure:
+  stage: test
+  extends: .tests
+  script: 
+    - ARM_CLIENT_ID=${AZURE_CLIENT_ID} ARM_CLIENT_SECRET=${AZURE_CLIENT_SECRET} ARM_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID} ARM_TENANT_ID=${AZURE_TENANT_ID} python3 cloud-image-val.py -r cloud/sample/resources_azure.json -d -p -m 'not pub' -o report.xml
+
   
 finish:
   stage: finish
