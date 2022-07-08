@@ -6,14 +6,10 @@ stages:
 .deps:
   image: python:3.8
   before_script:
-    - apt-get update && apt-get install -y gnupg software-properties-common ca-certificates apt-transport-https lsb-release
-    - curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
-    - apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-    - curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null
-    - AZ_REPO=$(lsb_release -cs)
-    - echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | tee /etc/apt/sources.list.d/azure-cli.list
-    - apt-get update && apt-get install terraform azure-cli
-    - pip install -r requirements.txt
+    - curl -fsSL https://get.docker.com -o get-docker.sh
+    - bash get-docker.sh
+    - systemctl start docker
+    - docker pull quay.io/cloudexperience/cloud-image-val-test:latest 
 
 .tests:
   extends: .deps
@@ -34,13 +30,13 @@ aws:
   stage: test
   extends: .tests
   script:
-    - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
+    - docker run -a stdout -a stderr -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} quay.io/cloudexperience/cloud-image-val-test:latest python cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
   
 azure:
   stage: test
   extends: .tests
   script: 
-    - ARM_CLIENT_ID=${AZURE_CLIENT_ID} ARM_CLIENT_SECRET=${AZURE_CLIENT_SECRET} ARM_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID} ARM_TENANT_ID=${AZURE_TENANT_ID} python3 cloud-image-val.py -r cloud/sample/resources_azure.json -d -p -m 'not pub' -o report.xml
+    - docker run -a stdout -a stderr -e ARM_CLIENT_ID=${AZURE_CLIENT_ID} -e ARM_CLIENT_SECRET=${AZURE_CLIENT_SECRET} -e ARM_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID} -e ARM_TENANT_ID=${AZURE_TENANT_ID} quay.io/cloudexperience/cloud-image-val-test:latest python cloud-image-val.py -r cloud/sample/resources_azure.json -d -p -m 'not pub' -o report.xml
 
   
 finish:
