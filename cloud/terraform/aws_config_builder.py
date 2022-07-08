@@ -70,7 +70,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
             'key_name': instance['aws_key_pair'],
-            'tags': {'name': name_tag, self.ci_tag_key: self.ci_tag_key},
+            'tags': {'name': name_tag, self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]
