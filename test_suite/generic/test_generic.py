@@ -179,20 +179,6 @@ class TestsGeneric:
         assert product_version == package_release_version, \
             f'product version ({product_version}) does not match package release version'
 
-    @pytest.mark.pub
-    @pytest.mark.run_on(['all'])
-    def test_release_version_in_image_name(self, host, instance_data):
-        """
-        Check if release version is on the image name
-        """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not run in atomic images')
-
-        cloud_image_name = instance_data['name']
-        product_version = float(host.system_info.release)
-
-        assert str(product_version).replace('.', '-') in cloud_image_name, 'product version is not in image name'
-
     @pytest.mark.run_on(['rhel'])
     def test_root_is_locked(self, host):
         """
@@ -302,41 +288,6 @@ class TestsServices:
 
             assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
                 f'{pass_auth_config_name} should be disabled (set to "no")'
-
-    # TODO: verify logic, think if we should divide
-    @pytest.mark.run_on(['rhel'])
-    def test_auditd(self, host):
-        """
-        - Service should be running
-        - Config files should have the correct MD5 checksums
-        """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to Atomic hosts')
-
-        auditd_service = 'auditd'
-
-        assert host.service(auditd_service).is_running, f'{auditd_service} expected to be running'
-
-        rhel_version = float(host.system_info.release)
-        checksums = self.__get_auditd_checksums_by_rhel_major_version(int(rhel_version))
-
-        with host.sudo():
-            for path, md5 in checksums.items():
-                assert md5 in host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
-
-    def __get_auditd_checksums_by_rhel_major_version(self, major_version):
-        checksums_by_version = {
-            8: {
-                '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            7: {
-                '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
-                '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
-            }
-        }
-
-        return checksums_by_version[major_version]
 
     @pytest.mark.run_on(['rhel', 'centos'])
     def test_sysconfig_kernel(self, host):
@@ -462,15 +413,18 @@ class TestsNetworking:
 @pytest.mark.order(1)
 class TestsSecurity:
     @pytest.mark.run_on(['rhel'])
-    def test_firewalld_is_disabled(self, host):
+    def test_firewalld_is_enabled(self, host, instance_data):
         """
-        firewalld is not required in cloud because there are security groups or other security mechanisms.
+        firewalld needs to be enabled in most clouds.
         """
-        assert not host.package('firewalld').is_installed, \
-            'firewalld should not be installed in RHEL cloud images'
+        if instance_data['cloud'] == 'aws':
+            pytest.skip('Test not applicable to AWS images')
+
+        assert host.service('firewalld').is_enabled, \
+            'firewalld should be enabled in most RHEL cloud images (except AWS AMIs)'
 
 
-@pytest.mark.wait(60)
+@pytest.mark.wait(120)
 @pytest.mark.trylast
 class TestsReboot:
     @pytest.mark.order(101)

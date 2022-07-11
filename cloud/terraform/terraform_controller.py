@@ -73,6 +73,7 @@ class TerraformController:
             username = self.tf_configurator.get_aws_username_by_ami_name(ami_name)
 
             instances_info[resource['address']] = {
+                'cloud': 'aws',
                 'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip'],
@@ -97,6 +98,7 @@ class TerraformController:
             image = self._get_azure_image_data_from_resource(resource)
 
             instances_info[resource['address']] = {
+                'cloud': 'azure',
                 'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip_address'],
@@ -119,6 +121,7 @@ class TerraformController:
             public_ip = resource['values']['network_interface'][0]['access_config'][0]['nat_ip']
 
             instances_info[resource['address']] = {
+                'cloud': 'gcloud',
                 'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': public_ip,
