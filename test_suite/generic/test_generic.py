@@ -440,7 +440,7 @@ class TestsNetworking:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
-    @pytest.mark.run_on(['all'])
+    @pytest.mark.run_on(['rhel', 'fedora35', 'centos'])
     def test_eth0_network_adapter_setup(self, host):
         """
         Make sure that eht0 default adapter is correctly setup:
