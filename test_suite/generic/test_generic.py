@@ -470,7 +470,7 @@ class TestsSecurity:
             'firewalld should not be installed in RHEL cloud images'
 
 
-@pytest.mark.wait(60)
+@pytest.mark.wait(90)
 @pytest.mark.trylast
 class TestsReboot:
     @pytest.mark.order(101)
