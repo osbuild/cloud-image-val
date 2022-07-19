@@ -13,9 +13,8 @@ Below you will find the specific requirements to make `cloud-image-val` tool wor
 The automation of some steps below will be automated in later versions of the tool (WIP).
 ### AWS
 - You must have a working AWS account.
-- The code is prepared to work with the **default profile** named `aws`.
-- The credentials must be stored in `~/.aws/credentials` for the `[aws]` profile.
-  - See https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html for more details.
+- The code is prepared to work with authentication by environment variables:
+  - https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
 - **Inbound rules** must be set to **allow SSH** connection from (at least) your public IP address in the default Security Group or VPC.
 
 ### Azure

@@ -15,13 +15,10 @@ def instance_data_aws_web(host):
 
 @pytest.fixture
 def instance_data_aws_cli(host, instance_data_aws_web):
-    # TODO: read AWS profile from somewhere, instead of being hardcoded
-    profile = 'aws'
     query_to_run = 'Reservations[].Instances[]'
 
     command_to_run = [
         'aws ec2 describe-instances',
-        f'--profile {profile}',
         '--instance-id {0}'.format(instance_data_aws_web['instanceId']),
         '--region {0}'.format(instance_data_aws_web['region']),
         f'--query "{query_to_run}"'
