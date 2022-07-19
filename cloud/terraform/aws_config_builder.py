@@ -23,11 +23,10 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
         return list(dict.fromkeys(instances_regions))
 
-    def __new_aws_provider(self, region, aws_profile='aws'):
+    def __new_aws_provider(self, region):
         return {
             'region': region,
             'alias': region,
-            'profile': aws_profile,
         }
 
     def build_resources(self):
