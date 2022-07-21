@@ -6,13 +6,8 @@ stages:
 .deps:
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
-    - echo "Install packages utilities"
-    - sudo dnf update -y && sudo dnf install -y dnf-plugins-core python3.10 python3-pip
-    - echo "Install Terraform"
-    - sudo dnf config-manager --add-repo https://rpm.releases.hashicorp.com/fedora/hashicorp.repo
-    - sudo dnf update -y && sudo dnf -y install terraform
-    - echo "Install pip dependencies"
-    - pip install -r requirements.txt
+    - sudo dnf update -y && sudo dnf install -y podman
+    - sudo podman pull --creds  ${QUAY_USERNAME}:${QUAY_PASSWORD} quay.io/cloudexperience/cloud-image-val-test
   variables:
     RUNNER: aws/fedora-35-x86_64
   tags:
@@ -37,14 +32,30 @@ aws:
   stage: test
   extends: .tests
   script:
-    - AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" python3 cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -m 'not pub' -o report.xml
+    - |
+      sudo podman run \
+      -a stdout -a stderr \
+      -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
+      -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+      -e AWS_REGION="${AWS_REGION}" \
+      -v ./:/tmp:Z \
+      quay.io/cloudexperience/cloud-image-val-test \
+      python cloud-image-val.py -r cloud/sample/resources_aws.json -d -p -o /tmp/report.xml -m 'not pub'
 
 azure:
   stage: test
   extends: .tests
   script:
-    - ARM_CLIENT_ID="${AZURE_CLIENT_ID}" ARM_CLIENT_SECRET="${AZURE_CLIENT_SECRET}" ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" ARM_TENANT_ID="${AZURE_TENANT_ID}" python3 cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o report.xml
-
+    - |
+      sudo podman run \
+      -a stdout -a stderr \
+      -e ARM_CLIENT_ID="${AZURE_CLIENT_ID}" \
+      -e ARM_CLIENT_SECRET="${AZURE_CLIENT_SECRET}" \
+      -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
+      -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
+      -v ./:/tmp:Z \
+      quay.io/cloudexperience/cloud-image-val-test \
+      python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml -m 'not pub'
 
 finish:
   stage: finish
