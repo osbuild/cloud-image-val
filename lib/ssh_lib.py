@@ -41,6 +41,7 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
         tick = time.time()
         if (os.system(f'ssh-keyscan "{host_address}" > /dev/null 2>&1') >> 8) == 0:
             print(f'{host_address} SSH is up! ({time.time() - start_time} seconds)')
+            time.sleep(5)
             return
         else:
             time_diff_seconds = int(time.time() - tick)
