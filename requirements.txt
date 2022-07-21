@@ -11,3 +11,4 @@ flake8==3.8.4
 argparse==1.4.0
 py==1.11.0
 paramiko==2.10.3
+awscli==1.22.67
