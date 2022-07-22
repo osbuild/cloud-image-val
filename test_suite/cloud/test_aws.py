@@ -702,7 +702,7 @@ class TestsAWSSAP:
 
         result = test_lib.run_local_script_in_host(host, local_file_path)
 
-        assert result.exit_status == 0
+        assert result.rc == 0
 
 
 @pytest.mark.order(2)

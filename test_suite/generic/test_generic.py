@@ -200,9 +200,9 @@ class TestsGeneric:
         """
         with host.sudo():
             if test_lib.is_rhel_atomic_host(host):
-                result = host.run('passwd -S root | grep -q Alternate').exit_status
+                result = host.run('passwd -S root | grep -q Alternate').rc
             else:
-                result = host.run('passwd -S root | grep -q LK').exit_status
+                result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
 
     @pytest.mark.run_on(['all'])
@@ -405,7 +405,7 @@ class TestsYum:
                 host.run_test('yum repolist'), \
                 'Could not get repo list correctly'
 
-            return_code = host.run('yum check-update').exit_status
+            return_code = host.run('yum check-update').rc
             assert return_code == 0 or return_code == 100, \
                 'Could not check for yum updates'
 
@@ -470,7 +470,7 @@ class TestsSecurity:
             'firewalld should not be installed in RHEL cloud images'
 
 
-@pytest.mark.wait(60)
+@pytest.mark.wait(30)
 @pytest.mark.trylast
 class TestsReboot:
     @pytest.mark.order(101)

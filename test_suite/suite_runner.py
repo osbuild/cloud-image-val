@@ -8,10 +8,12 @@ class SuiteRunner:
     rerun_failing_tests_regex = '|'.join([
         'refused',
         'ConnectionResetError',
-        'TimeoutError: timed out',
-        'SSHException: SSH session not active',
+        'TimeoutError',
+        'SSHException',
         'NoValidConnectionsError'
     ])
+
+    connection_backend = 'paramiko'
     max_reruns = 3
     rerun_delay_sec = 5
 
@@ -48,6 +50,7 @@ class SuiteRunner:
             'py.test',
             ' '.join(self.get_test_suite_paths()),
             f'--hosts={all_hosts}',
+            f'--connection={self.connection_backend}',
             f'--ssh-config {self.ssh_config}',
             f'--junit-xml {output_filepath}',
             f'--html {output_filepath.replace("xml", "html")}',
