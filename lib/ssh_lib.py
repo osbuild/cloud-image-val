@@ -24,7 +24,9 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
                  IdentityFile=ssh_key_path,
                  StrictHostKeyChecking='no',
                  UserKnownHostsFile='/dev/null',
-                 LogLevel='ERROR')
+                 LogLevel='ERROR',
+                 ConnectTimeout=30,
+                 ConnectionAttempts=5)
 
     conf.write(ssh_config_file)
 
