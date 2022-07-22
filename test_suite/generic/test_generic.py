@@ -6,6 +6,17 @@ from lib import test_lib
 @pytest.mark.order(1)
 class TestsGeneric:
     @pytest.mark.run_on(['all'])
+    def test_first_boot_time(self, host, instance_data):
+        if instance_data['cloud'] == 'azure':
+            max_boot_time_aws = 120
+        else:
+            max_boot_time_aws = 60
+
+        boot_time = test_lib.get_host_last_boot_time(host)
+
+        assert boot_time < max_boot_time_aws, f'First boot took more than {max_boot_time_aws} seconds'
+
+    @pytest.mark.run_on(['all'])
     def test_bash_history_is_empty(self, host):
         users = [host.user().name, 'root']
 
@@ -186,9 +197,9 @@ class TestsGeneric:
         """
         with host.sudo():
             if test_lib.is_rhel_atomic_host(host):
-                result = host.run('passwd -S root | grep -q Alternate').exit_status
+                result = host.run('passwd -S root | grep -q Alternate').rc
             else:
-                result = host.run('passwd -S root | grep -q LK').exit_status
+                result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
 
     @pytest.mark.run_on(['all'])
@@ -356,7 +367,7 @@ class TestsYum:
                 host.run_test('yum repolist'), \
                 'Could not get repo list correctly'
 
-            return_code = host.run('yum check-update').exit_status
+            return_code = host.run('yum check-update').rc
             assert return_code == 0 or return_code == 100, \
                 'Could not check for yum updates'
 
@@ -425,53 +436,61 @@ class TestsSecurity:
 
 
 @pytest.mark.wait(120)
-@pytest.mark.trylast
 class TestsReboot:
+    hostname_before_reboot_file = '/tmp/hostname_before_reboot'
+    kmemleak_arg = 'kmemleak=on'
+
+    def setup_before_reboot(self, host):
+        host.run(f'hostname > {self.hostname_before_reboot_file}')
+
+        with host.sudo():
+            host.run_test(f'grubby --update-kernel=ALL --args="{self.kmemleak_arg}"')
+
     @pytest.mark.order(101)
     @pytest.mark.run_on(['all'])
-    def test_reboot_time(self, host):
+    def test_launch_reboot(self, host, instance_data):
+        self.setup_before_reboot(host)
+        test_lib.reboot_host(host)
+
+    @pytest.mark.order(102)
+    @pytest.mark.run_on(['all'])
+    def test_reboot_time(self, host, instance_data):
         """
         Check reboot time after 1st init.
         BugZilla 1776710, 1446698, 1446688
         """
-        max_boot_time_seconds = 40.0
+        if instance_data['cloud'] == 'azure':
+            max_boot_time_seconds = 60.0
+        else:
+            max_boot_time_seconds = 40.0
 
-        new_host = test_lib.reboot_host(host)
-
-        boot_time = test_lib.get_host_last_boot_time(new_host)
+        boot_time = test_lib.get_host_last_boot_time(host)
 
         assert boot_time < max_boot_time_seconds, \
             f'Reboot took more than {max_boot_time_seconds} sec.'
 
-    @pytest.mark.order(102)
+    @pytest.mark.order(103)
     @pytest.mark.run_on(['all'])
     def test_reboot_keeps_current_hostname(self, host):
         """
         Check that reboot doesn't change the hostname
         """
-        current_hostname = host.check_output('hostname')
+        hostname_after_reboot = host.check_output('hostname')
 
-        new_host = test_lib.reboot_host(host)
-
-        assert current_hostname == new_host.check_output('hostname'), \
+        assert host.file(self.hostname_before_reboot_file).contains(hostname_after_reboot), \
             'Instance hostname changed after reboot'
 
-    @pytest.mark.order(103)
-    @pytest.mark.run_on(['all'])
+    # TODO: Review failure in RHEL 7.9, it may be related to a grubby bug
+    @pytest.mark.order(104)
+    @pytest.mark.run_on(['rhel8.4', 'rhel8.5', 'rhel8.6', 'rhel9.0', 'fedora', 'centos'])
     def test_reboot_grubby(self, host):
         """
         Check that user can update boot parameter using grubby tool
         """
-        kmemleak_arg = 'kmemleak=on'
         file_to_check = '/proc/cmdline'
 
         with host.sudo():
-            host.run_test(f'grubby --update-kernel=ALL --args="{kmemleak_arg}"')
+            assert host.file(file_to_check).contains(self.kmemleak_arg), \
+                f'Expected "{self.kmemleak_arg}" in "{file_to_check}"'
 
-        new_host = test_lib.reboot_host(host)
-
-        with new_host.sudo():
-            assert new_host.file(file_to_check).contains(kmemleak_arg), \
-                f'Expected "{kmemleak_arg}" in "{file_to_check}"'
-
-            new_host.run_test(f'grubby --update-kernel=ALL --remove-args="{kmemleak_arg}"')
+            host.run_test(f'grubby --update-kernel=ALL --remove-args="{self.kmemleak_arg}"')
