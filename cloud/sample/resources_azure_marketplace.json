@@ -7,6 +7,34 @@
       "image_definition": {
         "offer": "rh-rhel",
         "publisher": "RedHat",
+        "sku": "rh-rhel7",
+        "version": "7.9.2021110401"
+      },
+      "plan": {
+        "name": "rh-rhel7",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      },
+      "location": "eastus2"
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
+        "sku": "rh-rhel7-gen1",
+        "version": "7.9.2021110401"
+      },
+      "plan": {
+        "name": "rh-rhel7-gen1",
+        "publisher": "redhat",
+        "product": "rh-rhel"
+      },
+      "location": "eastus2"
+    },
+    {
+      "image_definition": {
+        "offer": "rh-rhel",
+        "publisher": "RedHat",
         "sku": "rh-rhel8",
         "version": "8.5.2022030600"
       },
@@ -14,7 +42,8 @@
         "name": "rh-rhel8",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "westus3"
     },
     {
       "image_definition": {
@@ -27,7 +56,8 @@
         "name": "rh-rhel8-gen1",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "westeurope"
     },
     {
       "image_definition": {
@@ -40,7 +70,8 @@
         "name": "rh-rhel8",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "westcentralus"
     },
     {
       "image_definition": {
@@ -53,7 +84,8 @@
         "name": "rh-rhel8-gen1",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "uksouth"
     },
     {
       "image_definition": {
@@ -66,7 +98,8 @@
         "name": "rh-rhel9",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "switzerlandnorth"
     },
     {
       "image_definition": {
@@ -79,7 +112,8 @@
         "name": "rh-rhel9-gen1",
         "publisher": "redhat",
         "product": "rh-rhel"
-      }
+      },
+      "location": "uaenorth"
     }
   ]
 }

@@ -88,6 +88,7 @@ class TestTerraformController:
 
         instances_info_expected = {
             'a.aws_instance_test': {
+                'cloud': 'aws',
                 'name': 'test_name',
                 'instance_id': 'test_id',
                 'public_ip': 'test_ip',
@@ -110,6 +111,7 @@ class TestTerraformController:
 
     def test_get_instances_azure(self, mocker, tf_controller):
         # Arrange
+        test_cloud = 'azure'
         test_name = 'test_name'
         test_computer_name = 'test_hostname'
         test_location = 'eastus'
@@ -142,6 +144,7 @@ class TestTerraformController:
 
         instances_info_expected = {
             test_resource_address: {
+                'cloud': test_cloud,
                 'name': test_name,
                 'instance_id': test_id,
                 'public_ip': test_public_ip,
@@ -171,6 +174,7 @@ class TestTerraformController:
 
     def test_get_instances_gcloud(self, tf_controller):
         # Arrange
+        test_cloud = 'gcloud'
         test_name = 'test_name'
         test_zone = 'us-east1-c'
         test_public_ip = '10.11.12.13'
@@ -204,6 +208,7 @@ class TestTerraformController:
 
         instances_info_expected = {
             test_resource_address: {
+                'cloud': test_cloud,
                 'name': test_name,
                 'instance_id': test_id,
                 'public_ip': test_public_ip,

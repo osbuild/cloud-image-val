@@ -70,6 +70,55 @@ class TestsAWS:
             assert re.match(fedora_ami_name_format, ami_name), \
                 'Unexpected AMI name for Fedora image'
 
+    @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
+    def test_release_version_in_ami_name(self, host, instance_data):
+        """
+        Check if release version is on the AMI name
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('This test does not apply to Atomic AMIs')
+
+        cloud_image_name = instance_data['name']
+        product_version = float(host.system_info.release)
+
+        assert str(product_version).replace('.', '-') in cloud_image_name, \
+            'Product version is not in AMI name'
+
+    # TODO: verify logic, think if we should divide
+    @pytest.mark.run_on(['rhel'])
+    def test_auditd(self, host):
+        """
+        - Service should be running
+        - Config files should have the correct MD5 checksums
+        """
+        checksums_by_version = {
+            9: {
+                '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            8: {
+                '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            7: {
+                '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
+                '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
+            }
+        }
+
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to Atomic hosts')
+
+        auditd_service = 'auditd'
+
+        assert host.service(auditd_service).is_running, f'{auditd_service} expected to be running'
+
+        rhel_version = float(host.system_info.release)
+        with host.sudo():
+            for path, md5 in checksums_by_version[int(rhel_version)].items():
+                assert md5 in host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
+
     @pytest.mark.run_on(['rhel'])
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
         """
@@ -784,3 +833,13 @@ class TestsAWSNetworking:
 
                 assert host.run_test(f'getent hosts {cds_name}'), \
                     f'Error getting {cds_name} host entry'
+
+
+class TestsAWSSecurity:
+    @pytest.mark.run_on(['rhel'])
+    def test_firewalld_is_not_installed(self, host):
+        """
+        firewalld is not required in AWS because there are other security mechanisms.
+        """
+        assert not host.package('firewalld').is_installed, \
+            'firewalld should not be installed in RHEL AMIs'

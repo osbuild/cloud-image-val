@@ -4,6 +4,11 @@
   "provider": "azure",
   "instances": [
     {
+      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/7.9/rhel-azure-7.9-20220719.sp.1.x86_64.vhd",
+      "location": "East US",
+      "name": "sample-rhel7.9-image-from-vhd"
+    },
+    {
       "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/8.6/rhel-azure-8.6-20220531.sp.2.x86_64.vhd",
       "location": "East US",
       "name": "sample-rhel8.6-image-from-vhd"

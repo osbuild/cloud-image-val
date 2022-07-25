@@ -62,7 +62,8 @@ def reboot_host(host, max_timeout=120):
 
     ssh_lib.wait_for_host_ssh_up(hostname, max_timeout)
 
-    new_host = host.get_host(f'paramiko://{username}@{hostname}', ssh_config=host.backend.ssh_config)
+    new_host = host.get_host(f'paramiko://{username}@{hostname}',
+                             ssh_config=host.backend.ssh_config)
 
     if int(new_host.check_output(last_boot_count_cmd)) != reboot_count + 1:
         raise Exception(f'Failed to reboot instance.\n'
@@ -79,9 +80,58 @@ def get_host_last_boot_time(host):
     :param host: The testinfra host object, from pytest test case
     :return: (float) Boot time, in seconds
     """
+    timeout_seconds = 60
+
     with host.sudo():
-        systemd_analyze_output = host.check_output('systemd-analyze')
+        start_time = time.time()
+        while time.time() < start_time + timeout_seconds:
+            systemd_analyze_result = host.run('systemd-analyze')
+            if systemd_analyze_result.exit_status == 0 and \
+                    'Startup finished' in systemd_analyze_result.stdout:
+                break
+            time.sleep(5)
 
-    print(host.run('systemd-analyze blame').stdout)
+        print(host.run('systemd-analyze blame').stdout)
 
-    return float(re.findall('Startup finished .* = (.*)s', systemd_analyze_output)[0])
+    boot_time_string = re.findall('Startup finished .* = (.*)s',
+                                  systemd_analyze_result.stdout)[0]
+
+    if 'min' in boot_time_string:
+        boot_time_data = re.match(r'(\d+)min (\d+.\d+)', boot_time_string)
+
+        if boot_time_data:
+            boot_time_data = boot_time_data.groups()
+            minutes = float(boot_time_data[0])
+            seconds = float(boot_time_data[1])
+
+            boot_time = (minutes * 60) + seconds
+        else:
+            raise Exception(f'Could not obtain boot time from systemd-analyze output: {boot_time_string}')
+    else:
+        boot_time = float(boot_time_string)
+
+    return float(boot_time)
+
+
+def compare_local_and_remote_file(host,
+                                  local_file_path,
+                                  remote_file_path,
+                                  ignore_space_and_blank=True):
+    tmp_path = f'/tmp/test_file_{time.time()}'
+
+    diff_command = ['diff']
+
+    if ignore_space_and_blank:
+        diff_command.append('-wB')
+
+    diff_command.extend([remote_file_path, tmp_path])
+
+    ssh_lib.copy_file_to_host(host, local_file_path, tmp_path)
+
+    with host.sudo():
+        result = host.run(' '.join(diff_command))
+        print(result.stdout)
+
+        host.run(f'rm -rf {tmp_path}')
+
+        return result.exit_status == 0

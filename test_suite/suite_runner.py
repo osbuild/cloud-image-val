@@ -8,8 +8,8 @@ class SuiteRunner:
     rerun_failing_tests_regex = '|'.join([
         'refused',
         'ConnectionResetError',
-        'TimeoutError: timed out',
-        'SSHException: SSH session not active',
+        'TimeoutError',
+        'SSHException',
         'NoValidConnectionsError'
     ])
     max_reruns = 3
@@ -81,6 +81,8 @@ class SuiteRunner:
 
         if self.cloud_provider == 'aws':
             test_suites_to_run.append('cloud/test_aws.py')
+        elif self.cloud_provider == 'azure':
+            test_suites_to_run.append('cloud/test_azure.py')
 
         return [os.path.join(os.path.dirname(__file__), p) for p in test_suites_to_run]
 
