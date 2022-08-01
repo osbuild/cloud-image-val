@@ -33,7 +33,7 @@ def instance_data_aws_cli(host, instance_data_aws_web):
 class TestsAWS:
     @pytest.mark.run_on(['all'])
     def test_first_boot_time(self, host):
-        max_boot_time_aws = 50.0
+        max_boot_time_aws = 60.0
 
         boot_time = test_lib.get_host_last_boot_time(host)
 
