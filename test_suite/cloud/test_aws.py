@@ -402,11 +402,11 @@ class TestsAWS:
         rules_file = '/etc/udev/rules.d/80-net-name-slot.rules'
 
         with host.sudo():
-            if float(host.system_info.release) > 8.4:
+            if float(host.system_info.release) >= 8.4:
                 # COMPOSER-844 - this set not required in rhel8+
                 assert not host.file(rules_file).exists, '80-net rules are not required in RHEL 8.4+'
             else:
-                assert host.file(rules_file).exists, '80-net rules are required in RHEL lower than 8.5'
+                assert host.file(rules_file).exists, '80-net rules are required in RHEL lower than 8.4'
 
             assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
                 '70-persistent-net rules are required'
