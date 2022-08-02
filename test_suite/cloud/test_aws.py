@@ -271,28 +271,14 @@ class TestsAWS:
         BugZilla 1679763
         """
         timesync_service_ipv4 = '169.254.169.123'
-        ntp_leap_lines = [
-            'leapsectz right/UTC',
-            'pool 2.rhel.pool.ntp.org iburst',
-        ]
+        line = f'server {timesync_service_ipv4} iburst minpoll 4 maxpoll 4'
+        compatible_version = 7.8
 
         with host.sudo():
             chrony_conf_content = host.file('/etc/chrony.conf').content_string
 
-            for line in ntp_leap_lines:
-                commented_line_exists = re.match(f'#[ ]?{line}|#[ ]+{line}', chrony_conf_content) is not None
-
-                assert f'server {timesync_service_ipv4}' in chrony_conf_content, \
-                    f'chrony should point to Amazon Time Sync service IPv4 {timesync_service_ipv4}'
-
-                compatible_version = 8.5
-                if float(host.system_info.release) < compatible_version:
-                    assert line in chrony_conf_content and not commented_line_exists, \
-                        f'NTP leap smear incompatibility found in chrony conf file, ' \
-                        f'affecting RHEL lower than {compatible_version}'
-                else:
-                    assert line not in chrony_conf_content or commented_line_exists, \
-                        f'{line} must be enabled in RHEL {compatible_version} and above'
+            assert line not in chrony_conf_content, \
+                f'"{line}" must be enabled in RHEL {compatible_version} and above'
 
             assert f'Selected source {timesync_service_ipv4}' in host.check_output('journalctl -u chronyd'), \
                 'Amazon Time Sync service is not in use'
