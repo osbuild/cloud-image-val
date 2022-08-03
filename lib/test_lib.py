@@ -30,7 +30,7 @@ def run_local_script_in_host(host, script_relative_path):
     To achieve this, the script is first copied to the remote host.
     :param host: The host object from the pytest test case.
     :param script_relative_path: Relative file path of the script to run (from project's root dir)
-    :return: testinfra.backend.base.CommandResult containing: command, exit_status, stdout, stderr
+    :return: testinfra.backend.base.CommandResult containing: command, rc, stdout, stderr
     """
     script_remote_path = f'/tmp/{path.basename(script_relative_path)}'
 
@@ -58,7 +58,7 @@ def reboot_host(host, max_timeout=120):
     with host.sudo():
         result = host.run('shutdown -r now')
 
-    time.sleep(5)
+    time.sleep(10)
 
     ssh_lib.wait_for_host_ssh_up(hostname, max_timeout)
 
@@ -67,7 +67,7 @@ def reboot_host(host, max_timeout=120):
 
     if int(new_host.check_output(last_boot_count_cmd)) != reboot_count + 1:
         raise Exception(f'Failed to reboot instance.\n'
-                        f'\tstatus:\t{result.exit_status}\n'
+                        f'\tstatus:\t{result.rc}\n'
                         f'\tstdout:\t{result.stdout}\n'
                         f'\tstderr:\t{result.stderr}')
 

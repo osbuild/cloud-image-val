@@ -25,7 +25,7 @@ def check_markers(host, request):
 
     supported_distros_and_versions = [
         'fedora', 'fedora34', 'fedora35', 'fedora36',
-        'rhel', 'rhel7.9', 'rhel8.5', 'rhel8.6', 'rhel9.0',
+        'rhel', 'rhel7.9', 'rhel8.4', 'rhel8.5', 'rhel8.6', 'rhel9.0',
         'centos', 'centos8', 'centos9'
     ]
 

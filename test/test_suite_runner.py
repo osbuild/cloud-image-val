@@ -10,6 +10,7 @@ class TestSuiteRunner:
     test_output_filepath = 'test/output/filepath.xml'
     test_filter = 'test_test_name'
     test_marker = 'pub'
+    test_connection = 'paramiko'
 
     @pytest.fixture
     def suite_runner(self):
@@ -45,11 +46,13 @@ class TestSuiteRunner:
         'test_filter, test_marker, test_debug, test_parallel, expected_command_string',
         [(None, None, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html'),
          (test_filter, test_marker, False, False,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
@@ -57,6 +60,7 @@ class TestSuiteRunner:
           f'-m "{test_marker}"'),
          (None, None, False, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
@@ -65,6 +69,7 @@ class TestSuiteRunner:
           '--reruns 3 --reruns-delay 5'),
          (None, None, True, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '

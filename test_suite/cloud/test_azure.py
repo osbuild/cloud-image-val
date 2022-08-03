@@ -14,14 +14,6 @@ def instance_data_azure_web(host):
 @pytest.mark.order(2)
 @pytest.mark.azure
 class TestsAzure:
-    @pytest.mark.run_on(['all'])
-    def test_first_boot_time(self, host):
-        max_boot_time = 120.0
-
-        boot_time = test_lib.get_host_last_boot_time(host)
-
-        assert boot_time < max_boot_time, f'First boot took more than {max_boot_time} seconds'
-
     @pytest.mark.run_on(['rhel7.9'])
     def test_66_azure_storage_rules_file_content(self, host):
         """

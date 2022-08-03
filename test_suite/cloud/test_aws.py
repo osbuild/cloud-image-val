@@ -31,14 +31,6 @@ def instance_data_aws_cli(host, instance_data_aws_web):
 
 @pytest.mark.order(2)
 class TestsAWS:
-    @pytest.mark.run_on(['all'])
-    def test_first_boot_time(self, host):
-        max_boot_time_aws = 60.0
-
-        boot_time = test_lib.get_host_last_boot_time(host)
-
-        assert boot_time < max_boot_time_aws, f'First boot took more than {max_boot_time_aws} seconds'
-
     # TODO: Divide test. Analyze centos
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
@@ -751,7 +743,7 @@ class TestsAWSSAP:
 
         result = test_lib.run_local_script_in_host(host, local_file_path)
 
-        assert result.exit_status == 0
+        assert result.rc == 0
 
 
 @pytest.mark.order(2)
