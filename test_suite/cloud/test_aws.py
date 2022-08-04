@@ -115,12 +115,11 @@ class TestsAWS:
             checksums = checksums_by_version['8.0+']
         else:
             checksums = checksums_by_version['7.0+']
-            
+
         with host.sudo():
             for path, md5 in checksums.items():
                 assert md5 in host.check_output(
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
-
 
     @pytest.mark.run_on(['rhel'])
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
@@ -612,8 +611,7 @@ class TestsAWS:
 
         aws_cli_cup_data = instance_data_aws_cli['CpuOptions']
 
-        total_v_cpus = aws_cli_cup_data['CoreCount'] * \
-            aws_cli_cup_data['ThreadsPerCore']
+        total_v_cpus = aws_cli_cup_data['CoreCount'] * aws_cli_cup_data['ThreadsPerCore']
 
         assert total_v_cpus == cpu_cores
 
