@@ -441,9 +441,8 @@ class TestsReboot:
     kmemleak_arg = 'kmemleak=on'
 
     def setup_before_reboot(self, host):
-        host.run(f'hostname > {self.hostname_before_reboot_file}')
-
         with host.sudo():
+            host.run(f'hostname > {self.hostname_before_reboot_file}')
             host.run_test(f'grubby --update-kernel=ALL --args="{self.kmemleak_arg}"')
 
     @pytest.mark.order(101)
@@ -477,8 +476,9 @@ class TestsReboot:
         """
         hostname_after_reboot = host.check_output('hostname')
 
-        assert host.file(self.hostname_before_reboot_file).contains(hostname_after_reboot), \
-            'Instance hostname changed after reboot'
+        with host.sudo():
+            assert host.file(self.hostname_before_reboot_file).contains(hostname_after_reboot), \
+                'Instance hostname changed after reboot'
 
     # TODO: Review failure in RHEL 7.9, it may be related to a grubby bug
     @pytest.mark.order(104)
