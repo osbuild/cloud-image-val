@@ -58,7 +58,8 @@ class TestsAWS:
                     'ARM (aarch64/arm64) is not supported in Red Hat High Availability images'
 
         elif distro == 'fedora':
-            fedora_ami_name_format = re.compile(r'Fedora-Cloud-Base-[\d]{2}-[\d]{8}.n.[\d].(?:aarch64|x86_64)')
+            fedora_ami_name_format = re.compile(
+                r'Fedora-Cloud-Base-[\d]{2}-[\d]{8}.n.[\d].(?:aarch64|x86_64)')
             assert re.match(fedora_ami_name_format, ami_name), \
                 'Unexpected AMI name for Fedora image'
 
@@ -85,15 +86,15 @@ class TestsAWS:
         - Config files should have the correct MD5 checksums
         """
         checksums_by_version = {
-            9: {
+            '8.6+': {
                 '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
             },
-            8: {
+            '8.0+': {
                 '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
             },
-            7: {
+            '7.0+': {
                 '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
                 '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
             }
@@ -104,12 +105,22 @@ class TestsAWS:
 
         auditd_service = 'auditd'
 
-        assert host.service(auditd_service).is_running, f'{auditd_service} expected to be running'
+        assert host.service(
+            auditd_service).is_running, f'{auditd_service} expected to be running'
 
         rhel_version = float(host.system_info.release)
+        if rhel_version >= 8.6:
+            checksums = checksums_by_version['8.6+']
+        elif rhel_version >= 8.0:
+            checksums = checksums_by_version['8.0+']
+        else:
+            checksums = checksums_by_version['7.0+']
+            
         with host.sudo():
-            for path, md5 in checksums_by_version[int(rhel_version)].items():
-                assert md5 in host.check_output(f'md5sum {path}'), f'Unexpected checksum for {path}'
+            for path, md5 in checksums.items():
+                assert md5 in host.check_output(
+                    f'md5sum {path}'), f'Unexpected checksum for {path}'
+
 
     @pytest.mark.run_on(['rhel'])
     def test_rh_cloud_firstboot_service_is_disabled(self, host):
@@ -121,7 +132,8 @@ class TestsAWS:
                 'rh-cloud-firstboot service must be disabled'
 
             with host.sudo():
-                cloud_firstboot_file = host.file('/etc/sysconfig/rh-cloud-firstboot')
+                cloud_firstboot_file = host.file(
+                    '/etc/sysconfig/rh-cloud-firstboot')
                 # TODO: Confirm if test should fail when this file does not exist
                 if cloud_firstboot_file.exists:
                     assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
@@ -175,14 +187,17 @@ class TestsAWS:
         ]
 
         if test_lib.is_rhel_sap(host):
-            unwanted_pkgs.remove('alsa-lib')  # In RHEL SAP images, alsa-lib is allowed
+            # In RHEL SAP images, alsa-lib is allowed
+            unwanted_pkgs.remove('alsa-lib')
 
         if test_lib.is_rhel_high_availability(host):
             unwanted_pkgs.append('rh-amazon-rhui-client')
 
-        found_pkgs = [pkg for pkg in unwanted_pkgs if host.package(pkg).is_installed]
+        found_pkgs = [
+            pkg for pkg in unwanted_pkgs if host.package(pkg).is_installed]
 
-        assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
+        assert len(
+            found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
 
     # TODO: divide by type of image and version
     @pytest.mark.run_on(['rhel'])
@@ -216,7 +231,9 @@ class TestsAWS:
         if test_lib.is_rhel_sap(host):
             required_pkgs.extend(['rhel-system-roles-sap', 'ansible'])
 
-            required_pkgs.extend(['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])  # BugZilla 1959813
+            # BugZilla 1959813
+            required_pkgs.extend(
+                ['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])
 
             required_pkgs.append('uuidd')  # BugZilla 1959813
 
@@ -226,7 +243,8 @@ class TestsAWS:
             required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
                                   'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])  # BugZilla 1959923, 1961168
 
-            required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
+            required_pkgs.extend(
+                ['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
 
             required_pkgs.append('tuned-profiles-sap-hana')  # BugZilla 1959962
 
@@ -236,9 +254,11 @@ class TestsAWS:
         if product_version < 8.0:
             required_pkgs = required_pkgs_v7
 
-        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
+        missing_pkgs = [
+            pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
-        assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
+        assert len(
+            missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
@@ -308,7 +328,8 @@ class TestsAWS:
         Check that ssh files permission set are correct.
         BugZilla 2013644
         """
-        files_to_check = ['ssh_host_ecdsa_key', 'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+        files_to_check = ['ssh_host_ecdsa_key',
+                          'ssh_host_ed25519_key', 'ssh_host_rsa_key']
         for file in files_to_check:
             if host.file(f'/etc/ssh/{file}').exists:
                 assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
@@ -344,7 +365,8 @@ class TestsAWS:
             # Cloud Access billing code, means don't charge for the OS (so it can apply to anything cloud Access)
             billing_codes = ['bp-63a5400a']
         else:
-            pytest.skip('Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
+            pytest.skip(
+                'Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
 
         for code in billing_codes:
             assert code in instance_data_aws_web['billingProducts'], \
@@ -389,9 +411,11 @@ class TestsAWS:
         with host.sudo():
             if float(host.system_info.release) >= 8.4:
                 # COMPOSER-844 - this set not required in rhel8+
-                assert not host.file(rules_file).exists, '80-net rules are not required in RHEL 8.4+'
+                assert not host.file(
+                    rules_file).exists, '80-net rules are not required in RHEL 8.4+'
             else:
-                assert host.file(rules_file).exists, '80-net rules are required in RHEL lower than 8.4'
+                assert host.file(
+                    rules_file).exists, '80-net rules are required in RHEL lower than 8.4'
 
             assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
                 '70-persistent-net rules are required'
@@ -403,7 +427,8 @@ class TestsAWS:
         """
         with host.sudo():
             file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
-            assert not host.file(file_to_check).exists, f'{file_to_check} should not be present in AMI'
+            assert not host.file(
+                file_to_check).exists, f'{file_to_check} should not be present in AMI'
 
     @pytest.mark.run_on(['rhel'])
     def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
@@ -445,7 +470,8 @@ class TestsAWS:
         """
         Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"
         """
-        assert host.package('gdisk').is_installed, 'Package "gdisk" is expected to be installed'
+        assert host.package(
+            'gdisk').is_installed, 'Package "gdisk" is expected to be installed'
 
         rhel_version = float(host.system_info.release)
 
@@ -455,7 +481,8 @@ class TestsAWS:
             file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
 
         with host.sudo():
-            assert host.file(file_to_check).exists, f'{file_to_check} should exist in RHEL {rhel_version}'
+            assert host.file(
+                file_to_check).exists, f'{file_to_check} should exist in RHEL {rhel_version}'
             assert host.file(file_to_check).contains('install_items+=" sgdisk "'), \
                 f'Expected configuration was not found in "{file_to_check}"'
 
@@ -511,12 +538,14 @@ class TestsAWS:
                 assert config in host.check_output('subscription-manager config'), \
                     f'Expected "{config}" not found in subscription manager configuration'
 
-            assert host.service('rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
+            assert host.service(
+                'rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
 
             assert host.run_test('subscription-manager config --rhsmcertd.auto_registration_interval=1'), \
                 'Error while changing auto_registration_interval from 60min to 1min'
 
-            assert host.run_test('systemctl restart rhsmcertd'), 'Error while restarting rhsmcertd service'
+            assert host.run_test(
+                'systemctl restart rhsmcertd'), 'Error while restarting rhsmcertd service'
 
             start_time = time.time()
             timeout = 360
@@ -528,14 +557,16 @@ class TestsAWS:
                 assert host.run_test('subscription-manager identity')
                 assert host.run_test('subscription-manager list --installed')
 
-                subscription_status = host.run('subscription-manager status').stdout
+                subscription_status = host.run(
+                    'subscription-manager status').stdout
 
                 if 'Red Hat Enterprise Linux' in subscription_status or \
                         'Simple Content Access' in subscription_status:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
-                        pytest.fail('insights-client command expected to succeed after auto-registration is complete')
+                        pytest.fail(
+                            'insights-client command expected to succeed after auto-registration is complete')
 
                     break
 
@@ -543,9 +574,11 @@ class TestsAWS:
                 if end_time - start_time > timeout:
                     assert host.run_test('insights-client --register'), \
                         'insights-client could not register successfully'
-                    pytest.fail(f'Timeout ({timeout}s) while waiting for subscription auto-registration')
+                    pytest.fail(
+                        f'Timeout ({timeout}s) while waiting for subscription auto-registration')
 
-                print(f'Waiting {interval}s for auto-registration to succeed...')
+                print(
+                    f'Waiting {interval}s for auto-registration to succeed...')
                 time.sleep(interval)
 
     @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
@@ -558,12 +591,14 @@ class TestsAWS:
             assert host.package('NetworkManager-cloud-setup').is_installed, \
                 'Expected cloud networking package is not installed'
 
-            assert host.service('nm-cloud-setup').is_enabled, 'Expected cloud service is not enabled'
+            assert host.service(
+                'nm-cloud-setup').is_enabled, 'Expected cloud service is not enabled'
 
             file_to_check = '/usr/lib/systemd/system/nm-cloud-setup.service.d/10-rh-enable-for-ec2.conf'
             expect_config = 'Environment=NM_CLOUD_SETUP_EC2=yes'
 
-            assert host.file(file_to_check).contains(expect_config), f'{expect_config} config is not set'
+            assert host.file(file_to_check).contains(
+                expect_config), f'{expect_config} config is not set'
 
     @pytest.mark.run_on(['all'])
     def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
@@ -572,11 +607,13 @@ class TestsAWS:
         """
 
         with host.sudo():
-            cpu_cores = int(host.check_output('grep "^processor" /proc/cpuinfo | wc -l'))
+            cpu_cores = int(host.check_output(
+                'grep "^processor" /proc/cpuinfo | wc -l'))
 
         aws_cli_cup_data = instance_data_aws_cli['CpuOptions']
 
-        total_v_cpus = aws_cli_cup_data['CoreCount'] * aws_cli_cup_data['ThreadsPerCore']
+        total_v_cpus = aws_cli_cup_data['CoreCount'] * \
+            aws_cli_cup_data['ThreadsPerCore']
 
         assert total_v_cpus == cpu_cores
 
@@ -757,7 +794,8 @@ class TestsAWSNetworking:
                 assert 'ena' in nic_driver, 'ENA driver must de used in KVM, arch64 and metal instances'
 
     def __test_nic_is_using_correct_driver(self, nic_name, nic_driver):
-        name_filter, driver_filter = self.__get_nic_filters_for_drivers(nic_name)
+        name_filter, driver_filter = self.__get_nic_filters_for_drivers(
+            nic_name)
 
         assert driver_filter in nic_driver, \
             f'{name_filter} network adapter must use {driver_filter} driver'
@@ -781,8 +819,10 @@ class TestsAWSNetworking:
         Check for IPv6 networking setup.
         """
         mac_addresses_url = 'http://169.254.169.254/latest/meta-data/network/interfaces/macs'
-        registered_mac_address = host.check_output(f'curl -s {mac_addresses_url}').replace('/', '')
-        registered_ipv6 = host.check_output(f'curl -s {mac_addresses_url}/{registered_mac_address}/ipv6s')
+        registered_mac_address = host.check_output(
+            f'curl -s {mac_addresses_url}').replace('/', '')
+        registered_ipv6 = host.check_output(
+            f'curl -s {mac_addresses_url}/{registered_mac_address}/ipv6s')
 
         if 'Not Found' in registered_ipv6:
             pytest.skip('No IPv6 enabled in this Subnet')
