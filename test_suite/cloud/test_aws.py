@@ -193,18 +193,17 @@ class TestsAWS:
 
         dracut-nohostonly -> dracut-config-generic
         dracut-norescue   -> dracut
-                          -> dracut-config-rescue
         """
         required_pkgs = [
             'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
             'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',
             'NetworkManager-cloud-setup', 'cloud-utils-growpart', 'gdisk',
-            'insights-client', 'dracut-config-generic', 'dracut-config-rescue', 'grub2-tools',
+            'insights-client', 'dracut-config-generic', 'grub2-tools',
         ]
 
         required_pkgs_v7 = [
             'kernel', 'yum-utils', 'cloud-init', 'dracut-config-generic',
-            'dracut-config-rescue', 'grub2', 'tar', 'rsync', 'chrony'
+            'grub2', 'tar', 'rsync', 'chrony'
         ]
 
         product_version = float(host.system_info.release)
