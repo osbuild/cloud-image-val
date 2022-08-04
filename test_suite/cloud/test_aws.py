@@ -448,12 +448,15 @@ class TestsAWS:
         """
         assert host.package('gdisk').is_installed, 'Package "gdisk" is expected to be installed'
 
-        if float(host.system_info.release) < 8.5:
+        rhel_version = float(host.system_info.release)
+
+        if rhel_version < 8.4:
             file_to_check = '/etc/dracut.conf.d/sgdisk.conf'
         else:
             file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
 
         with host.sudo():
+            assert host.file(file_to_check).exists, f'{file_to_check} should exist in RHEL {rhel_version}'
             assert host.file(file_to_check).contains('install_items+=" sgdisk "'), \
                 f'Expected configuration was not found in "{file_to_check}"'
 
