@@ -437,7 +437,7 @@ class TestsSecurity:
 
 @pytest.mark.wait(120)
 class TestsReboot:
-    hostname_before_reboot_file = '/tmp/hostname_before_reboot'
+    hostname_before_reboot_file = '/var/hostname_before_reboot'
     kmemleak_arg = 'kmemleak=on'
 
     def setup_before_reboot(self, host):
