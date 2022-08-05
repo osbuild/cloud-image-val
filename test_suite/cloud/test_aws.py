@@ -771,7 +771,7 @@ class TestsAWSSAP:
 
 @pytest.mark.order(2)
 class TestsAWSNetworking:
-    @pytest.mark.run_on(['all'])
+    @pytest.mark.run_on(['rhel', 'centos', 'fedora36'])
     def test_correct_network_driver_is_used(self, host):
         """
         If ena network device found, eth0 should use ena as default driver.
