@@ -162,7 +162,7 @@ class TestsAWS:
     def test_unwanted_packages_are_not_present(self, host):
         """
         Some pkgs are not required in EC2.
-        BugZilla 1888695
+        BugZilla 1888695, 2075815
         """
         unwanted_pkgs = [
             'aic94xx-firmware', 'alsa-firmware', 'alsa-lib', 'alsa-tools-firmware',
@@ -171,7 +171,7 @@ class TestsAWS:
             'iwl3945-firmware', 'iwl4965-firmware', 'iwl5000-firmware', 'iwl5150-firmware',
             'iwl6000-firmware', 'iwl6000g2a-firmware', 'iwl6000g2b-firmware', 'iwl6050-firmware',
             'iwl7260-firmware', 'libertas-sd8686-firmware', 'libertas-sd8787-firmware', 'libertas-usb8388-firmware',
-            'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools'
+            'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
         ]
 
         if test_lib.is_rhel_sap(host):
