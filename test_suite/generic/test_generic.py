@@ -6,6 +6,15 @@ from lib import test_lib
 @pytest.mark.order(1)
 class TestsGeneric:
     @pytest.mark.run_on(['all'])
+    def test_no_avc_denials(self, host):
+        """
+        Check there is no avc denials (selinux).
+        """
+        with host.sudo():
+            assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
+                'There should not be any avc denials (selinux)'
+
+    @pytest.mark.run_on(['all'])
     def test_first_boot_time(self, host, instance_data):
         if instance_data['cloud'] == 'azure':
             max_boot_time_aws = 120
@@ -116,15 +125,6 @@ class TestsGeneric:
             if int(lscpu_numa_nodes) > 1:
                 assert dmesg_numa_nodes > 1, \
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
-
-    @pytest.mark.run_on(['all'])
-    def test_no_avc_denials(self, host):
-        """
-        Check there is no avc denials (selinux).
-        """
-        with host.sudo():
-            assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
-                'There should not be any avc denials (selinux)'
 
     @pytest.mark.run_on(['rhel'])
     def test_cert_product_version_is_correct(self, host):
@@ -482,7 +482,7 @@ class TestsReboot:
 
     # TODO: Review failure in RHEL 7.9, it may be related to a grubby bug
     @pytest.mark.order(104)
-    @pytest.mark.run_on(['rhel8.4', 'rhel8.5', 'rhel8.6', 'rhel9.0', 'fedora', 'centos'])
+    @pytest.mark.run_on(['all'])
     def test_reboot_grubby(self, host):
         """
         Check that user can update boot parameter using grubby tool
