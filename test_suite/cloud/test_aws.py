@@ -781,7 +781,7 @@ class TestsAWSNetworking:
         """
         with host.sudo():
             if host.system_info.distribution == 'fedora':
-                host.run_test('dnf install lshw -y')
+                host.run_test('dnf install lshw -y >/dev/null')
 
             nic_name = host.check_output('lshw -C network')
             nic_driver = host.check_output('lshw -C network | grep "driver="')
