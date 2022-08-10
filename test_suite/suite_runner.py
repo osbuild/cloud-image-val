@@ -6,6 +6,7 @@ class SuiteRunner:
 
     # Rerun failed tests in case ssh times out or connection is refused by host
     rerun_failing_tests_regex = '|'.join([
+        'socket.timeout',
         'refused',
         'ConnectionResetError',
         'TimeoutError',
