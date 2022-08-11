@@ -321,7 +321,7 @@ class TestsAWS:
                     assert not host.file('/proc/cmdline').contains(line), \
                         f'{line} must not be specified in AMIs that are not SAP'
 
-    @pytest.mark.run_on(['rhel', 'centos', 'fedora36'])
+    @pytest.mark.run_on(['rhel7.9', 'rhel8.5', 'rhel8.6', 'rhel9.0', 'centos', 'fedora36'])
     def test_hostkey_permissions(self, host):
         """
         Check that ssh files permission set are correct.
