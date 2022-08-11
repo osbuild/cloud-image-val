@@ -65,7 +65,7 @@ class TestSuiteRunner:
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
-          '--only-rerun="refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
+          '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5'),
          (None, None, True, True,
           'py.test path1 path2 --hosts=user1@host1,user2@host2 '
@@ -74,7 +74,7 @@ class TestSuiteRunner:
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--numprocesses={len(test_instances)} --maxprocesses=40 '
-          '--only-rerun="refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
+          '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5 '
           '-v')]
     )
