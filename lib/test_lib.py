@@ -135,3 +135,34 @@ def compare_local_and_remote_file(host,
         host.run(f'rm -rf {tmp_path}')
 
         return result.exit_status == 0
+
+
+def filter_host_log_file_by_keywords(host,
+                                     log_file,
+                                     log_levels,
+                                     keywords,
+                                     exclude_mode=False):
+    log_levels_regex = '|'.join(log_levels)
+    keywords_regex = '|'.join(keywords)
+
+    print(f'Filtering {log_file} log file...')
+
+    if exclude_mode:
+        search_opt = '-vE'
+        print('(Exclude mode set to True. Keywords will be used for invert match)')
+    else:
+        search_opt = '-E'
+
+    with host.sudo():
+        result = host.run('grep -iE "{}" "{}" | grep {} "{}"'.format(log_levels_regex,
+                                                                     log_file,
+                                                                     search_opt,
+                                                                     keywords_regex))
+        if result.rc == 0:
+            print(f'Logs found:\n{result.stdout}')
+            return result.stdout
+        else:
+            print('No logs found.')
+            print(result.stderr)
+
+        return None
