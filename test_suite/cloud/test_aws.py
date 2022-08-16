@@ -399,27 +399,6 @@ class TestsAWS:
                 'ifnames expected to be specified'
 
     @pytest.mark.run_on(['rhel'])
-    def test_udev_kernel(self, host):
-        """
-        This is from ks file definition before migrating to ImageBuilder.
-        There is "70-persistent-net.rules" in all AMis and "80-net-name-slot.rules" in AMIs earlier than RHEL-8.4.
-        "80-net-name-slot.rules" is not actually required after migrating the build tool to ImageBuilder.
-        """
-        rules_file = '/etc/udev/rules.d/80-net-name-slot.rules'
-
-        with host.sudo():
-            if float(host.system_info.release) >= 8.4:
-                # COMPOSER-844 - this set not required in rhel8+
-                assert not host.file(
-                    rules_file).exists, '80-net rules are not required in RHEL 8.4+'
-            else:
-                assert host.file(
-                    rules_file).exists, '80-net rules are required in RHEL lower than 8.4'
-
-            assert host.file('/etc/udev/rules.d/70-persistent-net.rules').exists, \
-                '70-persistent-net rules are required'
-
-    @pytest.mark.run_on(['rhel'])
     def test_libc6_xen_conf_file_does_not_exist(self, host):
         """
         Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
