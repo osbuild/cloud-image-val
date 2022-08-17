@@ -286,6 +286,23 @@ class TestsGeneric:
             assert 'authorized_keys' in ssh_files, 'authorized_keys is not in /root/.ssh/'
             assert len(ssh_files) == 1, 'there are extra files in /root/.ssh/'
 
+    @pytest.mark.run_on(['all'])
+    def test_journal_log(self, host):
+        """
+        Verify no traceback|ordering in journalctl -xl
+        """
+        file_to_check = '/tmp/journalctl.log'
+        log_levels = ['traceback', 'ordering']
+
+        with host.sudo():
+            host.run(f'journalctl -xl > {file_to_check}')
+
+        logs_found = test_lib.filter_host_log_file_by_keywords(host,
+                                                               file_to_check,
+                                                               log_levels)
+        assert logs_found is None, \
+            f'Unexpected journal logs found in {file_to_check}'
+
 
 @pytest.mark.order(1)
 class TestsServices:

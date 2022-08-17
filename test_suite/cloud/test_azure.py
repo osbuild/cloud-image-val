@@ -12,7 +12,6 @@ def instance_data_azure_web(host):
 
 
 @pytest.mark.order(2)
-@pytest.mark.azure
 class TestsAzure:
     @pytest.mark.run_on(['rhel7.9'])
     def test_66_azure_storage_rules_file_content(self, host):
