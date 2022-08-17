@@ -3,12 +3,44 @@
     "project": "redhat-marketplace-dev",
     "instances": [
         {
-            "image": "rhel-9-v20220524",
+            "image": "rhel-9-v20220719",
             "region": "us-east1",
             "zone": "us-east1-c",
             "instance_type": "",
             "username": "google",
             "name": "rhel-9.0-x86_64"
+        },
+        {
+            "image": "rhel-8-v20220719",
+            "region": "us-east1",
+            "zone": "us-east1-c",
+            "instance_type": "",
+            "username": "google",
+            "name": "rhel-8.x-x86_64"
+        },
+        {
+            "image": "rhel-8-6-sap-v20220801",
+            "region": "us-east1",
+            "zone": "us-east1-c",
+            "instance_type": "",
+            "username": "google",
+            "name": "rhel-8.6-sap-x86_64"
+        },
+        {
+            "image": "rhel-9-arm64-v20220719",
+            "region": "us-central1",
+            "zone": "us-central1-a",
+            "instance_type": "t2a-standard-4",
+            "username": "google",
+            "name": "rhel-9.0-aarch64"
+        },
+        {
+            "image": "rhel-7-v20220719",
+            "region": "us-east1",
+            "zone": "us-east1-c",
+            "instance_type": "",
+            "username": "google",
+            "name": "rhel-7.x-x86_64"
         }
     ]
 }
