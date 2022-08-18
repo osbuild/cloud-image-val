@@ -1,5 +1,6 @@
 stages:
   - init
+  - build
   - test
   - finish
 
@@ -7,9 +8,9 @@ stages:
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
     - sudo dnf update -y && sudo dnf install -y podman
-    - sudo podman pull --creds  ${QUAY_USERNAME}:${QUAY_PASSWORD} quay.io/cloudexperience/cloud-image-val-test
   variables:
     RUNNER: aws/fedora-35-x86_64
+    QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val-test
   tags:
     - terraform
 
@@ -28,10 +29,21 @@ init:
   script:
     - schutzbot/update_github_status.sh start
 
+branch_container:
+  extends: .deps
+  stage: build
+  script:
+    - sudo podman build -t civ:"${CI_COMMIT_REF_SLUG}" .
+    - IMAGE_ID="$(sudo podman images --filter reference="localhost/civ" --quiet)"
+    - |
+      sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} \
+      "${IMAGE_ID}" "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+
 aws:
   stage: test
   extends: .tests
   script:
+    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
       sudo podman run \
       -a stdout -a stderr \
@@ -39,13 +51,14 @@ aws:
       -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
       -e AWS_REGION="${AWS_REGION}" \
       -v ./:/tmp:Z \
-      quay.io/cloudexperience/cloud-image-val-test \
-      python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml -m 'not pub'
+      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+      python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
 
 azure:
   stage: test
   extends: .tests
   script:
+    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
       sudo podman run \
       -a stdout -a stderr \
@@ -54,8 +67,8 @@ azure:
       -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
       -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
       -v ./:/tmp:Z \
-      quay.io/cloudexperience/cloud-image-val-test \
-      python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml -m 'not pub'
+      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+      python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
 
 finish:
   stage: finish
