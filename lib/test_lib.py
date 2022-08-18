@@ -140,24 +140,37 @@ def compare_local_and_remote_file(host,
 def filter_host_log_file_by_keywords(host,
                                      log_file,
                                      log_levels,
-                                     keywords,
+                                     keywords=None,
                                      exclude_mode=False):
+    """
+    Filters a log file by log levels, and then by a list of keywords.
+    If exclude_mode is set to True, the keywords will be used for inverted match.
+    :param host: The host to connect to, from testinfra's module
+    :param log_file: Path to the file that needs to be filtered
+    :param log_levels: The log levels that need to be taken into account for filtering
+    :param keywords: List of keywords to use as secondary filter, after filtering by log level
+    :param exclude_mode: Whether to use inverted match with the keywords or not
+    :return: String with all the log lines found, matching the criteria
+    """
     log_levels_regex = '|'.join(log_levels)
-    keywords_regex = '|'.join(keywords)
+
+    if keywords is not None:
+        keywords_regex = '|'.join(keywords)
+        if exclude_mode:
+            search_opt = '-vE'
+            print('exclude_mode set to True. Keywords will be used for inverted match')
+        else:
+            search_opt = '-E'
+        grep_filter_by_keyword = ' | grep {} "{}"'.format(search_opt, keywords_regex)
+    else:
+        grep_filter_by_keyword = ''
 
     print(f'Filtering {log_file} log file...')
 
-    if exclude_mode:
-        search_opt = '-vE'
-        print('(Exclude mode set to True. Keywords will be used for invert match)')
-    else:
-        search_opt = '-E'
-
     with host.sudo():
-        result = host.run('grep -iE "{}" "{}" | grep {} "{}"'.format(log_levels_regex,
-                                                                     log_file,
-                                                                     search_opt,
-                                                                     keywords_regex))
+        result = host.run('grep -iE "{}" "{}"{}'.format(log_levels_regex,
+                                                        log_file,
+                                                        grep_filter_by_keyword))
         if result.rc == 0:
             print(f'Logs found:\n{result.stdout}')
             return result.stdout
