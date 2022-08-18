@@ -223,25 +223,3 @@ class TestsAzure:
         with host.sudo():
             for service in service_list:
                 assert host.service(service).is_running
-
-    @pytest.mark.run_on(['all'])
-    def test_waagent_log(self, host):
-        """
-        Verify no err/fail/warn/trace in /var/log/waagent.log
-        """
-        file_to_check = '/var/log/waagent.log'
-        log_levels = ['err', 'fail', 'warn', 'trace']
-        ignore_list = [
-            'preferred',
-            'Dhcp client is not running',
-            'Move rules file 70-persistent-net.rules',
-            'UpdateGSErrors: 0'
-        ]
-
-        logs_found = test_lib.filter_host_log_file_by_keywords(host,
-                                                               file_to_check,
-                                                               log_levels,
-                                                               ignore_list,
-                                                               exclude_mode=True)
-        assert logs_found is None, \
-            f'Unexpected logs found in {file_to_check}'
