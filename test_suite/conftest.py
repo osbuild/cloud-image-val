@@ -20,8 +20,10 @@ def check_markers(host, request):
     # This part checks the list of combinations of distro-version each test has.
     # If the host doesn't meet any of the combinations, the test will be skipped.
     run_on_marker = request.node.get_closest_marker('run_on')
-    if not run_on_marker:
-        pytest.fail('All test cases have to be marked with "run_on" marker')
+    exclude_on_marker = request.node.get_closest_marker('exclude_on')
+    if not run_on_marker and not exclude_on_marker:
+        pytest.fail('All test cases have to be marked with at least "run_on" \
+                    or "exlude_on" marker')
 
     supported_distros_and_versions = [
         'fedora', 'fedora34', 'fedora35', 'fedora36',
@@ -32,6 +34,20 @@ def check_markers(host, request):
     host_distro = host.system_info.distribution
     host_version = host.system_info.release
     distro_version = f'{host_distro}{host_version}'
+
+    # Skip the test if the distro is explicitely excluded
+    if exclude_on_marker:
+        exclude_on_marker_list = exclude_on_marker.args[0]
+        if host_distro in exclude_on_marker_list \
+                or distro_version in exclude_on_marker_list:
+            pytest.skip(f"This test doesn't apply to {distro_version}")
+
+    # If there is no run_on_marker and distro is not excluded execute supported
+    # tests
+    if not run_on_marker:
+        if distro_version in supported_distros_and_versions:
+            return
+        pytest.fail(f"{distro_version} is not supported distro/version")
 
     run_on_marker_list = run_on_marker.args[0]
 
