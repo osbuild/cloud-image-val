@@ -74,7 +74,7 @@ class TestsGeneric:
                     'crashkernel must be enabled'
 
     @pytest.mark.run_on(['all'])
-    def test_cpu_flags_are_correct(self, host):
+    def test_cpu_flags_are_correct(self, host, instance_data):
         """
         Check various CPU flags for x86_64 instances.
         BugZilla 1061348
@@ -88,6 +88,9 @@ class TestsGeneric:
             'avx',
             'xsave',
         ]
+
+        if instance_data['cloud'] == 'azure':
+            expected_flags.append('pcid')
 
         with host.sudo():
             for flag in expected_flags:
@@ -319,13 +322,19 @@ class TestsServices:
 @pytest.mark.order(1)
 class TestsCloudInit:
     @pytest.mark.run_on(['all'])
-    def test_growpart_is_present_in_config(self, host):
+    def test_growpart_is_present_in_config(self, host, instance_data):
         """
-        Make sure there is growpart in cloud_init_modules group in "/etc/cloud/cloud.cfg".
+        Make sure there is "growpart" in cloud_init_modules group in "/etc/cloud/cloud.cfg".
+        For Azure instances, make sure there is also "mounts" in the config.
         BugZilla 966888
         """
-        assert host.file('/etc/cloud/cloud.cfg').contains('- growpart'), \
-            'growpart must be present in cloud_init_modules'
+        config_to_check = ['- growpart']
+        if instance_data['cloud'] == 'azure':
+            config_to_check.append('- mounts')
+
+        for config in config_to_check:
+            assert host.file('/etc/cloud/cloud.cfg').contains(config), \
+                f'{config} must be present in cloud_init_modules'
 
     @pytest.mark.run_on(['rhel'])
     def test_wheel_group_not_set_to_default_user(self, host):
