@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from lib import test_lib
@@ -428,6 +429,42 @@ class TestsNetworking:
 
             assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
                 f'Unexpected device name. Expected: "{device_name}"'
+
+    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.exclude_on(['rhel7.9', 'rhel8.4'])
+    def test_network_manager_cloud_setup(self, host, instance_data):
+        """
+        BugZilla 1822853
+        >=8.5: check NetworkManager-cloud-setup is installed and nm-cloud-setup.timer is setup for Azure and enabled
+        """
+        cloud_setup_base_path = '/usr/lib/systemd/system/nm-cloud-setup.service.d/'
+        files_and_configs_by_cloud = {
+            'aws': {
+                'file_to_check': os.path.join(cloud_setup_base_path, '10-rh-enable-for-ec2.conf'),
+                'expect_config': 'Environment=NM_CLOUD_SETUP_EC2=yes'
+            },
+            'azure': {  # COMPOSER-842
+                'file_to_check': os.path.join(cloud_setup_base_path, '10-rh-enable-for-azure.conf'),
+                'expect_config': 'Environment=NM_CLOUD_SETUP_AZURE=yes'
+            }
+        }
+
+        # EXDSP-813
+        if instance_data['cloud'] == 'azure' and float(host.system_info.release) == 8.5:
+            pytest.skip("There is a known issue in RHEL 8.5 Azure images and won't be fixed.")
+
+        with host.sudo():
+            assert host.package('NetworkManager-cloud-setup').is_installed, \
+                'NetworkManager-cloud-setup is expected to be installed in RHEL 8.5 and above'
+
+            assert host.service('nm-cloud-setup').is_enabled, \
+                'Expected cloud service is not enabled'
+
+            file_to_check = files_and_configs_by_cloud[instance_data['cloud']]['file_to_check']
+            expect_config = files_and_configs_by_cloud[instance_data['cloud']]['expect_config']
+
+            assert host.file(file_to_check).contains(expect_config), \
+                f'{expect_config} config is not set'
 
 
 @pytest.mark.order(1)
