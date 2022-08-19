@@ -40,7 +40,7 @@ def check_markers(host, request):
         exclude_on_marker_list = exclude_on_marker.args[0]
         if host_distro in exclude_on_marker_list \
                 or distro_version in exclude_on_marker_list:
-            pytest.skip(f"This test doesn't apply to {distro_version}")
+            pytest.skip(f'This test doesn't apply to {distro_version}')
 
     # If there is no run_on_marker and distro is not excluded execute supported
     # tests
