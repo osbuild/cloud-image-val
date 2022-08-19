@@ -223,3 +223,31 @@ class TestsAzure:
         with host.sudo():
             for service in service_list:
                 assert host.service(service).is_running
+
+    @pytest.mark.run_on(['rhel'])
+    def test_pkg_wanted(self, host):
+        wanted_pkgs = [
+            'yum-utils', 'redhat-release-eula', 'cloud-init',
+            'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',
+            'grub2-tools', 'WALinuxAgent', 'firewalld', 'chrony',
+            'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
+        ]
+
+        product_version = float(host.system_info.release)
+        if product_version < 8.0:
+            wanted_pkgs.append('dhclient')
+        else:
+            wanted_pkgs.extend(['insights-client', 'dhcp-client'])
+
+        missing_pkgs = [pkg for pkg in wanted_pkgs if not host.package(pkg).is_installed]
+
+        assert len(missing_pkgs) == 0, f'One or more packages are missing: {", ".join(missing_pkgs)}'
+
+    @pytest.mark.run_on(['all'])
+    def test_waagent_resourcedisk_format(self, host):
+        """
+        Verify the ResourceDisk.Format is disabled in waagent.conf
+        """
+        with host.sudo():
+            assert host.file('/etc/waagent.conf').contains('ResourceDisk.Format=n'), \
+                'ResourceDisk.Format=n has to be present in /etc/waagent.conf'
