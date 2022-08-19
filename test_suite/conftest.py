@@ -35,7 +35,7 @@ def check_markers(host, request):
     host_version = host.system_info.release
     distro_version = f'{host_distro}{host_version}'
 
-    # Skip the test if the distro is explicitely excluded
+    # Skip the test if the distro is explicitly excluded
     if exclude_on_marker:
         exclude_on_marker_list = exclude_on_marker.args[0]
         if host_distro in exclude_on_marker_list \
