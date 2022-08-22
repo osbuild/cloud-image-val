@@ -429,6 +429,20 @@ class TestsNetworking:
             assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
                 f'Unexpected device name. Expected: "{device_name}"'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_networkmanager_conf_plugins(self, host, instance_data):
+        """
+        Check /etc/NetworkManager/NetworkManager.conf
+        """
+        if instance_data['cloud'] == 'gcloud':
+            pytest.skip('This test does not apply to GCP.')
+
+        file_to_check = '/etc/NetworkManager/NetworkManager.conf'
+
+        with host.sudo():
+            assert host.file(file_to_check).contains('^plugins = ifcfg-rh,$'), \
+                f'Unexpected or missing plugin(s) in {file_to_check}'
+
 
 @pytest.mark.order(1)
 class TestsSecurity:

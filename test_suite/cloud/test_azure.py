@@ -226,6 +226,9 @@ class TestsAzure:
 
     @pytest.mark.run_on(['rhel'])
     def test_pkg_wanted(self, host):
+        """
+        Check that the expected packages are installed.
+        """
         wanted_pkgs = [
             'yum-utils', 'redhat-release-eula', 'cloud-init',
             'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',
