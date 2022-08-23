@@ -517,3 +517,75 @@ class TestsReboot:
                 f'Expected "{self.kmemleak_arg}" in "{file_to_check}"'
 
             host.run_test(f'grubby --update-kernel=ALL --remove-args="{self.kmemleak_arg}"')
+
+
+@pytest.mark.order(1)
+@pytest.mark.run_on(['rhel'])
+class TestsAuthConfig:
+    @pytest.fixture(autouse=True)
+    def skip_on_aws(self, host, instance_data):
+        if instance_data['cloud'] == 'aws':
+            pytest.skip("Auth test cases don't apply to AWS.")
+
+    @pytest.mark.exclude_on(['rhel7.9'])
+    def test_authselect_has_no_config(self, host):
+        """
+        Check authselect current
+        """
+        expected_output = 'No existing configuration detected.'
+        assert expected_output in host.run('authselect current').stdout, \
+            'authselect is expected to have no configuration'
+
+    @pytest.mark.exclude_on(['rhel7.9'])
+    def test_authselect_conf_files(self, host):
+        authselect_dir = '/etc/authselect/'
+        expected_config_files = ['custom', 'user-nsswitch.conf']
+        current_files = host.file(authselect_dir).listdir()
+
+        print(current_files)
+
+        assert current_files == expected_config_files, \
+            f'Unexpected result when listing files under {authselect_dir}'
+
+        authselect_custom_dir = '/etc/authselect/custom/'
+        assert len(host.file(authselect_custom_dir).listdir()) == 0, \
+            f'Unexpected files found under {authselect_custom_dir}.' \
+            f'This directory should be empty'
+
+    def test_fingerprint_auth(self, host):
+        """
+        Check file /etc/pam.d/fingerprint-auth
+        """
+        self.__check_pam_d_file_content(host, 'fingerprint-auth')
+
+    def test_password_auth(self, host):
+        """
+        Check file /etc/pam.d/password-auth
+        """
+        self.__check_pam_d_file_content(host, 'password-auth')
+
+    def test_postlogin(self, host):
+        """
+        Check file /etc/pam.d/postlogin
+        """
+        self.__check_pam_d_file_content(host, 'postlogin')
+
+    def test_smartcard_auth(self, host):
+        """
+        Check file /etc/pam.d/smartcard-auth
+        """
+        self.__check_pam_d_file_content(host, 'smartcard-auth')
+
+    def test_system_auth(self, host):
+        """
+        Check file /etc/pam.d/system-auth
+        """
+        self.__check_pam_d_file_content(host, 'system-auth')
+
+    def __check_pam_d_file_content(self, host, file_name):
+        product_major_version = int(float(host.system_info.release))
+        local_file = f'data/generic/{file_name}_rhel{product_major_version}'
+        file_to_check = f'/etc/pam.d/{file_name}'
+
+        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+            f'{file_to_check} has unexpected content'
