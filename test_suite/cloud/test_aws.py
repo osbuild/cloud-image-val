@@ -559,25 +559,6 @@ class TestsAWS:
                     f'Waiting {interval}s for auto-registration to succeed...')
                 time.sleep(interval)
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
-    def test_network_manager_cloud_setup(self, host):
-        """
-        BugZilla 1822853
-        Check NetworkManager-cloud-setup is installed and nm-cloud-setup is enabled
-        """
-        with host.sudo():
-            assert host.package('NetworkManager-cloud-setup').is_installed, \
-                'Expected cloud networking package is not installed'
-
-            assert host.service(
-                'nm-cloud-setup').is_enabled, 'Expected cloud service is not enabled'
-
-            file_to_check = '/usr/lib/systemd/system/nm-cloud-setup.service.d/10-rh-enable-for-ec2.conf'
-            expect_config = 'Environment=NM_CLOUD_SETUP_EC2=yes'
-
-            assert host.file(file_to_check).contains(
-                expect_config), f'{expect_config} config is not set'
-
     @pytest.mark.run_on(['all'])
     def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
         """
@@ -628,6 +609,7 @@ class TestsAWS:
                 f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
 
+# TODO: Almost all these tests are cloud-agnostic
 @pytest.mark.order(2)
 @pytest.mark.usefixtures('rhel_sap_only')
 class TestsAWSSAP:
@@ -738,6 +720,7 @@ class TestsAWSSAP:
             assert expected_cfg in host.check_output('tuned-adm active'), \
                 'tuned-adm command returned unexpected active setting'
 
+    # TODO: Only applicable to AWS
     @pytest.mark.run_on(['rhel'])
     def test_ha_specific_script(self, host, rhel_high_availability_only):
         # TODO: This script does not run correctly on RHEL-9.0 since awscli is not present in the repo.
