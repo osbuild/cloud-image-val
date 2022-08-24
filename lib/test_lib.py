@@ -121,6 +121,7 @@ def get_host_last_boot_time(host):
 def compare_local_and_remote_file(host,
                                   local_file_path,
                                   remote_file_path,
+                                  ignore_commented_lines=True,
                                   ignore_space_and_blank=True):
     tmp_path = f'/tmp/test_file_{time.time()}'
 
@@ -128,6 +129,9 @@ def compare_local_and_remote_file(host,
 
     if ignore_space_and_blank:
         diff_command.append('-wB')
+
+    if ignore_commented_lines:
+        diff_command.append('-I "^#" -I "^ #"')
 
     diff_command.extend([remote_file_path, tmp_path])
 

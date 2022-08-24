@@ -70,7 +70,8 @@ class TestsGeneric:
 
         # ---- To be removed by CLOUDX-211 ----
         product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
+        if host.system_info.distribution == 'rhel' and (
+                product_release_version == 9.1 or product_release_version == 8.7):
             pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
         # -------------------------------------
 
@@ -316,6 +317,37 @@ class TestsGeneric:
             authorized_keys_lines = host.check_output('cat /root/.ssh/authorized_keys | wc -l')
             assert authorized_keys_lines == '1', 'There is more than one public key in authorized_keys'
 
+    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.exclude_on(['rhel7.9'])
+    def test_dnf_conf(self, host, instance_data):
+        """
+        Check /etc/dnf/dnf.conf
+        """
+        local_file = 'data/generic/dnf.conf'
+        file_to_check = '/etc/dnf/dnf.conf'
+
+        if instance_data['cloud'] == 'gcloud':
+            local_file = 'data/google/dnf.conf'
+
+        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+            f'{file_to_check} has unexpected content'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_langpacks_conf(self, host):
+        """
+        Verify /etc/yum/pluginconf.d/langpacks.conf
+        """
+        local_file = 'data/generic/langpacks.conf'
+        file_to_check = '/etc/yum/pluginconf.d/langpacks.conf'
+
+        with host.sudo():
+            if float(host.system_info.release) < 8.0:
+                assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+                    f'{file_to_check} has unexpected content'
+            else:
+                assert not host.file(file_to_check).exists, \
+                    f'{file_to_check} should not exist in RHEL-8 and above'
+
 
 @pytest.mark.order(1)
 class TestsServices:
@@ -465,7 +497,8 @@ class TestsNetworking:
         """
         # ---- To be removed by CLOUDX-211 ----
         product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
+        if host.system_info.distribution == 'rhel' and (
+                product_release_version == 9.1 or product_release_version == 8.7):
             pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
         # -------------------------------------
 
@@ -662,7 +695,8 @@ class TestsKdump:
                 ]
             }
             if rhel_version >= 8.7:
-                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
+                conf['sysconfig_kdump'][
+                    2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
             return conf
         else:
             conf = {
@@ -683,7 +717,8 @@ class TestsKdump:
                 ]
             }
             if rhel_version >= 9.1:
-                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
+                conf['sysconfig_kdump'][
+                    2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
             return conf
 
     @pytest.mark.run_on(['rhel'])
@@ -693,7 +728,8 @@ class TestsKdump:
         """
         # ---- To be removed by CLOUDX-211 ----
         product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
+        if host.system_info.distribution == 'rhel' and (
+                product_release_version == 9.1 or product_release_version == 8.7):
             pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
         # -------------------------------------
 
