@@ -55,7 +55,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
     def __new_aws_instance(self, instance):
         if not instance['instance_type']:
-            instance['instance_type'] = 't2.micro'
+            instance['instance_type'] = 't3.medium'
 
         name_tag = instance['name'].replace('.', '-')
         name = self.create_resource_name([name_tag])

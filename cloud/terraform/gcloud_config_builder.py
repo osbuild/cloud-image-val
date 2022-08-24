@@ -84,7 +84,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
 
     def __new_gcloud_instance(self, instance):
         if not instance['instance_type']:
-            instance['instance_type'] = 'e2-micro'
+            instance['instance_type'] = 'c2d-highcpu-2'
 
         # Google instance names must match the following regex: '(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)'
         formatted_name = instance['name'].replace('.', '-').replace('_', '-')
