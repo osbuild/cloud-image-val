@@ -495,67 +495,6 @@ class TestsSecurity:
             'firewalld should be enabled in most RHEL cloud images (except AWS AMIs)'
 
 
-@pytest.mark.wait(120)
-class TestsReboot:
-    hostname_before_reboot_file = '/var/hostname_before_reboot'
-    kmemleak_arg = 'kmemleak=on'
-
-    def setup_before_reboot(self, host):
-        with host.sudo():
-            host.run(f'hostname > {self.hostname_before_reboot_file}')
-            host.run_test(f'grubby --update-kernel=ALL --args="{self.kmemleak_arg}"')
-
-    @pytest.mark.order(101)
-    @pytest.mark.run_on(['all'])
-    def test_launch_reboot(self, host, instance_data):
-        self.setup_before_reboot(host)
-        test_lib.reboot_host(host)
-
-    @pytest.mark.order(102)
-    @pytest.mark.run_on(['all'])
-    def test_reboot_time(self, host, instance_data):
-        """
-        Check reboot time after 1st init.
-        BugZilla 1776710, 1446698, 1446688
-        """
-        if instance_data['cloud'] == 'azure':
-            max_boot_time_seconds = 60.0
-        else:
-            max_boot_time_seconds = 40.0
-
-        boot_time = test_lib.get_host_last_boot_time(host)
-
-        assert boot_time < max_boot_time_seconds, \
-            f'Reboot took more than {max_boot_time_seconds} sec.'
-
-    @pytest.mark.order(103)
-    @pytest.mark.run_on(['all'])
-    def test_reboot_keeps_current_hostname(self, host):
-        """
-        Check that reboot doesn't change the hostname
-        """
-        hostname_after_reboot = host.check_output('hostname')
-
-        with host.sudo():
-            assert host.file(self.hostname_before_reboot_file).contains(hostname_after_reboot), \
-                'Instance hostname changed after reboot'
-
-    # TODO: Review failure in RHEL 7.9, it may be related to a grubby bug
-    @pytest.mark.order(104)
-    @pytest.mark.run_on(['all'])
-    def test_reboot_grubby(self, host):
-        """
-        Check that user can update boot parameter using grubby tool
-        """
-        file_to_check = '/proc/cmdline'
-
-        with host.sudo():
-            assert host.file(file_to_check).contains(self.kmemleak_arg), \
-                f'Expected "{self.kmemleak_arg}" in "{file_to_check}"'
-
-            host.run_test(f'grubby --update-kernel=ALL --remove-args="{self.kmemleak_arg}"')
-
-
 @pytest.mark.order(1)
 @pytest.mark.run_on(['rhel'])
 class TestsAuthConfig:
@@ -626,3 +565,154 @@ class TestsAuthConfig:
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
             f'{file_to_check} has unexpected content'
+
+
+@pytest.mark.order(2)
+class TestsKdump:
+    @pytest.mark.run_on(['rhel'])
+    def test_kdump_conf(self, host):
+        """
+        Check /etc/sysconfig/kdump and /etc/kdump.conf
+        """
+        sysconfig_kdump_conf = '/etc/sysconfig/kdump'
+        kdump_conf = '/etc/kdump.conf'
+
+        expected_kdump_config_data = self.__get_kdump_config_by_rhel_version(float(host.system_info.release))
+
+        expected_sysconfig_kdump_content = expected_kdump_config_data['sysconfig_kdump']
+        expected_kdump_content = expected_kdump_config_data['kdump_conf']
+
+        with host.sudo():
+            for item in expected_sysconfig_kdump_content:
+                assert host.file(sysconfig_kdump_conf).contains(f'^{item}'), \
+                    f'Unexpected kdump configuration in {sysconfig_kdump_conf}'
+
+            for item in expected_kdump_content:
+                assert host.file(kdump_conf).contains(f'^{item}'), \
+                    f'Unexpected kdump configuration in {sysconfig_kdump_conf}'
+
+    def __get_kdump_config_by_rhel_version(self, rhel_version):
+        if rhel_version < 8.0:
+            return {
+                'sysconfig_kdump': [
+                    'KDUMP_COMMANDLINE=""',
+                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off numa=off '
+                    'udev.children-max=2 panic=10 acpi_no_memhotplug transparent_hugepage=never '
+                    'nokaslr novmcoredd hest_disable"',
+                    'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug kaslr"',
+                    'KDUMP_IMG_EXT=""',
+                    'KDUMP_IMG="vmlinuz"',
+                    'KDUMP_KERNELVER=""',
+                    'KEXEC_ARGS=""'
+                ],
+                'kdump_conf': [
+                    'path /var/crash',
+                    'core_collector makedumpfile -l --message-level 1 -d 31'
+                ]
+            }
+        elif rhel_version < 9.0:
+            return {
+                'sysconfig_kdump': [
+                    'KDUMP_KERNELVER=""',
+                    'KDUMP_COMMANDLINE=""',
+                    'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb"',
+                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off numa=off '
+                    'udev.children-max=2 panic=10 rootflags=nofail acpi_no_memhotplug '
+                    'transparent_hugepage=never nokaslr novmcoredd hest_disable"',
+                    'KEXEC_ARGS="-s"',
+                    'KDUMP_IMG="vmlinuz"',
+                    'KDUMP_IMG_EXT=""'
+                ],
+                'kdump_conf': [
+                    'path /var/crash',
+                    'core_collector makedumpfile -l --message-level 7 -d 31'
+                ]
+            }
+        else:
+            return {
+                'sysconfig_kdump': [
+                    'KDUMP_KERNELVER=""',
+                    'KDUMP_COMMANDLINE=""',
+                    'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma"',
+                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off '
+                    'numa=off udev.children-max=2 panic=10 acpi_no_memhotplug transparent_hugepage=never '
+                    'nokaslr hest_disable novmcoredd cma=0 hugetlb_cma=0"',
+                    'KEXEC_ARGS="-s"',
+                    'KDUMP_IMG="vmlinuz"',
+                    'KDUMP_IMG_EXT=""'
+                ],
+                'kdump_conf': [
+                    'path /var/crash',
+                    'core_collector makedumpfile -l --message-level 7 -d 31'
+                ]
+            }
+
+    @pytest.mark.run_on(['rhel'])
+    def test_kdump_status(self, host):
+        """
+        Verify that kdump is enabled
+        """
+        with host.sudo():
+            assert 'Kdump is operational' in host.check_output('kdumpctl status 2>&1'), \
+                'Kdump is not operational'
+
+
+@pytest.mark.wait(120)
+class TestsReboot:
+    hostname_before_reboot_file = '/var/hostname_before_reboot'
+    kmemleak_arg = 'kmemleak=on'
+
+    def setup_before_reboot(self, host):
+        with host.sudo():
+            host.run(f'hostname > {self.hostname_before_reboot_file}')
+            host.run_test(f'grubby --update-kernel=ALL --args="{self.kmemleak_arg}"')
+
+    @pytest.mark.order(101)
+    @pytest.mark.run_on(['all'])
+    def test_launch_reboot(self, host, instance_data):
+        self.setup_before_reboot(host)
+        test_lib.reboot_host(host)
+
+    @pytest.mark.order(102)
+    @pytest.mark.run_on(['all'])
+    def test_reboot_time(self, host, instance_data):
+        """
+        Check reboot time after 1st init.
+        BugZilla 1776710, 1446698, 1446688
+        """
+        if instance_data['cloud'] == 'azure':
+            max_boot_time_seconds = 60.0
+        else:
+            max_boot_time_seconds = 40.0
+
+        boot_time = test_lib.get_host_last_boot_time(host)
+
+        assert boot_time < max_boot_time_seconds, \
+            f'Reboot took more than {max_boot_time_seconds} sec.'
+
+    @pytest.mark.order(103)
+    @pytest.mark.run_on(['all'])
+    def test_reboot_keeps_current_hostname(self, host):
+        """
+        Check that reboot doesn't change the hostname
+        """
+        hostname_after_reboot = host.check_output('hostname')
+
+        with host.sudo():
+            assert host.file(self.hostname_before_reboot_file).contains(hostname_after_reboot), \
+                'Instance hostname changed after reboot'
+
+    # TODO: Review failure in RHEL 7.9, it may be related to a grubby bug
+    @pytest.mark.order(104)
+    @pytest.mark.run_on(['all'])
+    def test_reboot_grubby(self, host):
+        """
+        Check that user can update boot parameter using grubby tool
+        """
+        file_to_check = '/proc/cmdline'
+
+        with host.sudo():
+            assert host.file(file_to_check).contains(self.kmemleak_arg), \
+                f'Expected "{self.kmemleak_arg}" in "{file_to_check}"'
+
+            host.run_test(f'grubby --update-kernel=ALL --remove-args="{self.kmemleak_arg}"')
