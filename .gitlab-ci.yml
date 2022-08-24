@@ -7,9 +7,11 @@ stages:
 .deps:
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
     - sudo dnf update -y && sudo dnf install -y podman
   variables:
     RUNNER: aws/fedora-35-x86_64
+    INTERNAL_NETWORK: "true"
     QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val-test
   tags:
     - terraform
@@ -69,6 +71,39 @@ azure:
       -v ./:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
+
+.rhel_runners: &rhel_runners
+    RUNNER:
+      - aws/centos-stream-8-x86_64
+      - aws/rhel-8.4-ga-x86_64
+      - aws/rhel-8.6-ga-x86_64
+      - aws/rhel-9.0-ga-x86_64
+      - aws/rhel-8.7-nightly-x86_64
+      - aws/rhel-9.1-nightly-x86_64
+      - aws/centos-stream-9-x86_64
+    INTERNAL_NETWORK: ["true"]
+
+.fedora_runners: &fedora_runners
+    RUNNER:
+      - aws/fedora-35-x86_64
+      - aws/fedora-36-x86_64
+
+.ib_tests:
+  extends: .tests
+  after_script:
+    - !reference [.tests, after_script]
+    - cp /tmp/report.html ./report.html
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+
+ib-aws:
+  stage: test
+  extends: .ib_tests
+  script:
+    - schutzbot/deploy.sh
+    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
 
 finish:
   stage: finish
