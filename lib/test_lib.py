@@ -138,6 +138,9 @@ def compare_local_and_remote_file(host,
     ssh_lib.copy_file_to_host(host, local_file_path, tmp_path)
 
     with host.sudo():
+        if not host.file(remote_file_path).exists:
+            raise FileNotFoundError(f'The remote file {remote_file_path} was not found')
+
         result = host.run(' '.join(diff_command))
         print(result.stdout)
 

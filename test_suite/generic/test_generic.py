@@ -175,6 +175,8 @@ class TestsGeneric:
         """
         kernel_release = host.check_output('uname -r')
 
+        print(f'Kernel release: {kernel_release}')
+
         with host.sudo():
             if host.package('systemd').is_installed:
                 assert '/lib/systemd/system/multi-user.target' in \
@@ -376,6 +378,19 @@ class TestsServices:
                 f'UPDATEDEFAULT should be set to `yes` in {kernel_config}'
             assert host.file(kernel_config).contains('DEFAULTKERNEL=kernel'), \
                 f'DEFAULTKERNEL should be set to `kernel` in {kernel_config}'
+
+    @pytest.mark.run_on(['all'])
+    def test_no_fail_service(self, host):
+        """
+        Verify no failed service
+        """
+        with host.sudo():
+            result = host.run('systemctl list-units | grep -i fail')
+
+            print(result.stdout)
+
+            assert result.rc != 0 and result.stdout == '', \
+                'There are failing services'
 
 
 @pytest.mark.order(1)
