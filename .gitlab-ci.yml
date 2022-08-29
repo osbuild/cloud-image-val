@@ -47,8 +47,8 @@ aws:
     - |
       sudo podman run \
       -a stdout -a stderr \
-      -e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
-      -e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+      -e AWS_ACCESS_KEY_ID="${V2_AWS_ACCESS_KEY_ID}" \
+      -e AWS_SECRET_ACCESS_KEY="${V2_AWS_SECRET_ACCESS_KEY}" \
       -e AWS_REGION="${AWS_REGION}" \
       -v ./:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
@@ -62,8 +62,8 @@ azure:
     - |
       sudo podman run \
       -a stdout -a stderr \
-      -e ARM_CLIENT_ID="${AZURE_CLIENT_ID}" \
-      -e ARM_CLIENT_SECRET="${AZURE_CLIENT_SECRET}" \
+      -e ARM_CLIENT_ID="${V2_AZURE_CLIENT_ID}" \
+      -e ARM_CLIENT_SECRET="${V2_AZURE_CLIENT_SECRET}" \
       -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
       -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
       -v ./:/tmp:Z \
