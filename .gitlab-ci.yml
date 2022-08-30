@@ -31,15 +31,12 @@ init:
   script:
     - schutzbot/update_github_status.sh start
 
-branch_container:
+container:
   extends: .deps
   stage: build
   script:
-    - sudo podman build -t civ:"${CI_COMMIT_REF_SLUG}" .
-    - IMAGE_ID="$(sudo podman images --filter reference="localhost/civ" --quiet)"
-    - |
-      sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} \
-      "${IMAGE_ID}" "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - sudo podman build -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
+    - sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
 
 aws:
   stage: test
@@ -105,6 +102,14 @@ ib-aws:
     - schutzbot/deploy.sh
     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
 
+container_main:
+  extends: .deps
+  rules:
+    - if: $CI_COMMIT_REF_SLUG == "main"
+  script:
+    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":main
+    - sudo podman tag "${QUAY_IO_CONTAINER_URL}":main "${QUAY_IO_CONTAINER_URL}":latest
+    - sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":latest
 finish:
   stage: finish
   script:
