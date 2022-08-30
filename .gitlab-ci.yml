@@ -104,6 +104,7 @@ ib-aws:
 
 container_main:
   extends: .deps
+  stage: finish
   rules:
     - if: $CI_COMMIT_REF_SLUG == "main"
   script:
