@@ -41,6 +41,8 @@ container:
 aws:
   stage: test
   extends: .tests
+  rules:
+    - if: $CI_COMMIT_REF_SLUG != "main"
   script:
     - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
@@ -56,6 +58,8 @@ aws:
 azure:
   stage: test
   extends: .tests
+  rules:
+    - if: $CI_COMMIT_REF_SLUG != "main"
   script:
     - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
