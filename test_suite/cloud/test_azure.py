@@ -110,6 +110,7 @@ class TestsAzure:
             assert host.file(sshd_config_file).contains('ClientAliveInterval 180'), \
                 f'ClientAliveInterval not set correctly in {sshd_config_file}'
 
+    @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_grub_params(self, host):
         """
