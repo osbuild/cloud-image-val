@@ -603,7 +603,7 @@ class TestsKdump:
                 ]
             }
         elif rhel_version < 9.0:
-            return {
+            conf = {
                 'sysconfig_kdump': [
                     'KDUMP_KERNELVER=""',
                     'KDUMP_COMMANDLINE=""',
@@ -620,8 +620,11 @@ class TestsKdump:
                     'core_collector makedumpfile -l --message-level 7 -d 31'
                 ]
             }
+            if rhel_version >= 8.7:
+                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
+            return conf
         else:
-            return {
+            conf = {
                 'sysconfig_kdump': [
                     'KDUMP_KERNELVER=""',
                     'KDUMP_COMMANDLINE=""',
@@ -638,6 +641,9 @@ class TestsKdump:
                     'core_collector makedumpfile -l --message-level 7 -d 31'
                 ]
             }
+            if rhel_version >= 9.1:
+                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
+            return conf
 
     @pytest.mark.run_on(['rhel'])
     def test_kdump_status(self, host):
