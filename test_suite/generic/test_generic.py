@@ -561,6 +561,7 @@ class TestsAuthConfig:
 
 @pytest.mark.order(2)
 class TestsKdump:
+    @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_kdump_conf(self, host):
         """
