@@ -8,7 +8,10 @@ stages:
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
     - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-    - sudo dnf update -y && sudo dnf install -y podman
+    - curl -fsSL https://get.docker.com -o get-docker.sh
+    - sudo sh get-docker.sh
+    - sudo systemctl start docker
+    - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
   variables:
     RUNNER: aws/fedora-35-x86_64
     INTERNAL_NETWORK: "true"
@@ -35,8 +38,9 @@ container:
   extends: .deps
   stage: build
   script:
-    - sudo podman build -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
-    - sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - sudo docker run --privileged --rm tonistiigi/binfmt --install all
+    - sudo docker buildx create --use
+    - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
 
 aws:
   stage: test
@@ -44,14 +48,14 @@ aws:
   rules:
     - if: $CI_COMMIT_REF_SLUG != "main"
   script:
-    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
-      sudo podman run \
+      sudo docker run \
       -a stdout -a stderr \
       -e AWS_ACCESS_KEY_ID="${V2_AWS_ACCESS_KEY_ID}" \
       -e AWS_SECRET_ACCESS_KEY="${V2_AWS_SECRET_ACCESS_KEY}" \
       -e AWS_REGION="${AWS_REGION}" \
-      -v ./:/tmp:Z \
+      -v ${PWD}:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
 
@@ -61,15 +65,15 @@ azure:
   rules:
     - if: $CI_COMMIT_REF_SLUG != "main"
   script:
-    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
     - |
-      sudo podman run \
+      sudo docker run \
       -a stdout -a stderr \
       -e ARM_CLIENT_ID="${V2_AZURE_CLIENT_ID}" \
       -e ARM_CLIENT_SECRET="${V2_AZURE_CLIENT_SECRET}" \
       -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
       -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
-      -v ./:/tmp:Z \
+      -v ${PWD}:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
 
@@ -91,6 +95,9 @@ azure:
 
 .ib_tests:
   extends: .tests
+  before_script:
+    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
   after_script:
     - !reference [.tests, after_script]
     - cp /tmp/report.html ./report.html
@@ -112,9 +119,13 @@ container_main:
   rules:
     - if: $CI_COMMIT_REF_SLUG == "main"
   script:
-    - sudo podman pull --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":main
-    - sudo podman tag "${QUAY_IO_CONTAINER_URL}":main "${QUAY_IO_CONTAINER_URL}":latest
-    - sudo podman push --creds ${QUAY_USERNAME}:${QUAY_PASSWORD} "${QUAY_IO_CONTAINER_URL}":latest
+    - sudo dnf install skopeo
+    - |
+      skopeo copy \
+      --src-username ${QUAY_USERNAME} \
+      --src-password ${QUAY_PASSWORD} \
+      --all "${QUAY_IO_CONTAINER_URL}":main "${QUAY_IO_CONTAINER_URL}":latest
+
 finish:
   stage: finish
   script:
