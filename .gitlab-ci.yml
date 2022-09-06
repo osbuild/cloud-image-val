@@ -125,6 +125,11 @@ container_main:
       --src-username ${QUAY_USERNAME} \
       --src-password ${QUAY_PASSWORD} \
       --all "${QUAY_IO_CONTAINER_URL}":main "${QUAY_IO_CONTAINER_URL}":latest
+    - |
+      skopeo copy \
+      --src-username ${QUAY_USERNAME} \
+      --src-password ${QUAY_PASSWORD} \
+      --all "${QUAY_IO_CONTAINER_URL}":main "${QUAY_IO_CONTAINER_URL}":prod  
 
 finish:
   stage: finish
