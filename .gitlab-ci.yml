@@ -33,98 +33,99 @@ init:
   stage: init
   script:
     - schutzbot/update_github_status.sh start
+    - echo $CI_PROJECT_NAME
 
-container:
-  extends: .deps
-  stage: build
-  script:
-    - sudo docker run --privileged --rm tonistiigi/binfmt --install all
-    - sudo docker buildx create --use
-    - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
+# container:
+#   extends: .deps
+#   stage: build
+#   script:
+#     - sudo docker run --privileged --rm tonistiigi/binfmt --install all
+#     - sudo docker buildx create --use
+#     - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
 
-aws:
-  stage: test
-  extends: .tests
-  rules:
-    - if: $CI_COMMIT_REF_SLUG != "main"
-  script:
-    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
-    - |
-      sudo docker run \
-      -a stdout -a stderr \
-      -e AWS_ACCESS_KEY_ID="${V2_AWS_ACCESS_KEY_ID}" \
-      -e AWS_SECRET_ACCESS_KEY="${V2_AWS_SECRET_ACCESS_KEY}" \
-      -e AWS_REGION="${AWS_REGION}" \
-      -v ${PWD}:/tmp:Z \
-      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
-      python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
+# aws:
+#   stage: test
+#   extends: .tests
+#   rules:
+#     - if: $CI_COMMIT_REF_SLUG != "main"
+#   script:
+#     - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+#     - |
+#       sudo docker run \
+#       -a stdout -a stderr \
+#       -e AWS_ACCESS_KEY_ID="${V2_AWS_ACCESS_KEY_ID}" \
+#       -e AWS_SECRET_ACCESS_KEY="${V2_AWS_SECRET_ACCESS_KEY}" \
+#       -e AWS_REGION="${AWS_REGION}" \
+#       -v ${PWD}:/tmp:Z \
+#       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+#       python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
 
-azure:
-  stage: test
-  extends: .tests
-  rules:
-    - if: $CI_COMMIT_REF_SLUG != "main"
-  script:
-    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
-    - |
-      sudo docker run \
-      -a stdout -a stderr \
-      -e ARM_CLIENT_ID="${V2_AZURE_CLIENT_ID}" \
-      -e ARM_CLIENT_SECRET="${V2_AZURE_CLIENT_SECRET}" \
-      -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
-      -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
-      -v ${PWD}:/tmp:Z \
-      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
-      python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
+# azure:
+#   stage: test
+#   extends: .tests
+#   rules:
+#     - if: $CI_COMMIT_REF_SLUG != "main"
+#   script:
+#     - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+#     - |
+#       sudo docker run \
+#       -a stdout -a stderr \
+#       -e ARM_CLIENT_ID="${V2_AZURE_CLIENT_ID}" \
+#       -e ARM_CLIENT_SECRET="${V2_AZURE_CLIENT_SECRET}" \
+#       -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
+#       -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
+#       -v ${PWD}:/tmp:Z \
+#       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+#       python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
 
-.rhel_runners: &rhel_runners
-    RUNNER:
-      - aws/centos-stream-8-x86_64
-      - aws/rhel-8.4-ga-x86_64
-      - aws/rhel-8.6-ga-x86_64
-      - aws/rhel-9.0-ga-x86_64
-      - aws/rhel-8.7-nightly-x86_64
-      - aws/rhel-9.1-nightly-x86_64
-      - aws/centos-stream-9-x86_64
-    INTERNAL_NETWORK: ["true"]
+# .rhel_runners: &rhel_runners
+#     RUNNER:
+#       - aws/centos-stream-8-x86_64
+#       - aws/rhel-8.4-ga-x86_64
+#       - aws/rhel-8.6-ga-x86_64
+#       - aws/rhel-9.0-ga-x86_64
+#       - aws/rhel-8.7-nightly-x86_64
+#       - aws/rhel-9.1-nightly-x86_64
+#       - aws/centos-stream-9-x86_64
+#     INTERNAL_NETWORK: ["true"]
 
-.fedora_runners: &fedora_runners
-    RUNNER:
-      - aws/fedora-35-x86_64
-      - aws/fedora-36-x86_64
+# .fedora_runners: &fedora_runners
+#     RUNNER:
+#       - aws/fedora-35-x86_64
+#       - aws/fedora-36-x86_64
 
-.ib_tests:
-  extends: .tests
-  before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
-    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-  after_script:
-    - !reference [.tests, after_script]
-    - cp /tmp/report.html ./report.html
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
+# .ib_tests:
+#   extends: .tests
+#   before_script:
+#     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+#     - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
+#   after_script:
+#     - !reference [.tests, after_script]
+#     - cp /tmp/report.html ./report.html
+#   parallel:
+#     matrix:
+#       - *fedora_runners
+#       - *rhel_runners
 
-ib-aws:
-  stage: test
-  extends: .ib_tests
-  script:
-    - schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
+# ib-aws:
+#   stage: test
+#   extends: .ib_tests
+#   script:
+#     - schutzbot/deploy.sh
+#     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
 
-container_main:
-  extends: .deps
-  stage: finish
-  rules:
-    - if: $CI_COMMIT_REF_SLUG == "main"
-  script:
-    - sudo dnf install skopeo -y
-    - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
-    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
-    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
+# container_main:
+#   extends: .deps
+#   stage: finish
+#   rules:
+#     - if: $CI_COMMIT_REF_SLUG == "main"
+#   script:
+#     - sudo dnf install skopeo -y
+#     - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
+#     - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
+#     - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
 
-finish:
-  stage: finish
-  script:
-    - schutzbot/update_github_status.sh finish
+# finish:
+#   stage: finish
+#   script:
+#     - schutzbot/update_github_status.sh finish
