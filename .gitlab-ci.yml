@@ -120,16 +120,9 @@ container_main:
     - if: $CI_COMMIT_REF_SLUG == "main"
   script:
     - sudo dnf install skopeo -y
-    - |
-      skopeo copy \
-      --src-username ${QUAY_USERNAME} \
-      --src-password ${QUAY_PASSWORD} \
-      --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
-    - |
-      skopeo copy \
-      --src-username ${QUAY_USERNAME} \
-      --src-password ${QUAY_PASSWORD} \
-      --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
+    - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
 
 finish:
   stage: finish
