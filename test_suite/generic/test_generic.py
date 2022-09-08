@@ -221,8 +221,8 @@ class TestsGeneric:
     def test_grub_config(self, host):
         current_arch = host.system_info.arch
         if current_arch != 'x86_64':
-            pytest.skip(f'Not applicable to {current_arch}')   
-        
+            pytest.skip(f'Not applicable to {current_arch}')
+
         grub2_file = '/boot/grub2/grubenv'
         linked_to = grub2_file
 
