@@ -19,6 +19,8 @@ class TestsGeneric:
     def test_first_boot_time(self, host, instance_data):
         if instance_data['cloud'] == 'azure':
             max_boot_time_aws = 120
+        elif host.system_info.arch == 'aarch64':
+            max_boot_time_aws = 70
         else:
             max_boot_time_aws = 60
 
@@ -214,8 +216,13 @@ class TestsGeneric:
         assert host.file('/etc/shells').contains('/bin/bash'), \
             '/bin/bash is not declared in /etc/shells'
 
+    # TODO: create test case for aarch64 grub config file
     @pytest.mark.run_on(['rhel'])
     def test_grub_config(self, host):
+        current_arch = host.system_info.arch
+        if current_arch != 'x86_64':
+            pytest.skip(f'Not applicable to {current_arch}')   
+        
         grub2_file = '/boot/grub2/grubenv'
         linked_to = grub2_file
 
