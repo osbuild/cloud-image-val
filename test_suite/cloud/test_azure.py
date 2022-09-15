@@ -176,6 +176,7 @@ class TestsAzure:
         if not is_efi:
             assert sku.endswith('gen1'), 'SKU does not match with image generation type'
 
+    @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_osdisk_size(self, host):
         """
