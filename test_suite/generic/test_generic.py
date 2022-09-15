@@ -65,16 +65,14 @@ class TestsGeneric:
         product_release_version = float(host.system_info.release)
 
         if product_release_version < 9.0:
-            expected_content = ['crashkernel=auto']
-        elif host.system_info.arch == 'x86_64':
-            expected_content = ['crashkernel=1G-4G:192M', '4G-64G:256M', '64G-:512M']
+            expected_content = 'crashkernel=auto'
         else:
-            expected_content = ['crashkernel=2G-:448M']
+            with host.sudo():
+                expected_content = host.check_output('kdumpctl showmem 2>&1 | sed -E "s/.*Reserved ([0-9]*).*/\1/"')
 
-        with host.sudo(host.user().name):
-            for item in expected_content:
-                assert host.file('/proc/cmdline').contains(item), \
-                    'crashkernel must be enabled'
+        with host.sudo():
+            assert host.file('/proc/cmdline').contains(expected_content), \
+                f'crashkernel must be enabled {expected_content}\n - {host.file("/proc/cmdline").content_string}\n - {host.check_output("kdumpctl showmem 2>&1")}'
 
     @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host, instance_data):
