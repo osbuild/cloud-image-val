@@ -2,6 +2,7 @@ import os
 import pytest
 
 from lib import test_lib
+from lib import console_lib
 
 
 @pytest.mark.order(1)
@@ -68,11 +69,17 @@ class TestsGeneric:
             expected_content = 'crashkernel=auto'
         else:
             with host.sudo():
-                expected_content = host.check_output('kdumpctl showmem 2>&1 | sed -E "s/.*Reserved ([0-9]*).*/\1/"')
+                expected_content = str(host.check_output('kdumpctl showmem 2>&1 | grep -oP "[0-9]*"'))
 
         with host.sudo():
+            print(console_lib.print_debug({"expected_content": expected_content,
+                                           "/proc/cmdline content": host.file("/proc/cmdline").content_string,
+                                           "kdumpctl showmem": host.check_output("kdumpctl showmem 2>&1")}))
+
             assert host.file('/proc/cmdline').contains(expected_content), \
-                f'crashkernel must be enabled {expected_content}\n - {host.file("/proc/cmdline").content_string}\n - {host.check_output("kdumpctl showmem 2>&1")}'
+                'crashkernel must be enabled'
+
+            # {expected_content}\n - {host.file("/proc/cmdline").content_string}\n - {host.check_output("kdumpctl showmem 2>&1")}
 
     @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host, instance_data):
