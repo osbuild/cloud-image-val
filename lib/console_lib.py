@@ -9,3 +9,11 @@ def print_divider(text):
     color_print('-' * divider_length)
     color_print(' ' * free_spaces + text)
     color_print('-' * divider_length)
+
+
+def print_debug(vars):
+    vars_string = '\n----------DEBUG----------'
+    for key, value in vars.items():
+        vars_string += f'\n - {key} = {value}'
+    vars_string += '\n----------DEBUG----------'
+    return vars_string
