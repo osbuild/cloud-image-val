@@ -113,7 +113,7 @@ ib-aws:
   stage: test
   extends: .ib_tests
   script:
-    - schutzbot/deploy.sh
+    - GITHUB_TOKEN=$GITHUB_TOKEN schutzbot/deploy.sh
     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
 
 container_main:
