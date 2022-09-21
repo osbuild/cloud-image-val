@@ -8,10 +8,12 @@ from lib import console_lib
 @pytest.mark.order(1)
 class TestsGeneric:
     @pytest.mark.run_on(['all'])
-    def test_no_avc_denials(self, host):
+    def test_no_avc_denials(self, host, instance_data):
         """
         Check there is no avc denials (selinux).
         """
+        if instance_data['cloud'] == 'azure':
+            pytest.skip('Skipping on fedora due to old image definitions')
         with host.sudo():
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
