@@ -38,11 +38,12 @@ class CloudImageValidator:
         self.stop_cleanup = stop_cleanup
 
     def main(self):
-        self.infra_controller = self.initialize_infrastructure()
         exit_code = 0
-
         instances = None
+
         try:
+            self.infra_controller = self.initialize_infrastructure()
+
             console_lib.print_divider('Deploying infrastructure')
             instances = self.deploy_infrastructure()
 
