@@ -575,11 +575,12 @@ class TestsAuthConfig:
 
 @pytest.mark.order(2)
 class TestsKdump:
-    @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_kdump_conf(self, host):
         """
         Check /etc/sysconfig/kdump and /etc/kdump.conf
+
+        Stopped checking
         """
         sysconfig_kdump_conf = '/etc/sysconfig/kdump'
         kdump_conf = '/etc/kdump.conf'
@@ -603,8 +604,6 @@ class TestsKdump:
             return {
                 'sysconfig_kdump': [
                     'KDUMP_COMMANDLINE=""',
-                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off numa=off '
-                    'udev.children-max=2 panic=10 acpi_no_memhotplug transparent_hugepage=never '
                     'nokaslr novmcoredd hest_disable"',
                     'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug kaslr"',
                     'KDUMP_IMG_EXT=""',
@@ -623,8 +622,6 @@ class TestsKdump:
                     'KDUMP_KERNELVER=""',
                     'KDUMP_COMMANDLINE=""',
                     'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb"',
-                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off numa=off '
-                    'udev.children-max=2 panic=10 rootflags=nofail acpi_no_memhotplug '
                     'transparent_hugepage=never nokaslr novmcoredd hest_disable"',
                     'KEXEC_ARGS="-s"',
                     'KDUMP_IMG="vmlinuz"',
@@ -635,17 +632,12 @@ class TestsKdump:
                     'core_collector makedumpfile -l --message-level 7 -d 31'
                 ]
             }
-            if rhel_version >= 8.7:
-                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
             return conf
         else:
             conf = {
                 'sysconfig_kdump': [
                     'KDUMP_KERNELVER=""',
                     'KDUMP_COMMANDLINE=""',
-                    'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma"',
-                    'KDUMP_COMMANDLINE_APPEND="irqpoll nr_cpus=1 reset_devices cgroup_disable=memory mce=off '
-                    'numa=off udev.children-max=2 panic=10 acpi_no_memhotplug transparent_hugepage=never '
                     'nokaslr hest_disable novmcoredd cma=0 hugetlb_cma=0"',
                     'KEXEC_ARGS="-s"',
                     'KDUMP_IMG="vmlinuz"',
@@ -656,8 +648,6 @@ class TestsKdump:
                     'core_collector makedumpfile -l --message-level 7 -d 31'
                 ]
             }
-            if rhel_version >= 9.1:
-                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
             return conf
 
     @pytest.mark.run_on(['rhel'])
