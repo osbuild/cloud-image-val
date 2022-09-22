@@ -2,25 +2,18 @@
   "provider": "aws",
   "instances": [
     {
-      "ami": "ami-068fd644a9270e323",
-      "region": "us-west-2",
+      "ami": "ami-088c289c3f07fa115",
+      "region": "ap-northeast-3",
       "instance_type": "",
-      "username": "ec2-user",
-      "name": "RHEL-7.9_HVM-20220222-x86_64-0-Hourly2-GP2"
+      "username": "root",
+      "name": "RHEL-9.0.0_HVM-20220513-x86_64-0-Hourly2-GP2"
     },
     {
-      "ami": "ami-06644055bed38ebd9",
-      "region": "us-east-1",
+      "ami": "ami-06a2a41d455060f8b",
+      "region": "eu-north-1",
       "instance_type": "",
       "username": "ec2-user",
-      "name": "RHEL-8.5.0_HVM-20211103-x86_64-0-Hourly2-GP2"
-    },
-    {
-      "ami": "ami-00e69c1911063647b",
-      "region": "us-east-1",
-      "instance_type": "",
-      "username": "ec2-user",
-      "name": "RHEL_HA-9.0.0_HVM_BETA-20211026-x86_64-10-Hourly2-GP2"
+      "name": "RHEL-8.6.0_HVM-20220503-x86_64-2-Hourly2-GP2"
     }
   ]
 }
