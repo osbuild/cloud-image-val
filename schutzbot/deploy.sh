@@ -58,6 +58,18 @@ priority=${priority}
 EOF
 }
 
+function get_last_passed_commit {
+  commit_list=$(curl -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=20 --header "authorization: Bearer ${GITHUB_TOKEN}" | jq -cr '.[].sha')
+
+  for commit in ${commit_list}; do
+          status=$(curl -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status | jq -cr '.state')
+          if [[ ${status} == "success" ]]; then
+                  break
+          fi
+  done
+  echo $commit
+}
+
 # Get OS details.
 source /etc/os-release
 ARCH=$(uname -m)
@@ -98,7 +110,7 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 sudo dnf -y install jq
 
 # Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(curl -s https://api.github.com/repos/osbuild/osbuild-composer/git/refs/heads/main | jq '.object.sha' | xargs)
+GIT_COMMIT=$(get_last_passed_commit)
 
 setup_repo osbuild-composer "${GIT_COMMIT}" 5
 

@@ -56,4 +56,4 @@ jobs:
           touch ~/.ssh/known_hosts
           ssh-keyscan -t rsa gitlab.com >> ~/.ssh/known_hosts
           git remote add ci git@gitlab.com:redhat/services/products/image-builder/ci/cloud-image-val-ci.git
-          git push -f ci
+          git push -f -o ci.variable="GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" ci
