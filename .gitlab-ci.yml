@@ -8,7 +8,6 @@ stages:
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
     - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-    - curl -o schutzbot/terraform https://raw.githubusercontent.com/osbuild/osbuild-composer/main/schutzbot/terraform
     - curl -fsSL https://get.docker.com -o get-docker.sh
     - sudo sh get-docker.sh
     - sudo systemctl start docker
