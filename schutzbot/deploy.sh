@@ -59,10 +59,10 @@ EOF
 }
 
 function get_last_passed_commit {
-  commit_list=$(curl -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=20 --header "authorization: Bearer ${GITHUB_TOKEN}" | jq -cr '.[].sha')
+  commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=20  | jq -cr '.[].sha')
 
   for commit in ${commit_list}; do
-          status=$(curl -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status | jq -cr '.state')
+          status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status | jq -cr '.state')
           if [[ ${status} == "success" ]]; then
                   break
           fi
