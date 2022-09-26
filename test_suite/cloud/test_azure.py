@@ -2,6 +2,7 @@ import json
 import pytest
 
 from lib import test_lib
+from lib import console_lib
 
 
 @pytest.fixture
@@ -211,9 +212,10 @@ class TestsAzure:
         ]
 
         with host.sudo():
+            debug = {"pwquality.conf": host.file(file_to_check).content_string}
             for setting in expected_settings:
                 assert host.file(file_to_check).contains(f'{setting}'), \
-                    f'Expected setting "{setting}" not found in "{file_to_check}"'
+                    f'Expected setting "{setting}" not found in "{file_to_check}" {console_lib.print_debug(debug)}'
 
     @pytest.mark.run_on(['all'])
     def test_services_running(self, host, instance_data):
