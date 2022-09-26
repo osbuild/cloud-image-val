@@ -213,6 +213,7 @@ class TestsAzure:
 
         if host.system_info.distribution == 'fedora':
             expected_settings[2] = 'minclass = 0'
+            expected_settings[3] = 'minlen = 8'
 
         with host.sudo():
             debug = {"pwquality.conf": host.file(file_to_check).content_string}
