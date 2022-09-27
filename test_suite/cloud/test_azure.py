@@ -211,6 +211,9 @@ class TestsAzure:
             'ucredit = 0',
         ]
 
+        if host.system_info.distribution == 'fedora':
+            expected_settings[2] = 'minclass = 0'
+
         with host.sudo():
             debug = {"pwquality.conf": host.file(file_to_check).content_string}
             for setting in expected_settings:
