@@ -96,7 +96,7 @@ azure:
       - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
 
-.ib_tests:
+.IB_tests:
   extends: .tests
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
@@ -109,12 +109,19 @@ azure:
       - *fedora_runners
       - *rhel_runners
 
-ib-aws:
+IB-aws:
   stage: test
-  extends: .ib_tests
+  extends: .IB_tests
   script:
-    - GITHUB_TOKEN=$GITHUB_TOKEN schutzbot/deploy.sh
+    - schutzbot/deploy.sh
     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
+
+IB-azure:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
 
 container_main:
   extends: .deps
