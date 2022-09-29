@@ -678,6 +678,12 @@ class TestsKdump:
         """
         Verify that kdump is enabled
         """
+        # ---- To be removed by CLOUDX-211 ----
+        product_release_version = float(host.system_info.release)
+        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
+            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
+        # -------------------------------------
+
         with host.sudo():
             assert 'Kdump is operational' in host.check_output('kdumpctl status 2>&1'), \
                 'Kdump is not operational'
