@@ -84,10 +84,14 @@ azure:
       - aws/rhel-8.6-ga-x86_64
       - aws/rhel-9.0-ga-x86_64
       - aws/rhel-8.7-nightly-x86_64
-      - aws/rhel-8.7-nightly-aarch64
       - aws/rhel-9.1-nightly-x86_64
-      - aws/rhel-9.1-nightly-aarch64
       - aws/centos-stream-9-x86_64
+    INTERNAL_NETWORK: ["true"]
+
+.rhel_runners_aarch64: &rhel_runners_aarch64
+    RUNNER:
+      - aws/rhel-8.7-nightly-aarch64
+      - aws/rhel-9.1-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
 
 .fedora_runners: &fedora_runners
@@ -104,10 +108,6 @@ azure:
   after_script:
     - !reference [.tests, after_script]
     - cp /tmp/report.html ./report.html
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
 
 IB-aws:
   stage: test
@@ -115,6 +115,11 @@ IB-aws:
   script:
     - schutzbot/deploy.sh
     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+      - *rhel_runners_aarch64
 
 IB-azure:
   stage: test
@@ -122,6 +127,10 @@ IB-azure:
   script:
     - schutzbot/deploy.sh
     - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
 
 container_main:
   extends: .deps
