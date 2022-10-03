@@ -20,15 +20,13 @@ function greenprint {
 
 function retry {
     local count=0
-    local retries=20
+    local retries=5
     until "$@"; do
         exit=$?
         count=$((count + 1))
         if [[ $count -lt $retries ]]; then
             echo "Retrying command..."
-            # If the test is executed just when a commit is merged to main, we have to wait ~15min
-            # for the rpm to ba available in s3 (teporary solution)
-            sleep 60
+            sleep 5
         else
             echo "Command failed after ${retries} retries. Giving up."
             return $exit
@@ -63,7 +61,8 @@ function get_last_passed_commit {
 
   for commit in ${commit_list}; do
           status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status | jq -cr '.state')
-          if [[ ${status} == "success" ]]; then
+          author=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit} | jq -cr '.commit.author.name')
+          if [[ ${status} == "success" && ! ${author} =~ "dependabot" ]]; then
                   break
           fi
   done
