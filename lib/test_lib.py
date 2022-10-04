@@ -91,7 +91,8 @@ def get_host_last_boot_time(host):
                 break
             time.sleep(5)
 
-        print(host.run('systemd-analyze blame').stdout)
+        print(host.run('systemd-analyze blame').stdout, end='\n-------\n')
+        print(host.run('systemd-analyze').stdout)
 
     boot_time_string = re.findall('Startup finished .* = (.*)s',
                                   systemd_analyze_result.stdout)[0]
@@ -103,6 +104,10 @@ def get_host_last_boot_time(host):
             boot_time_data = boot_time_data.groups()
             minutes = float(boot_time_data[0])
             seconds = float(boot_time_data[1])
+
+            if seconds > 60:
+                # This means it's miliseconds, not seconds
+                seconds /= 1000
 
             boot_time = (minutes * 60) + seconds
         else:

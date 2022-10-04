@@ -23,8 +23,6 @@ class TestsGeneric:
         if instance_data['cloud'] == 'azure':
             max_boot_time_aws = 120
         elif host.system_info.arch == 'aarch64':
-            if float(host.system_info.release) >= 9.1 and host.system_info.distribution == 'rhel':
-                pytest.skip('Skip test on rhel9.1 arm as it is not reliable')
             max_boot_time_aws = 70
         else:
             max_boot_time_aws = 60
