@@ -84,10 +84,14 @@ azure:
       - aws/rhel-8.6-ga-x86_64
       - aws/rhel-9.0-ga-x86_64
       - aws/rhel-8.7-nightly-x86_64
-      - aws/rhel-8.7-nightly-aarch64
       - aws/rhel-9.1-nightly-x86_64
-      - aws/rhel-9.1-nightly-aarch64
       - aws/centos-stream-9-x86_64
+    INTERNAL_NETWORK: ["true"]
+
+.rhel_runners_aarch64: &rhel_runners_aarch64
+    RUNNER:
+      - aws/rhel-8.7-nightly-aarch64
+      - aws/rhel-9.1-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
 
 .fedora_runners: &fedora_runners
@@ -96,7 +100,7 @@ azure:
       - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
 
-.ib_tests:
+.IB_tests:
   extends: .tests
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
@@ -104,17 +108,29 @@ azure:
   after_script:
     - !reference [.tests, after_script]
     - cp /tmp/report.html ./report.html
+
+IB-aws:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
   parallel:
     matrix:
       - *fedora_runners
       - *rhel_runners
+      - *rhel_runners_aarch64
 
-ib-aws:
+IB-azure:
   stage: test
-  extends: .ib_tests
+  extends: .IB_tests
   script:
-    - GITHUB_TOKEN=$GITHUB_TOKEN schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
+    - schutzbot/deploy.sh
+    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
 
 container_main:
   extends: .deps
