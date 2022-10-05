@@ -57,12 +57,12 @@ EOF
 }
 
 function get_last_passed_commit {
-  commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=20  | jq -cr '.[].sha')
+  commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=50  | jq -cr '.[].sha')
 
   for commit in ${commit_list}; do
-          status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status | jq -cr '.state')
-          author=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit} | jq -cr '.commit.author.name')
-          if [[ ${status} == "success" && ! ${author} =~ "dependabot" ]]; then
+          gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
+                          | jq -cr '.statuses[] | select(.context == "Schutzbot on GitLab") | .state')
+          if [[ ${gitlab_status} == "success" ]]; then
                   break
           fi
   done
