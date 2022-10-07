@@ -83,12 +83,6 @@ class TestsAzure:
         BugZilla 1645772
         nouveau,lbm-nouveau,floppy,skx_edac,intel_cstate should be disabled
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         file_pattern = '/lib/modprobe.d/blacklist-*.conf'
 
         blacklist = ['nouveau', 'lbm-nouveau', 'floppy', 'amdgpu']
@@ -207,12 +201,6 @@ class TestsAzure:
         """
         Check file /etc/security/pwquality.conf
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         file_to_check = '/etc/security/pwquality.conf'
         expected_settings = [
             'dcredit = 0',
@@ -255,12 +243,6 @@ class TestsAzure:
         """
         Check that the expected packages are installed.
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         wanted_pkgs = [
             'yum-utils', 'redhat-release-eula', 'cloud-init',
             'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',
