@@ -296,6 +296,19 @@ class TestsGeneric:
             assert 'authorized_keys' in ssh_files, 'authorized_keys is not in /root/.ssh/'
             assert len(ssh_files) == 1, 'there are extra files in /root/.ssh/'
 
+    @pytest.mark.run_on(['all'])
+    def test_no_extra_public_keys(self, host):
+        """
+        Verify there's only one key in /root/.ssh/authorized_keys
+        BugZilla 2127969
+        """
+        with host.sudo():
+            debug = host.file('/root/.ssh/authorized_keys').content_string
+            print(debug)
+
+            authorized_keys_lines = host.check_output('cat /root/.ssh/authorized_keys | wc -l')
+            assert authorized_keys_lines == '1', 'There is more than one public key in authorized_keys'
+
 
 @pytest.mark.order(1)
 class TestsServices:
