@@ -41,7 +41,7 @@ function setup_repo {
   local priority=${3:-10}
 
   local REPO_PATH=${project}/${DISTRO_VERSION}/${ARCH}/${commit}
-  if [[ "${NIGHTLY:=false}" == "true" && "${project}" == "osbuild-composer" ]]; then
+  if [[ "${INTERNAL_NIGHTLY:=false}" == "internal" && "${project}" == "osbuild-composer" ]]; then
     REPO_PATH=nightly/${REPO_PATH}
   fi
 
@@ -57,16 +57,53 @@ EOF
 }
 
 function get_last_passed_commit {
-  commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=50  | jq -cr '.[].sha')
+    # Using 'internal' instead of 'true' so it's easier to see the pipelines in the Gitlab page
+    if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
+        project_id="34771166"
+        base_curl="curl --header PRIVATE-TOKEN:${GITLAB_API_TOKEN}"
 
-  for commit in ${commit_list}; do
-          gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
+        # To get the schedule id use the ../pipeline_schedule endpoint
+        if [[ ${VERSION_ID%.*} == "8" ]]; then
+            # RHEL 8 scheduled pipeline id
+            schedule_id="233735"
+        else
+            # RHEL 9 scheduled pipeline id
+            schedule_id="233736"
+        fi
+
+        # Last executed pipeline ID
+        pipeline_id=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}" | jq '.last_pipeline.id')
+
+        warning_date=$(date -d "- 3 days" +%s)
+        created_at=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.started_at')
+        if [[ $(date -d "${created_at}" +%s) -lt "${warning_date}" ]]; then
+            echo "We are using an old scheduled pipeline id, Please update it"
+            exit 1
+        fi
+
+        statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=50" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
+        for status in ${statuses}; do 
+            if [ "$status" != "success" ]; then 
+                echo "Error in last nightly pipeline"
+                exit 1
+            fi 
+        done
+
+        commit=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.sha')
+        echo $commit
+
+    else
+        commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=50  | jq -cr '.[].sha')
+
+        for commit in ${commit_list}; do
+            gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
                           | jq -cr '.statuses[] | select(.context == "Schutzbot on GitLab") | .state')
-          if [[ ${gitlab_status} == "success" ]]; then
-                  break
-          fi
-  done
-  echo $commit
+            if [[ ${gitlab_status} == "success" ]]; then
+                break
+            fi
+        done
+        echo $commit
+    fi
 }
 
 # Get OS details.
@@ -148,7 +185,7 @@ retry sudo dnf -y install "${PROJECT}-tests"
 # Save osbuild-composer NVR to a file to be used as CI artifact
 rpm -q osbuild-composer > COMPOSER_NVR
 
-if [ "${NIGHTLY:=false}" == "true" ]; then
+if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
     # check if we've installed the osbuild-composer RPM from the nightly tree
     # under test or happen to install a newer version from one of the S3 repositories
     rpm -qi osbuild-composer
@@ -160,7 +197,7 @@ if [ "${NIGHTLY:=false}" == "true" ]; then
     fi
 
     # cross-check the installed RPM against the one under COMPOSE_URL
-    source tools/define-compose-url.sh
+    source schutzbot/define-compose-url.sh
 
     INSTALLED=$(rpm -q --qf "%{name}-%{version}-%{release}.%{arch}.rpm" osbuild-composer)
     RPM_URL="${COMPOSE_URL}/compose/AppStream/${ARCH}/os/Packages/${INSTALLED}"

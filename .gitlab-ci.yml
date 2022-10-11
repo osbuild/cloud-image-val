@@ -1,6 +1,7 @@
 stages:
   - init
   - build
+  - prepare-rhel-internal
   - test
   - finish
 
@@ -41,6 +42,29 @@ container:
     - sudo docker run --privileged --rm tonistiigi/binfmt --install all
     - sudo docker buildx create --use
     - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
+
+Prepare-rhel-internal:
+  stage: prepare-rhel-internal
+  before_script:
+    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
+  script:
+    - schutzbot/prepare-rhel-internal.sh
+  artifacts:
+    paths:
+      - rhel-${RHEL_MAJOR}.json
+      - rhel${RHEL_MAJOR}internal.repo
+      - COMPOSE_ID
+  tags:
+    - terraform
+  parallel:
+    matrix:
+      - RUNNER:
+          # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
+          # artifacts from all previous jobs and the last one wins
+          - aws/rhel-8.7-nightly-x86_64
+          - aws/rhel-9.1-nightly-x86_64
+        INTERNAL_NETWORK: ["true"]
 
 aws:
   stage: test
