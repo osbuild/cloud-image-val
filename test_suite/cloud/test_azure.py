@@ -92,6 +92,8 @@ class TestsAzure:
             assert host.run('lsmod | grep nouveau').exit_status != 0, \
                 'nouveau kernel module should not be loaded'
 
+            print(host.check_output('ls /lib/modprobe.d/'))
+
             files_content = host.check_output(f'cat {file_pattern}')
 
             print(files_content)
