@@ -18,13 +18,11 @@ class TerraformController:
     def create_infra(self):
         cmd_output = os.system(f'terraform init {self.debug_sufix}')
         if cmd_output:
-            print('terraform init command failed, check configuration')
-            exit(1)
+            raise Exception('terraform init command failed, check configuration')
 
         cmd_output = os.system(f'terraform apply -auto-approve {self.debug_sufix}')
         if cmd_output:
-            print('terraform apply command failed, check configuration')
-            exit(1)
+            raise Exception('terraform apply command failed, check configuration')
 
         print('Waiting for the ssh server in the instance(s) to be ready...')
         self.wait_for_all_instances_ssh_up()

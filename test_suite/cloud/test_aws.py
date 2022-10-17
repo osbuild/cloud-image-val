@@ -1,7 +1,5 @@
 import json
 import re
-import time
-
 import pytest
 
 from lib import test_lib
@@ -497,67 +495,6 @@ class TestsAWS:
             package_to_check = 'glibc-devel'
             assert host.package(package_to_check).is_installed, \
                 f'{package_to_check} is not installed'
-
-    @pytest.mark.pub
-    @pytest.mark.run_on(['rhel'])
-    def test_subscription_manager_auto(self, host):
-        """
-        BugZilla 8.4: 1932802, 1905398
-        BugZilla 7.9: 2077086, 2077085
-        """
-
-        expected_config = [
-            'auto_registration = 1',
-            'manage_repos = 0'
-        ]
-
-        with host.sudo():
-            for config in expected_config:
-                assert config in host.check_output('subscription-manager config'), \
-                    f'Expected "{config}" not found in subscription manager configuration'
-
-            assert host.service(
-                'rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
-
-            assert host.run_test('subscription-manager config --rhsmcertd.auto_registration_interval=1'), \
-                'Error while changing auto_registration_interval from 60min to 1min'
-
-            assert host.run_test(
-                'systemctl restart rhsmcertd'), 'Error while restarting rhsmcertd service'
-
-            start_time = time.time()
-            timeout = 360
-            interval = 30
-
-            while True:
-                assert host.file('/var/log/rhsm/rhsmcertd.log').exists
-                assert host.file('/var/log/rhsm/rhsm.log').exists
-                assert host.run_test('subscription-manager identity')
-                assert host.run_test('subscription-manager list --installed')
-
-                subscription_status = host.run(
-                    'subscription-manager status').stdout
-
-                if 'Red Hat Enterprise Linux' in subscription_status or \
-                        'Simple Content Access' in subscription_status:
-                    print('Subscription auto-registration completed successfully')
-
-                    if not host.run_test('insights-client --register'):
-                        pytest.fail(
-                            'insights-client command expected to succeed after auto-registration is complete')
-
-                    break
-
-                end_time = time.time()
-                if end_time - start_time > timeout:
-                    assert host.run_test('insights-client --register'), \
-                        'insights-client could not register successfully'
-                    pytest.fail(
-                        f'Timeout ({timeout}s) while waiting for subscription auto-registration')
-
-                print(
-                    f'Waiting {interval}s for auto-registration to succeed...')
-                time.sleep(interval)
 
     @pytest.mark.run_on(['all'])
     def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
