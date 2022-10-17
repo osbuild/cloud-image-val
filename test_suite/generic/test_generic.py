@@ -65,12 +65,11 @@ class TestsGeneric:
         with host.sudo():
             print(console_lib.print_debug({"expected_content": expected_content,
                                            "/proc/cmdline content": host.file("/proc/cmdline").content_string,
-                                           "kdumpctl showmem": host.check_output("kdumpctl showmem 2>&1")}))
+                                           "kdumpctl showmem": host.check_output("kdumpctl showmem 2>&1"),
+                                           "kexec-tools version": host.package("kexec-tools").version}))
 
             assert host.file('/proc/cmdline').contains(expected_content), \
                 'crashkernel must be enabled'
-
-            # {expected_content}\n - {host.file("/proc/cmdline").content_string}\n - {host.check_output("kdumpctl showmem 2>&1")}
 
     @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host, instance_data):
