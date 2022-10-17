@@ -1,4 +1,6 @@
 import os
+import time
+
 import pytest
 
 from lib import test_lib
@@ -393,6 +395,88 @@ class TestsServices:
                 'There are failing services'
 
 
+@pytest.mark.pub
+@pytest.mark.run_on(['rhel'])
+class TestsSubscriptionManager:
+    def test_subscription_manager_auto(self, host):
+        """
+        BugZilla 8.4: 1932802, 1905398
+        BugZilla 7.9: 2077086, 2077085
+        """
+
+        expected_config = [
+            'auto_registration = 1',
+            'manage_repos = 0'
+        ]
+
+        with host.sudo():
+            for config in expected_config:
+                assert config in host.check_output('subscription-manager config'), \
+                    f'Expected "{config}" not found in subscription manager configuration'
+
+            assert host.service(
+                'rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
+
+            assert host.run_test('subscription-manager config --rhsmcertd.auto_registration_interval=1'), \
+                'Error while changing auto_registration_interval from 60min to 1min'
+
+            assert host.run_test(
+                'systemctl restart rhsmcertd'), 'Error while restarting rhsmcertd service'
+
+            start_time = time.time()
+            timeout = 360
+            interval = 30
+
+            while True:
+                assert host.file('/var/log/rhsm/rhsmcertd.log').exists
+                assert host.file('/var/log/rhsm/rhsm.log').exists
+                assert host.run_test('subscription-manager identity')
+                assert host.run_test('subscription-manager list --installed')
+
+                subscription_status = host.run(
+                    'subscription-manager status').stdout
+
+                if 'Red Hat Enterprise Linux' in subscription_status or \
+                        'Simple Content Access' in subscription_status:
+                    print('Subscription auto-registration completed successfully')
+
+                    if not host.run_test('insights-client --register'):
+                        pytest.fail(
+                            'insights-client command expected to succeed after auto-registration is complete')
+
+                    break
+
+                end_time = time.time()
+                if end_time - start_time > timeout:
+                    assert host.run_test('insights-client --register'), \
+                        'insights-client could not register successfully'
+                    pytest.fail(
+                        f'Timeout ({timeout}s) while waiting for subscription auto-registration')
+
+                print(f'Waiting {interval}s for auto-registration to succeed...')
+                time.sleep(interval)
+
+    def test_subscription_manager_auto_config(self, host):
+        """
+        BugZilla: 1932802, 1905398
+        Verify auto_registration is enabled in the image
+        """
+        expected_config = [
+            'auto_registration = 1',
+            'manage_repos = 0'
+        ]
+
+        file_to_check = '/etc/rhsm/rhsm.conf'
+
+        with host.sudo():
+            for item in expected_config:
+                assert host.file(file_to_check).contains(item), \
+                    f'{file_to_check} has unexpected content'
+
+            assert host.service('rhsmcertd').is_enabled, \
+                'rhsmcertd service is expected to be enabled'
+
+
 @pytest.mark.order(1)
 class TestsCloudInit:
     @pytest.mark.run_on(['all'])
@@ -419,6 +503,26 @@ class TestsCloudInit:
         """
         assert not host.file('/etc/cloud/cloud.cfg').contains('wheel'), \
             'wheel should not be configured as default_user group'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_cloud_cfg(self, host):
+        """
+        Verify file /etc/cloud/cloud.cfg is not changed
+        """
+        package_to_check = 'cloud-init'
+
+        with host.sudo():
+            assert host.run_test(f'rpm -V {package_to_check}'), \
+                f'There should not be changes in {package_to_check} package'
+
+    @pytest.mark.run_on(['rhel9.0'])
+    def test_cloud_cfg_netdev_rhel9(self, host):
+        """
+        Verify _netdev is in cloud.cfg
+        """
+        with host.sudo():
+            assert host.file('/etc/cloud/cloud.cfg').contains('_netdev'), \
+                '_netdev is expected in cloud.cfg for RHEL 9.x'
 
 
 @pytest.mark.pub
@@ -460,6 +564,22 @@ class TestsYum:
                 host.run_test(r"rpm -q --queryformat '%{NAME}' zsh") and \
                 host.run_test('rpm -e zsh'), \
                 'yum packages installation failed'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_yum_conf(self, host):
+        """
+        Verify contents of /etc/yum.conf
+        """
+        product_major_version = int(float(host.system_info.release))
+        if product_major_version < 8:
+            local_file = 'data/generic/yum_rhel7'
+        else:
+            local_file = 'data/generic/yum'
+
+        file_to_check = '/etc/yum.conf'
+
+        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+            f'{file_to_check} has unexpected content'
 
 
 @pytest.mark.order(1)
@@ -710,8 +830,7 @@ class TestsKdump:
                 ]
             }
             if rhel_version >= 8.7:
-                conf['sysconfig_kdump'][
-                    2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
+                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb ignition.firstboot"'
             return conf
         else:
             conf = {
@@ -732,8 +851,7 @@ class TestsKdump:
                 ]
             }
             if rhel_version >= 9.1:
-                conf['sysconfig_kdump'][
-                    2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
+                conf['sysconfig_kdump'][2] = 'KDUMP_COMMANDLINE_REMOVE="hugepages hugepagesz slub_debug quiet log_buf_len swiotlb cma hugetlb_cma ignition.firstboot"'
             return conf
 
     @pytest.mark.run_on(['rhel'])

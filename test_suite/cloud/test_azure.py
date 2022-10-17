@@ -305,3 +305,37 @@ class TestsAzure:
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
             f'{file_to_check} has unexpected content'
+
+    @pytest.mark.pub
+    @pytest.mark.run_on(['rhel'])
+    def test_rhui_certificate_date(self, host):
+        """
+        Verify /etc/pki/rhui/product/content.crt exists
+        Check end time
+        """
+        cert_file = '/etc/pki/rhui/product/content.crt'
+
+        with host.sudo():
+            result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
+
+        print(result.stdout)
+
+        assert result.rc == 0, 'The certificate appears to have expired. Check the test case output for more details.'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_cmdline_console(self, host):
+        """
+        Verify that console=ttyS0 earlyprintk=ttyS0 rootdelay=300 are in cmdline
+        """
+        file_to_check = '/proc/cmdline'
+
+        expected_config = [
+            'console=ttyS0',
+            'earlyprintk=ttyS0',
+            'rootdelay=300'
+        ]
+
+        with host.sudo():
+            for item in expected_config:
+                assert host.file(file_to_check).contains(item), \
+                    f'{item} was expected in {file_to_check}'
