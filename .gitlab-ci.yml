@@ -93,9 +93,9 @@ azure:
     - |
       sudo docker run \
       -a stdout -a stderr \
-      -e ARM_CLIENT_ID="${V2_AZURE_CLIENT_ID}" \
-      -e ARM_CLIENT_SECRET="${V2_AZURE_CLIENT_SECRET}" \
-      -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}" \
+      -e ARM_CLIENT_ID="${CLOUDX_AZURE_CLIENT_ID}" \
+      -e ARM_CLIENT_SECRET="${CLOUDX_AZURE_CLIENT_SECRET}" \
+      -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID_MARKETPLACE}" \
       -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
       -v ${PWD}:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
