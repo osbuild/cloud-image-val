@@ -18,6 +18,7 @@ class TestsGeneric:
             assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
                 'There should not be any avc denials (selinux)'
 
+    @pytest.mark.skip("To be analize by CLOUDX-230")
     @pytest.mark.run_on(['all'])
     def test_first_boot_time(self, host, instance_data):
         if instance_data['cloud'] == 'azure':
@@ -701,6 +702,7 @@ class TestsKdump:
                 'Kdump is not operational'
 
 
+@pytest.mark.skip("To be analize by CLOUDX-230")
 @pytest.mark.wait(120)
 class TestsReboot:
     hostname_before_reboot_file = '/var/hostname_before_reboot'
