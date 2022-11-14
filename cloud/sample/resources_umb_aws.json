@@ -1,0 +1,929 @@
+{
+  "provider": "aws",
+  "instances": [
+    {
+      "ami": "ami-0a291b28b6d4b87fc",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-034829a8dd8d482a7",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0a93927ce62a1ec3d",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-08c7142de930740b7",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0191629f596122ded",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a5163cc991faa2a5",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0605a17676cbf0cb8",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0c08fd85d8f775888",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-096b2a803e2a485c6",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0a4c7461b5b624157",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-061e89a9fb7441bd7",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0cd6df7b85d755ddb",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-01e301d1d766b276b",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0821323c71bdeb2c8",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0ab34dbf61b943820",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-033c5dbd7cbda7da5",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-020a62d120592fb3a",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0914ae55f611e38ce",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0666b1467457e51b6",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0ab5854d2265d659b",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0f507956c406f3877",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0570ca5c7780d44ed",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0a976ae711753b516",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0f8bd8576bf0508c9",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0d17cbda1927ff791",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-008b013085d06e546",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0e5197b8826210fb8",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0bb885856706a7182",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-00955a4c8096087c2",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-019b7ad7b8c9900f6",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0ce95171e0ff18e00",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0b4ee18dc73d90a7b",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0de94fe0534929aa4",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-04138f28a0c7b9e80",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-011b3375b982bfb8f",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0724b7610824e1b68",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-042e19ea9fe07187e",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0a394962e9bed5e31",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-01672b7eec700eb97",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-01a073710a948b303",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-09daab4330856e522",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0491144b2bd70199d",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0943bffd83ba16de7",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0ce3ae56bcce94ec6",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a86c88472539f597",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0359bd83a7f68bdc5",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0cff069aab0d2130e",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-048f0c51ce819fda5",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0dd059b1795cf8642",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a9cea9700aa4ef5d",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-017729ebb453ebb40",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a75b8a8f1654d80a",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0ea4280454a7fb36f",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-020e0505875758985",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-08c42a0dcce355f00",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a8c579c18e899f24",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-00bde60d13d853eeb",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-013cb5efbbd35c800",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-07214a313d40965a3",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-09197a21ee18afa30",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-062943b116308eb26",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-017cb5e8a43ccf0b2",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-08b92285696c867a1",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0c7968f067c5f1998",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0e5a7379c1303b397",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0256846a5586ff488",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0ffd4d4c08fb4fcda",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0bb2e5228692a3078",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-083bcce1fa37d5238",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0462928a0ba58388b",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0482606b8049cdc5d",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0845585fc213b86b5",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0e38980f2fba45eac",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-08d480ab536e247fb",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0bd7418456aaf76fb",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-023258103f696058c",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0e4ddb6d27122f31a",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0e75e2ebd6816fca5",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-080d9ab44c34d3a06",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-054e5134643614660",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0996d922e24cdfb22",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0d7deee47c32eb36d",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0fec1b2c8353dc0bc",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0d6ee1f9def547cdc",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "sa-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-02a67cb5318bc694a",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0991d0805049ea1c6",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0afb8028c0e050bf0",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-08f9962d25b40516a",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-056fb88ff1be985b1",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-041a502efa9f2906f",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0f9b525e450ac1228",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-097018550026e4dd1",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-067849fbd6349579b",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-09bdf2c87aa1f4657",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a25e82cbfe629980",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0dd3d7602af6b7343",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-southeast-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0482d360b75727bfd",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0cc08bd0e29a9af4b",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0b1f9107ca43b26eb",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "eu-central-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-037500d2c25f2efc7",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-094fba69fbbf5b1af",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0be9515573a59f685",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0ec4b8f6b37ef9a6f",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-096378ce56876dc8b",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-000fbdd8e1f14b9d9",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-06237bcdbd772d97e",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0866e344dde8114aa",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-3",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-012d12537dc2eb273",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-00e02d331459636b6",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0f5b9c5759eda22b8",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "us-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0dc59081aa519f50f",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0774fbf54961082a9",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "us-west-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0bbe3332d42aed3ad",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "us-east-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-02581602697986277",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0d04055bda07ba680",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0bca74fac45501182",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-north-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0cbf624f97b0450ef",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-08924a62ec90c36f8",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-039499bf77a0a06f5",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ca-central-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0a6026fc14c7fb3d3",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "eu-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0e70bed49eb7dd654",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-094fb901c18d8d27e",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0d1b8b45c0148df82",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Access2-GP2",
+      "region": "ap-northeast-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-01bd826a47b9bb964",
+      "name": "RHEL_HA-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "ap-east-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-028e59676d69c658e",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "me-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-04999295d3f8cb999",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-southeast-2",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-02df3a1ab5a60ee09",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "eu-west-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-085d3254048f8cf76",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "ap-northeast-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0bff945c3ce0d2f3a",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Hourly2-GP2",
+      "region": "us-west-2",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0f5ca1d368d03d702",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "ap-northeast-3",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    },
+    {
+      "ami": "ami-0f42aea863c877506",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Access2-GP2",
+      "region": "af-south-1",
+      "username": "ec2-user",
+      "instance_type": "t3.medium"
+    },
+    {
+      "ami": "ami-0fff8b74a9ba52b7e",
+      "name": "RHEL-8.7.0_HVM-20221101-arm64-0-Hourly2-GP2",
+      "region": "eu-south-1",
+      "username": "ec2-user",
+      "instance_type": "a1.large"
+    }
+  ]
+}
