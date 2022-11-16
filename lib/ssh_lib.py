@@ -49,6 +49,8 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
             time.sleep(max(0, (1 - time_diff_seconds)))
 
     print(f'Timeout while waiting for {host_address} to be SSH-ready ({timeout_seconds} seconds).')
+    print('AWS: Check if this account has the appropiate inbound rules for this region')
+    exit(1)
 
 
 def copy_file_to_host(host, local_file_path, destination_path):
