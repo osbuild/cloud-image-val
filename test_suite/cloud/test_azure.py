@@ -219,11 +219,13 @@ class TestsAzure:
             expected_settings[3] = 'minlen = 8'
 
         with host.sudo():
-            debug = {"libpwquality version": host.package("libpwquality").version,
-            "pwquality.conf": host.file(file_to_check).content_string}
+            debug = {'libpwquality version': host.package('libpwquality').version,
+                     'pwquality.conf file content': host.file(file_to_check).content_string}
             for setting in expected_settings:
                 assert host.file(file_to_check).contains(f'{setting}'), \
-                    f'Expected setting "{setting}" not found in "{file_to_check}" {console_lib.print_debug(debug)}'
+                    f'Expected setting "{setting}" not found in "{file_to_check}"'
+
+        print(console_lib.print_debug(debug))
 
     @pytest.mark.run_on(['all'])
     def test_services_running(self, host, instance_data):
