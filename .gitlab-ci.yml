@@ -96,7 +96,7 @@ azure:
       -e ARM_CLIENT_ID="${CLOUDX_AZURE_CLIENT_ID}" \
       -e ARM_CLIENT_SECRET="${CLOUDX_AZURE_CLIENT_SECRET}" \
       -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID_MARKETPLACE}" \
-      -e ARM_TENANT_ID="${AZURE_TENANT_ID}" \
+      -e ARM_TENANT_ID="${AZURE_TENANT_ID_MARKETPLACE}" \
       -v ${PWD}:/tmp:Z \
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
