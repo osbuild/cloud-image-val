@@ -83,6 +83,23 @@ aws:
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
 
+aws-gov:
+  stage: test
+  extends: .tests
+  rules:
+    - if: $CI_COMMIT_REF_SLUG != "main"
+  script:
+    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - |
+      sudo docker run \
+      -a stdout -a stderr \
+      -e AWS_ACCESS_KEY_ID="${AWS_GOV_ACCESS_KEY_ID}" \
+      -e AWS_SECRET_ACCESS_KEY="${AWS_GOV_SECRET_ACCESS_KEY}" \
+      -e AWS_REGION="${AWS_GOV_REGION}" \
+      -v ${PWD}:/tmp:Z \
+      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+      python cloud-image-val.py -r cloud/sample/resources_aws_gov_marketplace.json -d -p -o /tmp/report.xml
+
 azure:
   stage: test
   extends: .tests
