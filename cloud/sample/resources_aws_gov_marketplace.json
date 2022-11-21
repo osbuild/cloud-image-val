@@ -16,11 +16,11 @@
             "name": "RHEL-8.5.0_HVM-20220303-x86_64-0-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497"
         },
         {
-            "ami": "ami-04fbb6451cb4e1430",
+            "ami": "ami-0d7c4b6d70bd387e7",
             "region": "us-gov-east-1",
             "instance_type": "t3.2xlarge",
             "username": "ec2-user",
-            "name": "RHEL-9.1.0_HVM-20221101-x86_64-2"
+            "name": "RHEL-9.1.0_HVM-20221101-x86_64-2-Hourly2-GP2"
         }
     ]
 }
