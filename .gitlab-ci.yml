@@ -155,40 +155,40 @@ azure:
       - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
 
-.IB_tests:
-  extends: .tests
-  before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
-    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-  after_script:
-    - !reference [.tests, after_script]
-    - cp /tmp/report.html ./report.html
+#.IB_tests:
+#  extends: .tests
+#  before_script:
+#    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+#    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
+#  after_script:
+#    - !reference [.tests, after_script]
+#    - cp /tmp/report.html ./report.html
 
-IB-aws:
-  stage: test
-  extends: .IB_tests
-  script:
-    - schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
-      - *rhel_runners_aarch64
-      - *rhel_runners_x86_64_internal_nightlies
-      - *rhel_runners_aarch64_internal_nightlies
+#IB-aws:
+#  stage: test
+#  extends: .IB_tests
+#  script:
+#    - schutzbot/deploy.sh
+#    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
+#  parallel:
+#    matrix:
+#      - *fedora_runners
+#      - *rhel_runners
+#      - *rhel_runners_aarch64
+#      - *rhel_runners_x86_64_internal_nightlies
+#      - *rhel_runners_aarch64_internal_nightlies
 
-IB-azure:
-  stage: test
-  extends: .IB_tests
-  script:
-    - schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
-      - *rhel_runners_x86_64_internal_nightlies
+#IB-azure:
+#  stage: test
+#  extends: .IB_tests
+#  script:
+#    - schutzbot/deploy.sh
+#    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
+#  parallel:
+#    matrix:
+#      - *fedora_runners
+#      - *rhel_runners
+#      - *rhel_runners_x86_64_internal_nightlies
 
 container_main:
   extends: .deps
