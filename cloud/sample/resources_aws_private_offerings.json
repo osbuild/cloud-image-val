@@ -1,0 +1,68 @@
+{
+  "provider": "aws",
+  "instances": [
+    {
+      "ami": "ami-0141306f2af067f68",
+      "name": "RHEL-8.6.0_HVM-20220503-x86_64-2-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0f641b3b11f5f1efc",
+      "name": "RHEL-7.9_HVM-20220222-x86_64-2-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-02e9175c79d143d91",
+      "name": "RHEL-7.9_HVM-20220512-x86_64-1-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0076cf7d1ae422823",
+      "name": "RHEL-9.0.0_HVM-20220513-x86_64-0-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0f174ef91728bed31",
+      "name": "RHEL-8.7.0_HVM-20221101-x86_64-0-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0f4f0dd05fb6cf5c6",
+      "name": "RHEL-7.9_HVM-20220222-x86_64-1-GP2-Marketplace-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-04fbb6451cb4e1430",
+      "name": "RHEL-9.1.0_HVM-20221101-x86_64-2-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0c3d0767755a72716",
+      "name": "RHEL-7.9_HVM-20221027-x86_64-0-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    },
+    {
+      "ami": "ami-0a8e798d1f87445f9",
+      "name": "RHEL-8.5.0_HVM-20220303-x86_64-0-Marketplace-GP2-6b2625ac-e9ca-4d9a-a34f-63dc75a4d497",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user"
+    }
+  ]
+}
