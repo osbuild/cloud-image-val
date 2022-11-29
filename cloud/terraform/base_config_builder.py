@@ -12,7 +12,7 @@ class BaseConfigBuilder:
     }
 
     resource_name_prefix = 'civ'
-    ci_tag_key = 'gitlab-ci-test'
+    ci_tag_key = 'civ-ci'
     ci_test_value = 'true'
 
     def __init__(self, resources_dict):
