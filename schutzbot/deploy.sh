@@ -81,7 +81,7 @@ function get_last_passed_commit {
             exit 1
         fi
 
-        statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=50" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
+        statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
         for status in ${statuses}; do 
             if [ "$status" != "success" ]; then 
                 echo "Error in last nightly pipeline"
@@ -93,7 +93,7 @@ function get_last_passed_commit {
         echo $commit
 
     else
-        commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=50  | jq -cr '.[].sha')
+        commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100  | jq -cr '.[].sha')
 
         for commit in ${commit_list}; do
             gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
