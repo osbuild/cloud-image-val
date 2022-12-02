@@ -1,22 +1,12 @@
 {
-  "subscription_id": "a5192c85-2bff-4433-ac37-69aad5fcc86a",
+  "subscription_id": "1be3e85f-1b24-400e-87ca-daec1140cc88",
   "resource_group": "cloud-experience",
   "provider": "azure",
   "instances": [
     {
-      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/7.9/rhel-azure-7.9-20220803.sp.1.x86_64.vhd",
+      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/7.9/rhel-azure-7.9-20220112.sp.1.x86_64.vhd",
       "location": "East US",
-      "name": "sample-rhel7.9.14-image-from-vhd"
-    },
-    {
-      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/8.6/rhel-azure-8.6-20220531.sp.2.x86_64.vhd",
-      "location": "East US",
-      "name": "sample-rhel8.6-image-from-vhd"
-    },
-    {
-      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/9.0/rhel-azure-9.0-20220531.sp.2.x86_64.vhd",
-      "location": "East US",
-      "name": "sample-rhel9.0-image-from-vhd"
+      "name": "image-from-vhd"
     }
   ]
 }
