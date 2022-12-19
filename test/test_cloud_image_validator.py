@@ -14,7 +14,10 @@ class TestCloudImageValidator:
     test_markers = 'pub'
     test_parallel = True
     test_debug = True
-    test_instances = ['test-instance-1', 'test-instance-2']
+    test_instances = {
+        'instance-1': {'public_dns': 'value_1', 'username': 'value_2'},
+        'instance-2': {'public_dns': 'value_1', 'username': 'value_2'}
+    }
 
     @pytest.fixture
     def validator(self):
@@ -39,6 +42,8 @@ class TestCloudImageValidator:
         mock_deploy_infrastructure = mocker.MagicMock(return_value=self.test_instances)
         validator.deploy_infrastructure = mock_deploy_infrastructure
 
+        mock_add_ssh_keys_to_instances = mocker.patch('lib.ssh_lib.add_ssh_keys_to_instances')
+
         mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
@@ -52,6 +57,7 @@ class TestCloudImageValidator:
         assert result == exit_code_test
         assert mock_print_divider.call_args_list == [
             mocker.call('Deploying infrastructure'),
+            mocker.call('Preparing environment'),
             mocker.call('Running tests'),
             mocker.call('Cleanup')
         ]
@@ -59,6 +65,7 @@ class TestCloudImageValidator:
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
         mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
+        mock_add_ssh_keys_to_instances.assert_called_once_with(self.test_instances)
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):
