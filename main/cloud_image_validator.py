@@ -47,6 +47,9 @@ class CloudImageValidator:
             console_lib.print_divider('Deploying infrastructure')
             instances = self.deploy_infrastructure()
 
+            console_lib.print_divider('Preparing environment')
+            ssh_lib.add_ssh_keys_to_instances(instances)
+
             console_lib.print_divider('Running tests')
             wait_status = self.run_tests_in_all_instances(instances)
             exit_code = wait_status >> 8
