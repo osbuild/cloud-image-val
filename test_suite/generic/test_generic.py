@@ -565,22 +565,6 @@ class TestsYum:
                 host.run_test('rpm -e zsh'), \
                 'yum packages installation failed'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_yum_conf(self, host):
-        """
-        Verify contents of /etc/yum.conf
-        """
-        product_major_version = int(float(host.system_info.release))
-        if product_major_version < 8:
-            local_file = 'data/generic/yum_rhel7'
-        else:
-            local_file = 'data/generic/yum'
-
-        file_to_check = '/etc/yum.conf'
-
-        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-            f'{file_to_check} has unexpected content'
-
 
 @pytest.mark.order(1)
 class TestsNetworking:

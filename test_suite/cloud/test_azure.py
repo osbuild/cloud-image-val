@@ -180,6 +180,9 @@ class TestsAzure:
         """
         sku = instance_data_azure_web['compute']['storageProfile']['imageReference']['sku']
 
+        if not sku:
+            pytest.skip('SKU is not present in image metadata. This test will be skipped.')
+
         with host.sudo():
             is_efi = host.run('dmesg | grep -w EFI').exit_status == 0
 
@@ -314,6 +317,9 @@ class TestsAzure:
         Check end time
         """
         cert_file = '/etc/pki/rhui/product/content.crt'
+
+        if test_lib.is_rhel_sap(host):
+            cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
 
         with host.sudo():
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
