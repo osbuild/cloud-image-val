@@ -11,7 +11,7 @@ def is_rhel_atomic_host(host):
 
 
 def is_rhel_sap(host):
-    return __test_keyword_in_repositories(host, 'sap-bundle')
+    return __test_keyword_in_repositories(host, 'sap-')
 
 
 def is_rhel_high_availability(host):
