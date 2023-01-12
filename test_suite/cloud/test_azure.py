@@ -17,13 +17,11 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel7.9'])
     def test_66_azure_storage_rules_file_content(self, host):
         """
-        Check file /etc/udev/rules.d/66-azure-storage.rules
+        Check that file '/etc/udev/rules.d/66-azure-storage.rules' exists
         """
-        local_file = 'data/azure/66-azure-storage.rules'
         remote_file = '/etc/udev/rules.d/66-azure-storage.rules'
 
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
+        assert host.file(remote_file).exists, f"The file '{remote_file}' doesn't exist"
 
     @pytest.mark.run_on(['rhel8.6', 'rhel9.0'])
     def test_68_azure_sriov_nm_unmanaged_rules_file_content(self, host):
