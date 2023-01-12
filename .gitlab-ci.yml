@@ -173,6 +173,17 @@ IB-azure:
       - *rhel_runners
       - *rhel_runners_x86_64_internal_nightlies
 
+SCHEDULED_CLOUD_CLEANER:
+  stage: finish
+  tags:
+    - terraform
+  variables:
+    RUNNER: aws/centos-stream-9-x86_64
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CLEANUP == "true"'
+  script:
+    - schutzbot/cloud_cleaner.sh
+
 container_main:
   extends: .deps
   stage: finish
