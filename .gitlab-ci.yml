@@ -70,8 +70,8 @@ Prepare-rhel-internal:
       - RUNNER:
           # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
           # artifacts from all previous jobs and the last one wins
-          - aws/rhel-8.7-nightly-x86_64
-          - aws/rhel-9.1-nightly-x86_64
+          - aws/rhel-8.8-nightly-x86_64
+          - aws/rhel-9.2-nightly-x86_64
         INTERNAL_NETWORK: ["true"]
 
 aws:
@@ -113,36 +113,35 @@ azure:
     RUNNER:
       - aws/centos-stream-8-x86_64
       - aws/rhel-8.4-ga-x86_64
-      - aws/rhel-8.6-ga-x86_64
-      - aws/rhel-9.0-ga-x86_64
-      - aws/rhel-8.7-nightly-x86_64
-      - aws/rhel-9.1-nightly-x86_64
+      - aws/rhel-8.7-ga-x86_64
+      - aws/rhel-9.1-ga-x86_64
+      - aws/rhel-8.8-nightly-x86_64
+      - aws/rhel-9.2-nightly-x86_64
       - aws/centos-stream-9-x86_64
     INTERNAL_NETWORK: ["true"]
 
 .rhel_runners_aarch64: &rhel_runners_aarch64
     RUNNER:
-      - aws/rhel-8.7-nightly-aarch64
-      - aws/rhel-9.1-nightly-aarch64
+      - aws/rhel-8.8-nightly-aarch64
+      - aws/rhel-9.2-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
     RUNNER:
-      - aws/rhel-8.7-nightly-x86_64
-      - aws/rhel-9.1-nightly-x86_64
+      - aws/rhel-8.8-nightly-x86_64
+      - aws/rhel-9.2-nightly-x86_64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
     RUNNER:
-      - aws/rhel-8.7-nightly-aarch64
-      - aws/rhel-9.1-nightly-aarch64
+      - aws/rhel-8.8-nightly-aarch64
+      - aws/rhel-9.2-nightly-aarch64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
 
 .fedora_runners: &fedora_runners
     RUNNER:
-      - aws/fedora-35-x86_64
       - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
 
