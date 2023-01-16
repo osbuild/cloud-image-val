@@ -153,19 +153,25 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    def test_nouveau_is_blacklisted(self, host):
+    @pytest.mark.exclude_on(['rhel7.9'])
+    def test_blocklist(self, host):
         """
-        Check that nouveau is disabled.
-        BugZilla 1645772
+        Check that a list of modules are disabled - not loaded.
         """
+        modules = ['nouveau', 'amdgpu']
+        blacklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
+        files_to_check = [blacklist_conf.format(module=modules[x]) for x in range(len(modules))]
+        blocklist_conf_strings = ['blacklist ' + x for x in modules]
+
         with host.sudo():
-            assert host.file('/proc/cmdline').contains('rd.blacklist=nouveau'), \
-                'nouveau must be blacklisted in cmdline'
+            for module in modules:
+                assert not host.run(f'lsmod | grep {module}').stdout,\
+                    f"{module} shouldn't be loaded"
 
-            file_to_check = '/usr/lib/modprobe.d/blacklist-nouveau.conf'
-
-            assert host.file(file_to_check).contains('blacklist nouveau'), \
-                f'nouveau is not blacklisted in "{file_to_check}"'
+            for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
+                assert host.file(file).exists, f'file "{file}" does not exist'
+                assert host.file(file).contains(str_to_check), \
+                    f'{str_to_check} is not blacklisted in "{file}"'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
