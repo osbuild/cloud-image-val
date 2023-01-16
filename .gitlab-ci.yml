@@ -14,7 +14,7 @@ stages:
     - sudo systemctl start docker
     - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
   variables:
-    RUNNER: aws/fedora-35-x86_64
+    RUNNER: aws/fedora-37-x86_64
     INTERNAL_NETWORK: "true"
     QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val-test
   tags:
@@ -182,8 +182,7 @@ IB-azure:
 
 SCHEDULED_CLOUD_CLEANER:
   stage: finish
-  tags:
-    - terraform
+  extends: .deps
   variables:
     RUNNER: aws/centos-stream-9-x86_64
   rules:
@@ -195,7 +194,7 @@ container_main:
   extends: .deps
   stage: finish
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $CI_COMMIT_REF_SLUG == "main"'
+    - if: '$CI_PIPELINE_SOURCE != "schedule" && $CI_COMMIT_REF_SLUG == "main"'
   script:
     - sudo dnf install skopeo -y
     - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
