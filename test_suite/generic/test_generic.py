@@ -331,7 +331,7 @@ class TestsGeneric:
                     f'{file_to_check} should not exist in RHEL-8 and above'
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(3)
 class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
