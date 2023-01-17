@@ -27,6 +27,7 @@ stages:
   after_script:
     - schutzbot/update_github_status.sh update || true
     - echo https://redhat.gitlab.io/-/services/products/image-builder/ci/cloud-image-val-ci/-/jobs/${CI_JOB_ID}/artifacts/report.html
+  retry: 1
   artifacts:
     paths:
       - report.html
