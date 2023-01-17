@@ -1,6 +1,7 @@
 import os
 import time
 import sshconf
+import paramiko
 
 
 def generate_ssh_key_pair(ssh_key_path):
@@ -66,3 +67,34 @@ def copy_file_to_host(host, local_file_path, destination_path):
 
     sftp.put(local_file_path, destination_path)
     sftp.close()
+
+
+def add_ssh_keys_to_instances(instances):
+    """
+    Adding ssh public keys of team members to all instances authorized_keys.
+    :param instances: Has all the instances needed information - 'public_dns', 'username' etc..
+    :return: None
+    """
+    authorized_keys = "~/.ssh/authorized_keys"
+    ssh_identity_file = '/tmp/ssh_key'
+    team_ssh_keys_file = 'schutzbot/team_ssh_keys.txt'
+    ssh_client = get_ssh_client()
+
+    for instance in instances.values():
+        ssh_client.connect(
+            hostname=instance['public_dns'],
+            username=instance['username'],
+            key_filename=ssh_identity_file
+        )
+
+        with open(team_ssh_keys_file, 'r') as f:
+            team_ssh_keys = f.read()
+            cmd = f"echo '{team_ssh_keys}' >> {authorized_keys}"
+            ssh_client.exec_command(cmd)
+        ssh_client.close()
+
+
+def get_ssh_client():
+    ssh_client = paramiko.client.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    return ssh_client
