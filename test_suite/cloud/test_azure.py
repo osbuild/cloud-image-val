@@ -81,12 +81,6 @@ class TestsAzure:
         BugZilla 1645772
         nouveau,lbm-nouveau,floppy,skx_edac,intel_cstate should be disabled
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         file_pattern = '/lib/modprobe.d/blacklist-*.conf'
 
         blacklist = ['nouveau', 'lbm-nouveau', 'floppy', 'amdgpu']
@@ -97,6 +91,8 @@ class TestsAzure:
         with host.sudo():
             assert host.run('lsmod | grep nouveau').exit_status != 0, \
                 'nouveau kernel module should not be loaded'
+
+            print(host.check_output('ls /lib/modprobe.d/'))
 
             files_content = host.check_output(f'cat {file_pattern}')
 
@@ -208,12 +204,6 @@ class TestsAzure:
         """
         Check file /etc/security/pwquality.conf
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         file_to_check = '/etc/security/pwquality.conf'
         expected_settings = [
             'dcredit = 0',
@@ -229,10 +219,13 @@ class TestsAzure:
             expected_settings[3] = 'minlen = 8'
 
         with host.sudo():
-            debug = {"pwquality.conf": host.file(file_to_check).content_string}
+            debug = {'libpwquality version': host.package('libpwquality').version,
+                     'pwquality.conf file content': host.file(file_to_check).content_string}
             for setting in expected_settings:
                 assert host.file(file_to_check).contains(f'{setting}'), \
-                    f'Expected setting "{setting}" not found in "{file_to_check}" {console_lib.print_debug(debug)}'
+                    f'Expected setting "{setting}" not found in "{file_to_check}"'
+
+        print(console_lib.print_debug(debug))
 
     @pytest.mark.run_on(['all'])
     def test_services_running(self, host, instance_data):
@@ -256,12 +249,6 @@ class TestsAzure:
         """
         Check that the expected packages are installed.
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         wanted_pkgs = [
             'yum-utils', 'redhat-release-eula', 'cloud-init',
             'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',

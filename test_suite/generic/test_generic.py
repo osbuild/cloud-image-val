@@ -56,13 +56,6 @@ class TestsGeneric:
         """
         product_release_version = float(host.system_info.release)
 
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (
-                product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         if product_release_version < 9.0:
             expected_content = 'crashkernel=auto'
         else:
@@ -72,12 +65,11 @@ class TestsGeneric:
         with host.sudo():
             print(console_lib.print_debug({"expected_content": expected_content,
                                            "/proc/cmdline content": host.file("/proc/cmdline").content_string,
-                                           "kdumpctl showmem": host.check_output("kdumpctl showmem 2>&1")}))
+                                           "kdumpctl showmem": host.check_output("kdumpctl showmem 2>&1"),
+                                           "kexec-tools version": host.package("kexec-tools").version}))
 
             assert host.file('/proc/cmdline').contains(expected_content), \
                 'crashkernel must be enabled'
-
-            # {expected_content}\n - {host.file("/proc/cmdline").content_string}\n - {host.check_output("kdumpctl showmem 2>&1")}
 
     @pytest.mark.run_on(['all'])
     def test_cpu_flags_are_correct(self, host, instance_data):
@@ -339,7 +331,7 @@ class TestsGeneric:
                     f'{file_to_check} should not exist in RHEL-8 and above'
 
 
-@pytest.mark.order(1)
+@pytest.mark.order(3)
 class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
@@ -600,13 +592,6 @@ class TestsNetworking:
         BugZilla 1822853
         >=8.5: check NetworkManager-cloud-setup is installed and nm-cloud-setup.timer is setup for Azure and enabled
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (
-                product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         cloud_setup_base_path = '/usr/lib/systemd/system/nm-cloud-setup.service.d/'
         files_and_configs_by_cloud = {
             'aws': {
@@ -829,13 +814,6 @@ class TestsKdump:
         """
         Verify that kdump is enabled
         """
-        # ---- To be removed by CLOUDX-211 ----
-        product_release_version = float(host.system_info.release)
-        if host.system_info.distribution == 'rhel' and (
-                product_release_version == 9.1 or product_release_version == 8.7):
-            pytest.skip("Temporarily skip test due to failing nightlies (CLOUDX-211)")
-        # -------------------------------------
-
         with host.sudo():
             assert 'Kdump is operational' in host.check_output('kdumpctl status 2>&1'), \
                 'Kdump is not operational'
