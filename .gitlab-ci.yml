@@ -50,49 +50,7 @@ container:
     - sudo docker buildx create --use
     - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
 
-Prepare-rhel-internal:
-  stage: prepare-rhel-internal
-  rules:
-    - if: '$CI_PIPELINE_SOURCE != "schedule"'
-  before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
-    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-  script:
-    - schutzbot/prepare-rhel-internal.sh
-  artifacts:
-    paths:
-      - rhel-${RHEL_MAJOR}.json
-      - rhel${RHEL_MAJOR}internal.repo
-      - COMPOSE_ID
-  tags:
-    - terraform
-  parallel:
-    matrix:
-      - RUNNER:
-          # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
-          # artifacts from all previous jobs and the last one wins
-          - aws/rhel-8.8-nightly-x86_64
-          - aws/rhel-9.2-nightly-x86_64
-        INTERNAL_NETWORK: ["true"]
-
-aws:
-  stage: test
-  extends: .tests
-  rules:
-    - if: $CI_COMMIT_REF_SLUG != "main"
-  script:
-    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
-    - |
-      sudo docker run \
-      -a stdout -a stderr \
-      -e AWS_ACCESS_KEY_ID="${CLOUDX_AWS_ACCESS_KEY_ID}" \
-      -e AWS_SECRET_ACCESS_KEY="${CLOUDX_AWS_SECRET_ACCESS_KEY}" \
-      -e AWS_REGION="${AWS_REGION}" \
-      -v ${PWD}:/tmp:Z \
-      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
-      python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
-
-azure:
+azure_arm64:
   stage: test
   extends: .tests
   rules:
@@ -145,41 +103,6 @@ azure:
     RUNNER:
       - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
-
-.IB_tests:
-  extends: .tests
-  before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
-    - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
-  after_script:
-    - !reference [.tests, after_script]
-    - cp /tmp/report.html ./report.html
-
-IB-aws:
-  stage: test
-  extends: .IB_tests
-  script:
-    - schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/aws.sh
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
-      - *rhel_runners_aarch64
-      - *rhel_runners_x86_64_internal_nightlies
-      - *rhel_runners_aarch64_internal_nightlies
-
-IB-azure:
-  stage: test
-  extends: .IB_tests
-  script:
-    - schutzbot/deploy.sh
-    - ARTIFACTS=/tmp/ bash /usr/libexec/tests/osbuild-composer/azure.sh
-  parallel:
-    matrix:
-      - *fedora_runners
-      - *rhel_runners
-      - *rhel_runners_x86_64_internal_nightlies
 
 SCHEDULED_CLOUD_CLEANER:
   stage: finish

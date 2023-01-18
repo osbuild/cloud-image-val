@@ -81,6 +81,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'os_disk': os_disk,
+            'hyper_v_generation': 'V2',
             'tags': {self.ci_tag_key: self.ci_test_value}
         }
 
