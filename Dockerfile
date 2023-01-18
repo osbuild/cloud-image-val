@@ -16,12 +16,12 @@ RUN dnf install -y \
 
 # Install terraform
 RUN if [[ $(uname -m) == "aarch64" ]]; \
-    then wget --quiet https://releases.hashicorp.com/terraform/1.2.4/terraform_1.2.4_linux_arm64.zip; \
-    else wget --quiet https://releases.hashicorp.com/terraform/1.2.4/terraform_1.2.4_linux_amd64.zip; fi
+    then wget --quiet https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_arm64.zip; \
+    else wget --quiet https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_amd64.zip; fi
 
-RUN unzip terraform_1.2.4_linux_*.zip \
+RUN unzip terraform_1.3.7_linux_*.zip \
   && mv terraform /usr/bin \
-  && rm terraform_1.2.4_linux_*.zip
+  && rm terraform_1.3.7_linux_*.zip
 
 # Install python requirements
 RUN pip install -r requirements.txt
