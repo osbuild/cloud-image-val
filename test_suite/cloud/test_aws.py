@@ -159,8 +159,8 @@ class TestsAWS:
         Check that a list of modules are disabled - not loaded.
         """
         modules = ['nouveau', 'amdgpu']
-        blacklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
-        files_to_check = [blacklist_conf.format(module=modules[x]) for x in range(len(modules))]
+        blocklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
+        files_to_check = [blocklist_conf.format(module=modules[x]) for x in range(len(modules))]
         blocklist_conf_strings = ['blacklist ' + x for x in modules]
 
         with host.sudo():
@@ -171,7 +171,7 @@ class TestsAWS:
             for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
                 assert host.file(file).exists, f'file "{file}" does not exist'
                 assert host.file(file).contains(str_to_check), \
-                    f'{str_to_check} is not blacklisted in "{file}"'
+                    f'{str_to_check} is not blocklisted in "{file}"'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
