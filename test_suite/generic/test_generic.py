@@ -586,7 +586,6 @@ class TestsNetworking:
                 f'Unexpected device name. Expected: "{device_name}"'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['rhel7.9', 'rhel8.4'])
     def test_network_manager_cloud_setup(self, host, instance_data):
         """
         BugZilla 1822853
@@ -604,9 +603,14 @@ class TestsNetworking:
             }
         }
 
+        product_version = float(host.system_info.release)
+
+        if product_version < 8.5:
+            pytest.skip("NetworkManager-cloud-setup was introduced in RHEL 8.5.")
+
         # EXDSP-813
-        if instance_data['cloud'] == 'azure' and float(host.system_info.release) == 8.5:
-            pytest.skip("There is a known issue in RHEL 8.5 Azure images and won't be fixed.")
+        if instance_data['cloud'] == 'azure' and product_version == 8.5:
+            pytest.skip("There is a known issue affecting RHEL 8.5 on Azure images and won't be fixed (EXDSP-813).")
 
         with host.sudo():
             assert host.package('NetworkManager-cloud-setup').is_installed, \
