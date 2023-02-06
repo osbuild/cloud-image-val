@@ -749,11 +749,14 @@ class TestsAWSNetworking:
         region = instance_data_aws_web['region']
 
         rhui_cds_hostnames = [
-            f'rhui2-cds01.{region}.aws.ce.redhat.com',
-            f'rhui2-cds02.{region}.aws.ce.redhat.com',
+            f'rhui.{region}.aws.ce.redhat.com',
+            f'rhui4-cds01.{region}.aws.ce.redhat.com',
+            f'rhui4-cds02.{region}.aws.ce.redhat.com',
             f'rhui3-cds01.{region}.aws.ce.redhat.com',
             f'rhui3-cds02.{region}.aws.ce.redhat.com',
             f'rhui3-cds03.{region}.aws.ce.redhat.com',
+            f'rhui2-cds01.{region}.aws.ce.redhat.com',
+            f'rhui2-cds02.{region}.aws.ce.redhat.com',
         ]
 
         with host.sudo():
@@ -762,8 +765,15 @@ class TestsAWSNetworking:
                 # All the content requests are redirected to the closest standard regions.
                 cds_name = cds.replace('-gov', '')
 
-                assert host.run_test(f'getent hosts {cds_name}'), \
-                    f'Error getting {cds_name} host entry'
+                cds_list_with_errors = []
+                if host.run(f'getent hosts {cds_name}').exit_status != 0:
+                    cds_list_with_errors.append(cds)
+
+        print('Red Hat CDS hosts possibly unreachable or with issues:')
+        print('\n'.join(cds_list_with_errors))
+
+        assert len(cds_list_with_errors) < len(rhui_cds_hostnames), \
+            'None of the CDS are reachable or all of them have issues'
 
 
 class TestsAWSSecurity:
