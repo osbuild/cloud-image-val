@@ -55,7 +55,9 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
     def __new_aws_instance(self, instance):
         if not instance['instance_type']:
-            instance['instance_type'] = 't3.medium'
+            # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
+            # This does not apply to the automation in Jenkins, since we parse the pub task and get the arch from there
+            instance['instance_type'] = 't3.large'
 
         name_tag = instance['name'].replace('.', '-')
         name = self.create_resource_name([name_tag])
