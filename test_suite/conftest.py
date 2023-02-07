@@ -1,6 +1,7 @@
 import json
 import time
 import pytest
+import re
 
 from py.xml import html
 from pytest_html import extras
@@ -10,6 +11,11 @@ from lib import test_lib
 
 @pytest.fixture(autouse=True, scope='function')
 def check_markers(host, request):
+    skip_message = "This test doesn't apply to {distro_version}"
+
+    def parse_distro_version(distro_version):
+        return float(re.findall(r"\d+(\.\d+)?", distro_version)[0])
+
     # Check if test needs to wait before being run
     wait_marker = request.node.get_closest_marker('wait')
     if wait_marker:
@@ -32,7 +38,7 @@ def check_markers(host, request):
     ]
 
     host_distro = host.system_info.distribution
-    host_version = host.system_info.release
+    host_version = float(host.system_info.release)
     distro_version = f'{host_distro}{host_version}'
 
     # Skip the test if the distro is explicitly excluded
@@ -40,7 +46,19 @@ def check_markers(host, request):
         exclude_on_marker_list = exclude_on_marker.args[0]
         if host_distro in exclude_on_marker_list \
                 or distro_version in exclude_on_marker_list:
-            pytest.skip(f"This test doesn't apply to {distro_version}")
+            pytest.skip(skip_message.format(distro_version=distro_version))
+        else:
+            for item in exclude_on_marker_list:
+                if host_distro in item and item[0] == '<':
+                    if host_version < parse_distro_version(item):
+                        pytest.skip(skip_message.format(distro_version=distro_version))
+                    else:
+                        return
+                if host_distro in item and item[0] == '>':
+                    if host_version > parse_distro_version(item):
+                        pytest.skip(skip_message.format(distro_version=distro_version))
+                    else:
+                        return
 
     # If there is no run_on_marker and distro is not excluded execute supported
     # tests
@@ -62,7 +80,7 @@ def check_markers(host, request):
             or distro_version in run_on_marker_list:
         return
     else:
-        pytest.skip(f"This test doesn't apply to {distro_version}")
+        pytest.skip(skip_message.format(distro_version=distro_version))
 
 
 @pytest.mark.run_on(['rhel'])
