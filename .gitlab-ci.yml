@@ -75,7 +75,7 @@ Prepare-rhel-internal:
           - aws/rhel-9.2-nightly-x86_64
         INTERNAL_NETWORK: ["true"]
 
-aws:
+.aws:
   stage: test
   extends: .tests
   rules:
@@ -92,7 +92,7 @@ aws:
       "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
       python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
 
-azure:
+.azure:
   stage: test
   extends: .tests
   rules:
