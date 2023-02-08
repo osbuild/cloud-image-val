@@ -211,12 +211,14 @@ class TestsAWS:
 
         dracut-nohostonly -> dracut-config-generic
         dracut-norescue   -> dracut
+
+        BugZilla 1822853: Starting from RHEL 8.5, NetworkManager-cloud-setup package was added
         """
         required_pkgs = [
             'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
             'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',
-            'NetworkManager-cloud-setup', 'cloud-utils-growpart', 'gdisk',
-            'insights-client', 'dracut-config-generic', 'grub2-tools',
+            'cloud-utils-growpart', 'gdisk', 'insights-client',
+            'dracut-config-generic', 'grub2-tools',
         ]
 
         required_pkgs_v7 = [
@@ -225,8 +227,8 @@ class TestsAWS:
         ]
 
         product_version = float(host.system_info.release)
-        if product_version > 8.4:
-            required_pkgs.remove('NetworkManager-cloud-setup')
+        if product_version >= 8.5:
+            required_pkgs.append('NetworkManager-cloud-setup')
 
         if 8.4 > product_version >= 8.0:
             required_pkgs.append('rng-tools')
@@ -281,10 +283,10 @@ class TestsAWS:
 
         if unwanted_rhui_pkgs:
             for pkg in unwanted_rhui_pkgs:
-                assert not host.package(pkg).is_installed, \
+                assert host.run(f'rpm -qa | grep {pkg}').exit_status != 0, \
                     f'Unexpected rhui package installed: {pkg}'
 
-        assert host.package(required_rhui_pkg).is_installed, \
+        assert host.run(f'rpm -qa | grep {required_rhui_pkg}').exit_status == 0, \
             f'Package "{required_rhui_pkg}" should be present'
 
     @pytest.mark.run_on(['rhel'])
@@ -749,11 +751,14 @@ class TestsAWSNetworking:
         region = instance_data_aws_web['region']
 
         rhui_cds_hostnames = [
-            f'rhui2-cds01.{region}.aws.ce.redhat.com',
-            f'rhui2-cds02.{region}.aws.ce.redhat.com',
+            f'rhui.{region}.aws.ce.redhat.com',
+            f'rhui4-cds01.{region}.aws.ce.redhat.com',
+            f'rhui4-cds02.{region}.aws.ce.redhat.com',
             f'rhui3-cds01.{region}.aws.ce.redhat.com',
             f'rhui3-cds02.{region}.aws.ce.redhat.com',
             f'rhui3-cds03.{region}.aws.ce.redhat.com',
+            f'rhui2-cds01.{region}.aws.ce.redhat.com',
+            f'rhui2-cds02.{region}.aws.ce.redhat.com',
         ]
 
         with host.sudo():
@@ -762,8 +767,15 @@ class TestsAWSNetworking:
                 # All the content requests are redirected to the closest standard regions.
                 cds_name = cds.replace('-gov', '')
 
-                assert host.run_test(f'getent hosts {cds_name}'), \
-                    f'Error getting {cds_name} host entry'
+                cds_list_with_errors = []
+                if host.run(f'getent hosts {cds_name}').exit_status != 0:
+                    cds_list_with_errors.append(cds)
+
+        print('Red Hat CDS hosts possibly unreachable or with issues:')
+        print('\n'.join(cds_list_with_errors))
+
+        assert len(cds_list_with_errors) < len(rhui_cds_hostnames), \
+            'None of the CDS are reachable or all of them have issues'
 
 
 class TestsAWSSecurity:

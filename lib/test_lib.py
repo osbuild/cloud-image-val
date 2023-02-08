@@ -15,7 +15,8 @@ def is_rhel_sap(host):
 
 
 def is_rhel_high_availability(host):
-    return __test_keyword_in_repositories(host, 'highavailability')
+    rhui_pkg = str(host.run('rpm -qa | grep rhui').stdout)
+    return re.search('rhui-(?!sap).*ha', rhui_pkg)
 
 
 def __test_keyword_in_repositories(host, keyword):
