@@ -14,7 +14,7 @@ def check_markers(host, request):
     skip_message = "This test doesn't apply to {distro_version}"
 
     def parse_distro_version(distro_version):
-        return float(re.findall(r"\d+(\.\d+)?", distro_version)[0])
+        return float((re.search(r"\d+(\.\d+)?", distro_version)).group(0))
 
     # Check if test needs to wait before being run
     wait_marker = request.node.get_closest_marker('wait')
