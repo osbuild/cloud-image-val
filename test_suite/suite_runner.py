@@ -56,6 +56,7 @@ class SuiteRunner:
             f'--junit-xml {output_filepath}',
             f'--html {output_filepath.replace("xml", "html")}',
             '--self-contained-html',
+            f'--json-report --json-report-file={output_filepath.replace("xml", "json")}'
         ]
 
         if test_filter:

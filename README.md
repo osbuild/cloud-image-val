@@ -136,7 +136,7 @@ There are markers that are mandatory, and they are defined in the pytest.ini fil
 
 The main markers are the following ones:
 - `run_on`: It allows to specify distributions and versions that the test case is applicable to. **It accepts a python list as argument.**
-- `exclude_on` It is the opposite to the "run_on" marker. If both are specified, the markers' logic will first detect the distros/versions the test applies to, and then check if one of these belong to this marker. If so, the test won't run and will be skipped. **It accepts a python list as argument.**
+- `exclude_on`: It skips a test according to the specified host distro, version or added operators ('<' or '>'). (e.g. ['<rhel8.5', 'centos9','fedora'] - all instances lower than rhel8.5 will be skipped, centos9 will be skipped and instances that are fedora distribution will be also skipped). If "run_on" & "exclude_on" markers are both specified, the markers' logic will first detect the distros/versions the test applies to, and then check if one of these belong to this marker. If so, the test won't run and will be skipped. **It accepts a python list as argument.**
 - `pub`: It allows us to filter for test cases applicable to "published" images. That means, anything that is marked as "pub" is considered to be only run on production-ready images (e.g. final testing before they are published, or right after they are published).
 
 **NOTE**: Either `run_on` or `exclude_on` need to be specified for each test case. They are mandatory markers. If you want to make the test run everywhere, just use `@pytest.mark.run_on(['all'])`.
