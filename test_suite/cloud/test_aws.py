@@ -153,7 +153,7 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['rhel7.9'])
+    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_blocklist(self, host):
         """
         Check that a list of modules are disabled - not loaded.
@@ -165,7 +165,7 @@ class TestsAWS:
 
         with host.sudo():
             for module in modules:
-                assert not host.run(f'lsmod | grep {module}').stdout,\
+                assert not host.run(f'lsmod | grep {module}').stdout, \
                     f"{module} shouldn't be loaded"
 
             for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
@@ -188,6 +188,15 @@ class TestsAWS:
             'iwl7260-firmware', 'libertas-sd8686-firmware', 'libertas-sd8787-firmware', 'libertas-usb8388-firmware',
             'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
         ]
+
+        product_version = float(host.system_info.release)
+
+        # BugZilla 1888695
+        if 8.3 > product_version >= 8.0:
+            unwanted_pkgs.remove('rng-tools')
+
+        if product_version < 8.5:
+            unwanted_pkgs.remove('qemu-guest-agent')
 
         if test_lib.is_rhel_sap(host):
             # In RHEL SAP images, alsa-lib is allowed
@@ -212,7 +221,7 @@ class TestsAWS:
         dracut-nohostonly -> dracut-config-generic
         dracut-norescue   -> dracut
 
-        BugZilla 1822853: Starting from RHEL 8.5, NetworkManager-cloud-setup package was added
+        BugZilla 1822853, 1823315: Starting from RHEL 8.5, NetworkManager-cloud-setup package was added
         """
         required_pkgs = [
             'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
@@ -230,7 +239,7 @@ class TestsAWS:
         if product_version >= 8.5:
             required_pkgs.append('NetworkManager-cloud-setup')
 
-        if 8.4 > product_version >= 8.0:
+        if 8.3 > product_version >= 8.0:
             required_pkgs.append('rng-tools')
 
         if test_lib.is_rhel_sap(host):
