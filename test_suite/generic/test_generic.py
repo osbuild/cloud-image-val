@@ -375,6 +375,7 @@ class TestsServices:
 
 @pytest.mark.pub
 @pytest.mark.run_on(['rhel'])
+@pytest.mark.exclude_on(['<rhel8.3'])
 class TestsSubscriptionManager:
     def test_subscription_manager_auto(self, host):
         """
@@ -437,7 +438,7 @@ class TestsSubscriptionManager:
     def test_subscription_manager_auto_config(self, host):
         """
         BugZilla: 1932802, 1905398
-        Verify auto_registration is enabled in the image
+        Verify that auto_registration is enabled in the image
         """
         expected_config = [
             'auto_registration = 1',
