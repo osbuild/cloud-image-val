@@ -108,9 +108,15 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
     def __new_azure_shared_image(self, instance, vhd_properties):
         product = vhd_properties['product_name']
         version = vhd_properties['version'].replace(".", "-")
-        arch = vhd_properties['arch']
 
-        name = f"{product}-{version}-{arch}"
+        if vhd_properties['arch'] == 'x86_64':
+            arch = 'x64'
+        elif vhd_properties['arch'] == 'aarch64':
+            arch = 'Arm64'
+        else:
+            arch = 'x64'
+
+        name = self.create_resource_name([f"{product}-{version}-{arch}"])
         instance['azurerm_shared_image'] = name
 
         identifier = {
@@ -125,29 +131,16 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'resource_group_name': self.resource_group,
             'location': instance['location'],
             'os_type': 'Linux',
-            'identifier': identifier
+            'identifier': identifier,
+            'hyper_v_generation': 'V2',
+            'architecture': arch
         }
 
         self.resources_tf['resource']['azurerm_shared_image'][name] = new_image_definition
 
     def __new_azure_shared_image_version(self, instance, vhd_properties):
-        product = vhd_properties['product_name']
-        version = vhd_properties['version'].replace(".", "-")
-        vhd_arch = vhd_properties['arch']
-
-        if vhd_arch == 'x86_64':
-            arch = 'x64'
-        elif vhd_arch == 'aarch64':
-            arch = 'Arm64'
-
-        name = self.create_resource_name([
-            product,
-            version,
-            arch,
-            'image'
-        ])
-
-        instance['image_from_vhd'] = name
+        name = self.create_resource_name([instance['azurerm_shared_image'], 'img-version'])
+        instance['azurerm_shared_image_version'] = name
 
         target_region = {
             'name': 'eastus',
@@ -297,8 +290,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             if 'plan' in instance:
                 new_instance['plan'] = instance['plan']
         elif 'vhd_uri' in instance:
-            new_instance['depends_on'].append('azurerm_shared_image_version.{}'.format(instance['image_from_vhd']))
-            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['image_from_vhd'])
+            new_instance['depends_on'].append('azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
+            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image'])
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
 
