@@ -160,7 +160,7 @@ IB-aws:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - export ARTIFACTS=/tmp/ CIV_OPTIONS=("-r=/tmp/resource-file.json" "-d" "-o=/tmp/report.xml" "-m 'not pub'")
+    - export ARTIFACTS=/tmp/ CIV_OPTIONS=( -r=/tmp/resource-file.json -d -o=/tmp/report.xml -m="not pub" )
     - bash /usr/libexec/tests/osbuild-composer/aws.sh
   parallel:
     matrix:
@@ -175,7 +175,7 @@ IB-azure:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - export ARTIFACTS=/tmp/ CIV_OPTIONS=("-r=/tmp/resource-file.json" "-d" "-o=/tmp/report.xml" "-m 'not pub'")
+    - export ARTIFACTS=/tmp/ CIV_OPTIONS=( -r=/tmp/resource-file.json -d -o=/tmp/report.xml -m="not pub" )
     - bash /usr/libexec/tests/osbuild-composer/azure.sh
   parallel:
     matrix:
