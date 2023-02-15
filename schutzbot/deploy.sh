@@ -146,7 +146,7 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 sudo dnf -y install jq
 
 # Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(get_last_passed_commit)
+GIT_COMMIT="8624ff65f806bf65790749929679015f59d286e4"
 
 setup_repo osbuild-composer "${GIT_COMMIT}" 5
 
