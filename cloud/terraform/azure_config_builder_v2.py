@@ -98,15 +98,20 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         #     build_nr = integer of builditeration performed on the build date
         #     arch = architecture
         vhd_name = vhd_uri.split('/')[-1]
+
         azure_vhd_regex = (
             r"(?P<product_name>\D*)\-(?P<version>[\d]+\.[\d]+(?:\.[\d]+)?)\-"
             r"(?P<date>\d{4}\d{2}\d{2})\.\bsp\.(?P<build_nr>\d)\.(?P<arch>\S*)\.\bvhd"
         )
-        matches = re.match(azure_vhd_regex, vhd_name, re.IGNORECASE)
-        if matches:
-            return matches.groupdict()
 
-        return {}
+        azure_vhd_regex_image_builder = r'image-(?P<product_name>.*)-(?P<version>\d+)-(?P<arch>x86_64|aarch64).*.vhd'
+
+        matches = re.match(azure_vhd_regex, vhd_name, re.IGNORECASE)
+        matches_image_builder = re.match(azure_vhd_regex_image_builder, vhd_name, re.IGNORECASE)
+
+        vhd_data = matches.groupdict() if matches else matches_image_builder.groupdict()
+
+        return vhd_data
 
     def __new_azure_shared_image(self, instance, vhd_properties):
         product = vhd_properties['product_name']
