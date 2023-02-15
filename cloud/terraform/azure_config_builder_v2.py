@@ -18,8 +18,10 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         self.ssh_key_path = ssh_key_path
         self.subscription_id = resources_dict['subscription_id']
-        self.gallery_name = resources_dict['gallery_name']
         self.resource_group = resources_dict['resource_group']
+
+        if 'gallery_name' in resources_dict:
+            self.gallery_name = resources_dict['gallery_name']
 
         self.azure_resource_id_base = f'/subscriptions/{self.subscription_id}/resourceGroups/' \
                                       f'{self.resource_group}/providers'
@@ -42,11 +44,12 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_subnet'] = {}
 
         # VM specific resources
-        self.resources_tf['resource']['azurerm_shared_image'] = {}
-        self.resources_tf['resource']['azurerm_shared_image_version'] = {}
         self.resources_tf['resource']['azurerm_public_ip'] = {}
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
+        # Only applicable if vhd_uri is provided in resources.json
+        self.resources_tf['resource']['azurerm_shared_image'] = {}
+        self.resources_tf['resource']['azurerm_shared_image_version'] = {}
 
         for instance in self.resources_dict['instances']:
             instance['hostname'] = self.create_resource_name(['vm'])
@@ -241,6 +244,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
     def __new_azure_vm(self, instance):
+        if 'arch' not in instance or not instance['arch']:
+            instance['arch'] = 'x86_64'
+
         if 'instance_type' not in instance or not instance['instance_type']:
             if instance['arch'] == 'x86_64':
                 instance['instance_type'] = self.default_x86_vm_size
@@ -290,7 +296,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             if 'plan' in instance:
                 new_instance['plan'] = instance['plan']
         elif 'vhd_uri' in instance:
-            new_instance['depends_on'].append('azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
+            new_instance['depends_on'].append(
+                'azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
             new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image'])
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
@@ -301,7 +308,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         :param azure_image_name: The name of the image as it was created in Azure
         :return: String
         """
-        return '{}/Microsoft.Compute/galleries/{}/images/{}'.format(self.azure_resource_id_base, self.gallery_name, azure_image_name)
+        return '{}/Microsoft.Compute/galleries/{}/images/{}'.format(self.azure_resource_id_base, self.gallery_name,
+                                                                    azure_image_name)
 
     def __get_azure_network_resource_uri(self,
                                          terraform_resource_type,
