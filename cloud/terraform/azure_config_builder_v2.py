@@ -20,9 +20,6 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.subscription_id = resources_dict['subscription_id']
         self.resource_group = resources_dict['resource_group']
 
-        if 'gallery_name' in resources_dict:
-            self.gallery_name = resources_dict['gallery_name']
-
         self.azure_resource_id_base = f'/subscriptions/{self.subscription_id}/resourceGroups/' \
                                       f'{self.resource_group}/providers'
 
@@ -48,6 +45,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
         # Only applicable if vhd_uri is provided in resources.json
+        self.resources_tf['resource']['azurerm_shared_image_gallery'] = {}
         self.resources_tf['resource']['azurerm_shared_image'] = {}
         self.resources_tf['resource']['azurerm_shared_image_version'] = {}
 
@@ -63,14 +61,16 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             self.__new_azure_subnet(instance)
 
             if 'vhd_uri' in instance:
-                vhd_properties = self.__parse_vhd_name(instance['vhd_uri'])
-
-                self.__new_azure_shared_image(instance, vhd_properties)
-                self.__new_azure_shared_image_version(instance, vhd_properties)
+                self.__new_azure_shared_image_gallery(instance)
+                self.__new_azure_shared_image(instance)
+                self.__new_azure_shared_image_version(instance)
 
             self.__new_azure_public_ip(instance)
             self.__new_azure_nic(instance)
             self.__new_azure_vm(instance)
+
+        if not self.resources_tf['resource']['azurerm_shared_image_gallery']:
+            del self.resources_tf['resource']['azurerm_shared_image_gallery']
 
         if not self.resources_tf['resource']['azurerm_shared_image']:
             del self.resources_tf['resource']['azurerm_shared_image']
@@ -97,23 +97,41 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         #     date = date image was produced
         #     build_nr = integer of builditeration performed on the build date
         #     arch = architecture
-        vhd_name = vhd_uri.split('/')[-1]
 
         azure_vhd_regex = (
-            r"(?P<product_name>\D*)\-(?P<version>[\d]+\.[\d]+(?:\.[\d]+)?)\-"
+            r"https:\/\/(?P<storage_account>.*)\.blob.*\/(?P<product_name>\D*)\-(?P<version>[\d]+\.[\d]+(?:\.[\d]+)?)\-"
             r"(?P<date>\d{4}\d{2}\d{2})\.\bsp\.(?P<build_nr>\d)\.(?P<arch>\S*)\.\bvhd"
         )
 
-        azure_vhd_regex_image_builder = r'image-(?P<product_name>.*)-(?P<version>\d+)-(?P<arch>x86_64|aarch64).*.vhd'
+        azure_vhd_regex_image_builder = (
+            r"https:\/\/(?P<storage_account>.*)\.blob.*\/image-(?P<product_name>.*)-"
+            r"(?P<version>\d+)-(?P<arch>x86_64|aarch64).*.vhd"
+        )
 
-        matches = re.match(azure_vhd_regex, vhd_name, re.IGNORECASE)
-        matches_image_builder = re.match(azure_vhd_regex_image_builder, vhd_name, re.IGNORECASE)
+        matches = re.match(azure_vhd_regex, vhd_uri, re.IGNORECASE)
+        matches_image_builder = re.match(azure_vhd_regex_image_builder, vhd_uri, re.IGNORECASE)
 
         vhd_data = matches.groupdict() if matches else matches_image_builder.groupdict()
 
         return vhd_data
 
-    def __new_azure_shared_image(self, instance, vhd_properties):
+    def __new_azure_shared_image_gallery(self, instance):
+        name = self.create_resource_name(['gallery'], separator='_')
+        instance['azurerm_shared_image_gallery'] = name
+
+        new_image_gallery = {
+            'name': name,
+            'resource_group_name': self.resource_group,
+            'location': instance['location'],
+            'tags': {self.ci_tag_key: self.ci_test_value}
+        }
+
+        self.resources_tf['resource']['azurerm_shared_image_gallery'][name] = new_image_gallery
+
+    def __new_azure_shared_image(self, instance):
+        vhd_properties = self.__parse_vhd_name(instance['vhd_uri'])
+        instance['vhd_properties'] = vhd_properties
+
         product = vhd_properties['product_name']
         version = vhd_properties['version'].replace(".", "-")
 
@@ -124,7 +142,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         else:
             arch = 'x64'
 
-        name = self.create_resource_name([f"{product}-{version}-{arch}"])
+        name = self.create_resource_name([product, version, arch])
         instance['azurerm_shared_image'] = name
 
         identifier = {
@@ -135,37 +153,42 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         new_image_definition = {
             'name': name,
-            'gallery_name': self.gallery_name,
+            'gallery_name': instance['azurerm_shared_image_gallery'],
             'resource_group_name': self.resource_group,
             'location': instance['location'],
             'os_type': 'Linux',
             'identifier': identifier,
             'hyper_v_generation': 'V2',
-            'architecture': arch
+            'architecture': arch,
+            'tags': {self.ci_tag_key: self.ci_test_value},
+            'depends_on': [
+                'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
+            ]
         }
 
         self.resources_tf['resource']['azurerm_shared_image'][name] = new_image_definition
 
-    def __new_azure_shared_image_version(self, instance, vhd_properties):
+    def __new_azure_shared_image_version(self, instance):
         name = self.create_resource_name([instance['azurerm_shared_image'], 'img-version'])
         instance['azurerm_shared_image_version'] = name
 
         target_region = {
-            'name': 'eastus',
+            'name': instance['location'],
             'regional_replica_count': 1
         }
 
         new_image = {
             'name': '0.0.1',
             'blob_uri': instance['vhd_uri'],
-            'storage_account_id': f"/subscriptions/{self.subscription_id}/resourceGroups/rh-resource/providers/Microsoft.Storage/storageAccounts/rhimages",
+            'storage_account_id': self.__get_azure_storage_account_uri(instance['vhd_properties']['storage_account']),
             'image_name': instance['azurerm_shared_image'],
             'location': instance['location'],
             'resource_group_name': self.resource_group,
-            'gallery_name': self.gallery_name,
+            'gallery_name': instance['azurerm_shared_image_gallery'],
             'target_region': target_region,
             'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
+                'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
                 'azurerm_shared_image.{}'.format(instance['azurerm_shared_image']),
             ]
         }
@@ -303,17 +326,28 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         elif 'vhd_uri' in instance:
             new_instance['depends_on'].append(
                 'azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
-            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image'])
+            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image_gallery'],
+                                                                         instance['azurerm_shared_image'])
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
 
-    def __get_azure_image_uri(self, azure_image_name):
+    def __get_azure_storage_account_uri(self, storage_account_name):
+        """
+        Returns a composed string URI that belongs to a specific Storage Account, from its name
+        :param storage_account_name: The name of the Storage Account in Azure
+        :return: String
+        """
+        return '/subscriptions/{0}/resourceGroups/rh-resource/providers/Microsoft.Storage/storageAccounts/{1}'\
+            .format(self.subscription_id, storage_account_name)
+
+    def __get_azure_image_uri(self, azure_image_gallery_name, azure_image_name):
         """
         Returns a composed string URI that belongs to a specific Azure image, from its name
         :param azure_image_name: The name of the image as it was created in Azure
         :return: String
         """
-        return '{}/Microsoft.Compute/galleries/{}/images/{}'.format(self.azure_resource_id_base, self.gallery_name,
+        return '{}/Microsoft.Compute/galleries/{}/images/{}'.format(self.azure_resource_id_base,
+                                                                    azure_image_gallery_name,
                                                                     azure_image_name)
 
     def __get_azure_network_resource_uri(self,
