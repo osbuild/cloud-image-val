@@ -5,18 +5,27 @@
   "instances": [
     {
       "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/7.9/rhel-azure-7.9-20220803.sp.1.x86_64.vhd",
+      "arch": "x86_64",
       "location": "East US",
       "name": "sample-rhel7.9.14-image-from-vhd"
     },
     {
       "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/8.6/rhel-azure-8.6-20220531.sp.2.x86_64.vhd",
+      "arch": "x86_64",
       "location": "East US",
       "name": "sample-rhel8.6-image-from-vhd"
     },
     {
       "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/9.0/rhel-azure-9.0-20220531.sp.2.x86_64.vhd",
+      "arch": "x86_64",
       "location": "East US",
       "name": "sample-rhel9.0-image-from-vhd"
+    },
+    {
+      "vhd_uri": "https://rhimages.blob.core.windows.net/rhel/9.1/rhel-azure-9.1-20230117.sp.1.aarch64.vhd",
+      "arch": "arm64",
+      "location": "East US",
+      "name": "sample-rhel9.1-arm64-image-from-vhd"
     }
   ]
 }
