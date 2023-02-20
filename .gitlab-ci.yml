@@ -179,7 +179,7 @@ container_main:
   extends: .deps
   stage: finish
   rules:
-    - if: $CI_COMMIT_REF_SLUG == "main"'
+    - if: $CI_COMMIT_REF_SLUG == "main"
   script:
     - sudo dnf install skopeo -y
     - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
