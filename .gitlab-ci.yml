@@ -140,6 +140,12 @@ Prepare-rhel-internal:
 
 .IB_tests:
   extends: .tests
+  variables:
+    CIV_OPTION_R: "-r=/tmp/resource-file.json"
+    CIV_OPTION_D: "-d"
+    CIV_OPTION_O: "-o=/tmp/report.xml"
+    CIV_OPTION_M: "-m not pub"
+    ARTIFACTS: "/tmp/"
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
     - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
@@ -152,10 +158,7 @@ IB-aws:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - |
-      export ARTIFACTS=/tmp/ 
-      export CIV_OPTIONS=( -r=/tmp/resource-file.json -d -o=/tmp/report.xml -m="not pub" ) 
-      bash /usr/libexec/tests/osbuild-composer/aws.sh
+    - /usr/libexec/tests/osbuild-composer/aws.sh
   parallel:
     matrix:
       - *fedora_runners
@@ -167,11 +170,9 @@ IB-aws:
 IB-azure:
   stage: test
   extends: .IB_tests
-  variables:
-  
   script:
     - schutzbot/deploy.sh
-    - CIV_OPTIONS=( -r=/tmp/resource-file.json -d -o=/tmp/report.xml -m="not pub" ) bash /usr/libexec/tests/osbuild-composer/azure.sh
+    - /usr/libexec/tests/osbuild-composer/azure.sh
   parallel:
     matrix:
       - *fedora_runners
