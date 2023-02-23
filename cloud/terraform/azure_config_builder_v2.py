@@ -142,6 +142,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         else:
             arch = 'x64'
 
+        instance['arch'] = arch
+
         name = self.create_resource_name([product, version, arch])
         instance['azurerm_shared_image'] = name
 
@@ -272,6 +274,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
     def __new_azure_vm(self, instance):
+        # If no architecture is specified and we are not deploying from vhd URI, we will assume it's x64 arch
         if 'arch' not in instance or not instance['arch']:
             instance['arch'] = 'x86_64'
 
