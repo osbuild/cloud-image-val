@@ -163,7 +163,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
     def __new_azure_vm(self, instance):
-        if 'instance_type' not in instance or not instance['instance_type']:
+        if 'instance_type' not in instance or instance['instance_type'] == '':
             instance['instance_type'] = self.default_vm_size
 
         instance_hostname = instance['hostname']

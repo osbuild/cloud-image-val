@@ -135,9 +135,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         product = vhd_properties['product_name']
         version = vhd_properties['version'].replace(".", "-")
 
-        if vhd_properties['arch'] == 'x86_64':
-            arch = 'x64'
-        elif vhd_properties['arch'] == 'aarch64':
+        if vhd_properties['arch'] == 'aarch64':
             arch = 'Arm64'
         else:
             arch = 'x64'
@@ -274,15 +272,15 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
     def __new_azure_vm(self, instance):
-        # If no architecture is specified and we are not deploying from vhd URI, we will assume it's x64 arch
-        if 'arch' not in instance or not instance['arch']:
+        # If no architecture is specified, and we are not deploying from vhd URI, we will assume it's x64 arch
+        if 'arch' not in instance or instance['arch'] == '' or not instance['arch']:
             instance['arch'] = 'x86_64'
 
-        if 'instance_type' not in instance or not instance['instance_type']:
-            if instance['arch'] == 'x86_64':
-                instance['instance_type'] = self.default_x86_vm_size
-            elif instance['arch'] == 'arm64':
+        if 'instance_type' not in instance or instance['instance_type'] == '' or not instance['instance_type']:
+            if instance['arch'] == 'arm64':
                 instance['instance_type'] = self.default_arm64_vm_size
+            else:
+                instance['instance_type'] = self.default_x86_vm_size
 
         instance_hostname = instance['hostname']
 
