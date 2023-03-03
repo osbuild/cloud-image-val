@@ -277,7 +277,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             instance['arch'] = 'x86_64'
 
         if 'instance_type' not in instance or instance['instance_type'] == '' or not instance['instance_type']:
-            if instance['arch'] == 'arm64':
+            if instance['arch'] == 'Arm64':
                 instance['instance_type'] = self.default_arm64_vm_size
             else:
                 instance['instance_type'] = self.default_x86_vm_size
