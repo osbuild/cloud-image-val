@@ -141,10 +141,6 @@ Prepare-rhel-internal:
 .IB_tests:
   extends: .tests
   variables:
-    CIV_OPTION_R: "-r=/tmp/resource-file.json"
-    CIV_OPTION_D: "-d"
-    CIV_OPTION_O: "-o=/tmp/report.xml"
-    CIV_OPTION_M: "-m not pub"
     ARTIFACTS: "/tmp/"
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
@@ -158,7 +154,8 @@ IB-aws:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - /usr/libexec/tests/osbuild-composer/aws.sh
+    - python3 schutzbot/get_options.py /tmp/civ_options.sh && source /tmp/civ_options.sh
+    - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
   parallel:
     matrix:
       - *fedora_runners
@@ -172,7 +169,8 @@ IB-azure:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - /usr/libexec/tests/osbuild-composer/azure.sh
+    - python3 schutzbot/get_options.py /tmp/civ_options.sh && source /tmp/civ_options.sh
+    - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
   parallel:
     matrix:
       - *fedora_runners
