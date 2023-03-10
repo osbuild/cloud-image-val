@@ -33,6 +33,7 @@ def run_local_script_in_host(host, script_relative_path):
     :param script_relative_path: Relative file path of the script to run (from project's root dir)
     :return: testinfra.backend.base.CommandResult containing: command, rc, stdout, stderr
     """
+    print("test")
     script_remote_path = f'/tmp/{path.basename(script_relative_path)}'
 
     ssh_lib.copy_file_to_host(host, script_relative_path, script_remote_path)
