@@ -26,6 +26,7 @@ def __test_keyword_in_repositories(host, keyword):
 
 
 def run_local_script_in_host(host, script_relative_path):
+    print("test")
     """
     Runs a local script in the given remote host.
     To achieve this, the script is first copied to the remote host.
