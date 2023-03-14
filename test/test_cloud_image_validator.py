@@ -8,12 +8,15 @@ from test_suite.suite_runner import SuiteRunner
 
 
 class TestCloudImageValidator:
-    test_resources_file = '/fake/test/resources_file.json'
-    test_output_file = '/fake/test/output_file.xml'
-    test_filter = 'test_test_name'
-    test_markers = 'pub'
-    test_parallel = True
-    test_debug = True
+    test_config = {"resources_file": '/fake/test/resources_file.json',
+                   "output_file": '/fake/test/output_file.xml',
+                   "test_filter": 'test_test_name',
+                   "include_markers": 'pub',
+                   "parallel": True,
+                   "debug": True,
+                   "stop_cleanup": False,
+                   "config_file": "/fake/test/config_file.yml"
+                   }
     test_instances = {
         'instance-1': {'public_dns': 'value_1', 'username': 'value_2'},
         'instance-2': {'public_dns': 'value_1', 'username': 'value_2'}
@@ -21,12 +24,7 @@ class TestCloudImageValidator:
 
     @pytest.fixture
     def validator(self):
-        return CloudImageValidator(resources_file=self.test_resources_file,
-                                   output_file=self.test_output_file,
-                                   test_filter=self.test_filter,
-                                   include_markers=self.test_markers,
-                                   parallel=self.test_parallel,
-                                   debug=self.test_debug)
+        return CloudImageValidator(config=self.test_config)
 
     def test_main(self, mocker, validator):
         # Arrange
@@ -34,17 +32,21 @@ class TestCloudImageValidator:
         wait_status_test = 32512
         exit_code_test = 127
 
-        mock_initialize_infrastructure = mocker.MagicMock(return_value=test_controller)
+        mock_initialize_infrastructure = mocker.MagicMock(
+            return_value=test_controller)
         validator.initialize_infrastructure = mock_initialize_infrastructure
 
         mock_print_divider = mocker.patch('lib.console_lib.print_divider')
 
-        mock_deploy_infrastructure = mocker.MagicMock(return_value=self.test_instances)
+        mock_deploy_infrastructure = mocker.MagicMock(
+            return_value=self.test_instances)
         validator.deploy_infrastructure = mock_deploy_infrastructure
 
-        mock_add_ssh_keys_to_instances = mocker.patch('lib.ssh_lib.add_ssh_keys_to_instances')
+        mock_add_ssh_keys_to_instances = mocker.patch(
+            'lib.ssh_lib.add_ssh_keys_to_instances')
 
-        mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
+        mock_run_tests_in_all_instances = mocker.MagicMock(
+            return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
         mock_cleanup = mocker.MagicMock()
@@ -64,8 +66,10 @@ class TestCloudImageValidator:
 
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
-        mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
-        mock_add_ssh_keys_to_instances.assert_called_once_with(self.test_instances)
+        mock_run_tests_in_all_instances.assert_called_once_with(
+            self.test_instances)
+        mock_add_ssh_keys_to_instances.assert_called_once_with(
+            self.test_instances)
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):
@@ -98,7 +102,8 @@ class TestCloudImageValidator:
         mock_get_instances = mocker.patch.object(TerraformController,
                                                  'get_instances',
                                                  return_value=self.test_instances)
-        mock_generate_instances_ssh_config = mocker.patch('lib.ssh_lib.generate_instances_ssh_config')
+        mock_generate_instances_ssh_config = mocker.patch(
+            'lib.ssh_lib.generate_instances_ssh_config')
 
         mock_write_instances_to_json = mocker.MagicMock()
         validator._write_instances_to_json = mock_write_instances_to_json
@@ -113,7 +118,8 @@ class TestCloudImageValidator:
 
         mock_create_infra.assert_called_once()
         mock_get_instances.assert_called_once()
-        mock_write_instances_to_json.assert_called_once_with(self.test_instances)
+        mock_write_instances_to_json.assert_called_once_with(
+            self.test_instances)
         mock_generate_instances_ssh_config.assert_called_once_with(instances=self.test_instances,
                                                                    ssh_config_file=validator.ssh_config_file,
                                                                    ssh_key_path=validator.ssh_identity_file)
@@ -126,12 +132,14 @@ class TestCloudImageValidator:
 
         validator.run_tests_in_all_instances(self.test_instances)
 
-        mock_run_tests.assert_called_once_with(validator.output_file, self.test_filter, self.test_markers)
+        mock_run_tests.assert_called_once_with(
+            validator.config["output_file"], self.test_config["test_filter"], self.test_config["include_markers"])
 
     def test_destroy_infrastructure(self, mocker, validator):
-        mock_destroy_infra = mocker.patch.object(TerraformController, 'destroy_infra')
+        mock_destroy_infra = mocker.patch.object(
+            TerraformController, 'destroy_infra')
         validator.infra_controller = TerraformController
-        validator.debug = False
+        validator.config["debug"] = False
 
         mock_os_remove = mocker.patch('os.remove')
 
@@ -144,4 +152,5 @@ class TestCloudImageValidator:
             mocker.call(validator.ssh_pub_key_file),
             mocker.call(validator.ssh_config_file),
             mocker.call(validator.instances_json),
+            mocker.call(validator.config["config_file"])
         ]

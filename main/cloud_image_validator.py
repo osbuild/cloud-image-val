@@ -19,23 +19,8 @@ class CloudImageValidator:
     infra_controller = None
     infra_configurator = None
 
-    def __init__(self,
-                 resources_file,
-                 output_file,
-                 test_filter=None,
-                 include_markers=None,
-                 parallel=False,
-                 debug=False,
-                 stop_cleanup=False):
-        self.resources_file = resources_file
-        self.output_file = output_file
-
-        self.test_filter = test_filter
-        self.include_markers = include_markers
-
-        self.parallel = parallel
-        self.debug = debug
-        self.stop_cleanup = stop_cleanup
+    def __init__(self, config):
+        self.config = config
 
     def main(self):
         exit_code = 0
@@ -59,7 +44,7 @@ class CloudImageValidator:
             exit_code = 1
 
         finally:
-            if self.stop_cleanup:
+            if self.config["stop_cleanup"]:
                 self.print_ssh_commands_for_instances(instances)
                 input('Press ENTER to proceed with cleanup:')
 
@@ -82,19 +67,19 @@ class CloudImageValidator:
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
 
         self.infra_configurator = TerraformConfigurator(ssh_key_path=self.ssh_pub_key_file,
-                                                        resources_path=self.resources_file)
+                                                        resources_path=self.config["resources_file"])
         self.infra_configurator.configure_from_resources_json()
 
-        if self.debug:
+        if self.config["debug"]:
             self.infra_configurator.print_configuration()
 
-        return TerraformController(self.infra_configurator, self.debug)
+        return TerraformController(self.infra_configurator, self.config["debug"])
 
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()
         instances = self.infra_controller.get_instances()
 
-        if self.debug:
+        if self.config["debug"]:
             pprint(instances)
 
         self._write_instances_to_json(instances)
@@ -113,18 +98,19 @@ class CloudImageValidator:
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
                              instances=instances,
                              ssh_config=self.ssh_config_file,
-                             parallel=self.parallel,
-                             debug=self.debug)
+                             parallel=self.config["parallel"],
+                             debug=self.config["debug"])
 
-        return runner.run_tests(self.output_file,
-                                self.test_filter,
-                                self.include_markers)
+        return runner.run_tests(self.config["output_file"],
+                                self.config["test_filter"],
+                                self.config["include_markers"])
 
     def cleanup(self):
         self.infra_controller.destroy_infra()
 
-        if not self.debug:
+        if not self.config["debug"]:
             os.remove(self.ssh_identity_file)
             os.remove(self.ssh_pub_key_file)
             os.remove(self.ssh_config_file)
             os.remove(self.instances_json)
+            os.remove(self.config["config_file"])
