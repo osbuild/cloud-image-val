@@ -12,11 +12,11 @@ class BaseConfigBuilder:
     }
 
     resource_name_prefix = 'civ'
-    ci_tag_key = 'civ-ci'
-    ci_test_value = 'true'
 
-    def __init__(self, resources_dict):
+    def __init__(self, resources_dict, ssh_key_path, config):
         self.resources_dict = resources_dict
+        self.ssh_key_path = ssh_key_path
+        self.config = config
 
         self.resources_tf = {'resource': {}}
         self.providers_tf = {'provider': {self.cloud_providers[self.cloud_name]: []}}
@@ -45,3 +45,10 @@ class BaseConfigBuilder:
 
     def get_random_numbers(self):
         return f'{random.randrange(1, 10 ** 5):03}'
+
+    def add_tags(self, config_dict, resource, tags_key="tags"):
+        if config_dict["tags"]:
+            if tags_key in resource:
+                resource[tags_key] = {**resource[tags_key], **config_dict["tags"]}
+            else:
+                resource[tags_key] = config_dict["tags"]

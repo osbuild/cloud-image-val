@@ -14,9 +14,10 @@ class TerraformConfigurator:
     providers_tf = None
     resources_tf = None
 
-    def __init__(self, ssh_key_path, resources_path):
+    def __init__(self, ssh_key_path, resources_path, config):
         self.resources_path = resources_path
         self.ssh_key_path = ssh_key_path
+        self.config = config
 
         self.resources_dict = self._initialize_resources_dict()
         self.cloud_name = self.get_cloud_provider_from_resources()
@@ -51,11 +52,11 @@ class TerraformConfigurator:
         cloud_name = self.resources_dict['provider']
 
         if cloud_name == 'aws':
-            return AWSConfigBuilder(self.resources_dict, self.ssh_key_path)
+            return AWSConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
         elif cloud_name == 'azure':
-            return AzureConfigBuilderV2(self.resources_dict, self.ssh_key_path)
+            return AzureConfigBuilderV2(self.resources_dict, self.ssh_key_path, self.config)
         elif cloud_name == 'gcloud':
-            return GCloudConfigBuilder(self.resources_dict, self.ssh_key_path)
+            return GCloudConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
         else:
             raise Exception(f'Could not find any suitable configurator for "{cloud_name}" cloud provider')
 
