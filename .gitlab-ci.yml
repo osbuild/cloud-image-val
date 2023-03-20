@@ -42,10 +42,8 @@ container:
     - sudo docker run --privileged --rm tonistiigi/binfmt --install all
     - sudo docker buildx create --use
     - export build_cmd="sudo docker buildx build --push --platform linux/arm64,linux/amd64"
-    - if [ $(python schutzbot/update-base.py)=="true" ]; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
+    - if python schutzbot/update-base.py | grep -q "true" ; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
     - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
-    # Remove after image builder tests are adapted to using the new repo (COMPOSER-1926)
-    - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}"-test:"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
 
 Prepare-rhel-internal:
   stage: build

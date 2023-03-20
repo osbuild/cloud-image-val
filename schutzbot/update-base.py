@@ -20,7 +20,7 @@ if __name__ == "__main__":
     files_changed = get_files_changed()
 
     for file_changed in files_changed:
-        if files_changed in files_that_update_base:
+        if file_changed in files_that_update_base:
             print("true")
             exit()
 
