@@ -8,7 +8,6 @@ class CIVConfig():
     def validate(self):
         with open(self.config_path) as config_file:
             config = yaml.safe_load(config_file)
-            print(config)
             assert 'resources_file' in config.keys(), 'ERROR: Please provide a resources file'
             assert 'output_file' in config.keys(), 'ERROR: Please provide an output path'
 

@@ -1,7 +1,6 @@
 stages:
   - init
   - build
-  - prepare-rhel-internal
   - test
   - finish
 
@@ -16,7 +15,7 @@ stages:
   variables:
     RUNNER: aws/fedora-37-x86_64
     INTERNAL_NETWORK: "true"
-    QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val-test
+    QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val
   tags:
     - terraform
 
@@ -42,10 +41,14 @@ container:
   script:
     - sudo docker run --privileged --rm tonistiigi/binfmt --install all
     - sudo docker buildx create --use
-    - sudo docker buildx build --push --platform linux/arm64,linux/amd64 -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" .
+    - export build_cmd="sudo docker buildx build --push --platform linux/arm64,linux/amd64"
+    - if [ $(python schutzbot/update-base.py)=="true" ]; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
+    - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
+    # Remove after image builder tests are adapted to using the new repo (COMPOSER-1926)
+    - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}"-test:"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
 
 Prepare-rhel-internal:
-  stage: prepare-rhel-internal
+  stage: build
   before_script:
     - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
     - curl -LJO https://raw.githubusercontent.com/osbuild/osbuild-composer/main/Schutzfile
