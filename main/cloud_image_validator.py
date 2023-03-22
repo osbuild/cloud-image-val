@@ -45,8 +45,15 @@ class CloudImageValidator:
 
         finally:
             if self.config["stop_cleanup"]:
-                self.print_ssh_commands_for_instances(instances)
-                input('Press ENTER to proceed with cleanup:')
+                if self.config["environment"] == "local":
+                    self.print_ssh_commands_for_instances(instances)
+                    input('Press ENTER to proceed with cleanup:')
+                elif self.config["environment"] == "automated":
+                    console_lib.print_divider('Skipping cleanup')
+                    return exit_code
+                else:
+                    print('ERROR: --environment parameter should be either "local" or "automated"')
+                    exit()
 
             console_lib.print_divider('Cleanup')
             self.cleanup()

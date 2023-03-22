@@ -1,9 +1,11 @@
 import os
 import json
 
+from pprint import pprint
 from argparse import ArgumentParser, RawTextHelpFormatter
 from main.cloud_image_validator import CloudImageValidator
 from lib.config_lib import CIVConfig
+from lib import console_lib
 
 parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
@@ -36,6 +38,11 @@ parser.add_argument('-s', '--stop-cleanup',
                          'Helpful when you need to connect through ssh to an instance. Default is DISABLED',
                     default=False,
                     action='store_true')
+parser.add_argument('-e', '--environment',
+                    help='Use this option to set what invironment CIV is going to run on.\n'
+                         'This can change CIV bahaviour like how "-s" works. this option can be\n'
+                         'set to "automated" or "local". Default is "local"',
+                    default="local")
 parser.add_argument('-c', '--config-file',
                     help='Use this option to pass CLI options through a config file.\n'
                          'This config should be in yaml format, examples can be found in the README',
@@ -70,6 +77,10 @@ if __name__ == '__main__':
         args.config_file = civ_config.config_path
         civ_config.write_config(args)
         config = civ_config.get_config()
+
+    if config["debug"]:
+        console_lib.print_divider('Config')
+        pprint(config)
 
     cloud_image_validator = CloudImageValidator(config=config)
     exit(cloud_image_validator.main())
