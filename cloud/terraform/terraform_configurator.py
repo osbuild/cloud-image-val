@@ -5,6 +5,7 @@ from pprint import pprint
 from cloud.terraform.aws_config_builder import AWSConfigBuilder
 from cloud.terraform.azure_config_builder_v2 import AzureConfigBuilderV2
 from cloud.terraform.gcloud_config_builder import GCloudConfigBuilder
+from lib import console_lib
 
 
 class TerraformConfigurator:
@@ -70,6 +71,7 @@ class TerraformConfigurator:
             json.dump(content, config_file)
 
     def print_configuration(self):
+        console_lib.print_divider('Terraform configuration')
         pprint(self.main_tf)
         pprint(self.providers_tf)
         pprint(self.resources_tf)
