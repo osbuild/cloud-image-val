@@ -13,10 +13,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
     default_location = 'eastus'
     default_publisher = 'RedHat'
 
-    def __init__(self, resources_dict, ssh_key_path):
-        super().__init__(resources_dict)
+    def __init__(self, resources_dict, ssh_key_path, config):
+        super().__init__(resources_dict, ssh_key_path, config)
 
-        self.ssh_key_path = ssh_key_path
         self.subscription_id = resources_dict['subscription_id']
         self.resource_group = resources_dict['resource_group']
 
@@ -122,9 +121,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         new_image_gallery = {
             'name': name,
             'resource_group_name': self.resource_group,
-            'location': instance['location'],
-            'tags': {self.ci_tag_key: self.ci_test_value}
+            'location': instance['location']
         }
+        self.add_tags(self.config, new_image_gallery)
 
         self.resources_tf['resource']['azurerm_shared_image_gallery'][name] = new_image_gallery
 
@@ -160,11 +159,11 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'identifier': identifier,
             'hyper_v_generation': 'V2',
             'architecture': arch,
-            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
             ]
         }
+        self.add_tags(self.config, new_image_definition)
 
         self.resources_tf['resource']['azurerm_shared_image'][name] = new_image_definition
 
@@ -186,12 +185,12 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'resource_group_name': self.resource_group,
             'gallery_name': instance['azurerm_shared_image_gallery'],
             'target_region': target_region,
-            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
                 'azurerm_shared_image.{}'.format(instance['azurerm_shared_image']),
             ]
         }
+        self.add_tags(self.config, new_image)
 
         self.resources_tf['resource']['azurerm_shared_image_version'][name] = new_image
 
@@ -204,8 +203,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'address_space': ['10.0.0.0/16'],
             'location': instance['location'],
             'resource_group_name': self.resource_group,
-            'tags': {self.ci_tag_key: self.ci_test_value}
         }
+        self.add_tags(self.config, new_virtual_network)
 
         self.resources_tf['resource']['azurerm_virtual_network'][name] = new_virtual_network
 
@@ -235,8 +234,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'location': instance['location'],
             'allocation_method': 'Static',
             'domain_name_label': instance['hostname'],
-            'tags': {self.ci_tag_key: self.ci_test_value}
         }
+        self.add_tags(self.config, new_public_ip)
 
         self.resources_tf['resource']['azurerm_public_ip'][name] = new_public_ip
 
@@ -261,13 +260,13 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'ip_configuration': ip_configuration,
-            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
                 'azurerm_public_ip.{}'.format(instance['azurerm_public_ip']),
             ]
         }
+        self.add_tags(self.config, new_nic)
 
         self.resources_tf['resource']['azurerm_network_interface'][name] = new_nic
 
@@ -310,13 +309,13 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
                 azure_resource_name=instance['azurerm_network_interface'])],
             'os_disk': os_disk,
             'admin_ssh_key': admin_ssh_key,
-            'tags': {self.ci_tag_key: self.ci_test_value},
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
                 'azurerm_network_interface.{}'.format(instance['azurerm_network_interface']),
             ]
         }
+        self.add_tags(self.config, new_instance)
 
         if 'image_uri' in instance:
             new_instance['source_image_id'] = instance['image_uri']

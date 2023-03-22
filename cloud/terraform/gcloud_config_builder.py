@@ -9,10 +9,9 @@ class GCloudConfigBuilder(BaseConfigBuilder):
 
     ssh_enabled_tag = 'ssh-enabled'
 
-    def __init__(self, resources_dict, ssh_key_path):
-        super().__init__(resources_dict)
+    def __init__(self, resources_dict, ssh_key_path, config):
+        super().__init__(resources_dict, ssh_key_path, config)
 
-        self.ssh_key_path = ssh_key_path
         self.project = resources_dict['project']
 
     def build_providers(self):
@@ -116,6 +115,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
             'username': username,
         }
 
+        # TODO: Enable tags from config file
         new_instance = {
             'name': name,
             'machine_type': instance['instance_type'],
@@ -123,7 +123,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
             'zone': instance['zone'],
             'network_interface': network_interface,
             'metadata': metadata,
-            'tags': [self.ssh_enabled_tag, self.ci_tag_key],
+            'tags': [self.ssh_enabled_tag],
             'depends_on': [
                 'google_compute_network.{}'.format(instance['google_compute_network'])
             ]

@@ -67,7 +67,8 @@ class CloudImageValidator:
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
 
         self.infra_configurator = TerraformConfigurator(ssh_key_path=self.ssh_pub_key_file,
-                                                        resources_path=self.config["resources_file"])
+                                                        resources_path=self.config["resources_file"],
+                                                        config=self.config)
         self.infra_configurator.configure_from_resources_json()
 
         if self.config["debug"]:
