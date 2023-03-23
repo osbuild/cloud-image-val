@@ -22,6 +22,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
         return {
             'region': region,
             'alias': region,
+            'skip_region_validation': True
         }
 
     def build_resources(self):
