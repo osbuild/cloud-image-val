@@ -155,7 +155,7 @@ IB-aws:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - python3 schutzbot/get_options.py /tmp/civ_options.sh && source /tmp/civ_options.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
   parallel:
     matrix:
@@ -170,7 +170,7 @@ IB-azure:
   extends: .IB_tests
   script:
     - schutzbot/deploy.sh
-    - python3 schutzbot/get_options.py /tmp/civ_options.sh && source /tmp/civ_options.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
   parallel:
     matrix:

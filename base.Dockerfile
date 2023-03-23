@@ -15,13 +15,13 @@ RUN dnf install -y \
     keychain
 
 # Install terraform
-RUN if [[ $(uname -m) == "aarch64" ]]; \
-    then wget --quiet https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_arm64.zip; \
-    else wget --quiet https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_amd64.zip; fi
-
-RUN unzip terraform_1.3.7_linux_*.zip \
-  && mv terraform /usr/bin \
-  && rm terraform_1.3.7_linux_*.zip
+RUN tf_version="1.4.2"; \
+    if [[ $(uname -m) == "aarch64" ]]; \
+    then wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_arm64.zip; \
+    else wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_amd64.zip; fi; \
+    unzip terraform_"${tf_version}"_linux_*.zip \
+    && mv terraform /usr/bin \
+    && rm terraform_"${tf_version}"_linux_*.zip
 
 # Install python requirements
 RUN pip install -r requirements.txt
