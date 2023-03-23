@@ -1,6 +1,16 @@
+"""
+This script exports checks which files and test methods have changed. If the only thing
+that changed in the PR are test methods, only execute those.
+
+To do so, it creates bash script with "SKIP_<CLOUD>" variables and "CIV_CONFIG_FILE" that
+is a file with the configuration of CIV in yaml format.
+"""
 import os
 import subprocess
 import sys
+import yaml
+
+from pprint import pprint
 
 
 def get_files_changed():
@@ -114,14 +124,14 @@ def write_vars_file(vars, vars_file_path):
                 vars_file.write(f'export {var}="{vars[var]}"\n')
 
 
-def get_civ_option_t():
+def get_modified_methods_str():
     modified_methods = get_modified_methods()
     if modified_methods is None:
         return None
 
     print('--- Modified methods:')
     print(*list(modified_methods), sep='\n')
-    return '-t ' + ' or '.join(list(modified_methods))
+    return ' or '.join(list(modified_methods))
 
 
 def get_skip_vars():
@@ -141,19 +151,39 @@ def get_skip_vars():
     return skip_vars
 
 
+def write_config_file(config_path, civ_config):
+    with open(config_path, 'w+') as config_file:
+        yaml.dump(civ_config, config_file)
+
+
 if __name__ == '__main__':
     vars_file_path = sys.argv[1]
-
-    # Set CIV_OPTIONS and SKIP_<CLOUD> env variables
     vars = {}
 
-    skip_vars = get_skip_vars()
-    option_t = get_civ_option_t()
+    if os.environ['CI_COMMIT_REF_SLUG'] != 'main':
+        skip_vars = get_skip_vars()
+        modified_methods_str = get_modified_methods_str()
+    else:
+        modified_methods_str = None
 
-    # If option_t is different than None, we are applying the filter
-    # If it's None, just run CIV with default values, no filter
-    if option_t:
-        vars['CIV_OPTION_T'] = option_t
+    civ_config = {'resources_file': '/tmp/resource-file.json',
+                  'output_file': '/tmp/report.xml',
+                  'environment': 'automated',
+                  'tags': {'Workload': 'CIV Runner',
+                           'Job_name': os.environ['CI_JOB_NAME'],
+                           'Project': 'CIV',
+                           'Branch': os.environ['CI_COMMIT_REF_SLUG'],
+                           'Pipeline_id': os.environ['CI_PIPELINE_ID'],
+                           'Pipeline_source': os.environ['CI_PIPELINE_SOURCE']},
+                  'debug': True,
+                  'include_markers': 'not pub',
+                  'test_filter': None}
+
+    civ_config['test_filter'] = modified_methods_str
+
+    # If modified_methods_str is different than None, we might need to skip some clouds
+    # If it's None, just run CIV in all clouds, no skipping
+    if modified_methods_str:
         vars['SKIP_AWS'] = skip_vars['skip_aws']
         vars['SKIP_AZURE'] = skip_vars['skip_azure']
         vars['SKIP_GCP'] = skip_vars['skip_gcp']
@@ -162,12 +192,14 @@ if __name__ == '__main__':
         vars['SKIP_AZURE'] = 'false'
         vars['SKIP_GCP'] = 'false'
 
-    vars['CIV_OPTION_R'] = '-r=/tmp/resource-file.json'
-    vars['CIV_OPTION_D'] = '-d'
-    vars['CIV_OPTION_O'] = '-o=/tmp/report.xml'
-    vars['CIV_OPTION_M'] = '-m not pub'
-
-    print('--- CIV_OPTIONS and SKIP_<CLOUD>:')
+    print('--- SKIP_<CLOUD>:')
     [print(key, ': ', value) for key, value in vars.items()]
+
+    config_path = '/tmp/civ_config.yaml'
+    vars['CIV_CONFIG_FILE'] = config_path
+
+    write_config_file(config_path, civ_config)
+    print('--- civ_config:')
+    pprint(civ_config)
 
     write_vars_file(vars, vars_file_path)
