@@ -169,17 +169,15 @@ if __name__ == '__main__':
     civ_config = {'resources_file': '/tmp/resource-file.json',
                   'output_file': '/tmp/report.xml',
                   'environment': 'automated',
-                  'tags': {'Workload': 'CIV Runner',
-                           'Job_name': os.environ['CI_JOB_NAME'],
+                  'tags': {'Workload': 'CI Runner',
+                           'Job_name': 'In_CI_Cloud_Test:' + os.environ['CI_JOB_NAME'],
                            'Project': 'CIV',
                            'Branch': os.environ['CI_COMMIT_REF_SLUG'],
                            'Pipeline_id': os.environ['CI_PIPELINE_ID'],
                            'Pipeline_source': os.environ['CI_PIPELINE_SOURCE']},
                   'debug': True,
                   'include_markers': 'not pub',
-                  'test_filter': None}
-
-    civ_config['test_filter'] = modified_methods_str
+                  'test_filter': modified_methods_str}
 
     # If modified_methods_str is different than None, we might need to skip some clouds
     # If it's None, just run CIV in all clouds, no skipping
