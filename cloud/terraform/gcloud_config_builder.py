@@ -3,7 +3,7 @@ from cloud.terraform.base_config_builder import BaseConfigBuilder
 
 class GCloudConfigBuilder(BaseConfigBuilder):
     cloud_name = 'gcloud'
-    cloud_provider_definition = {'google': {'source': 'hashicorp/google', 'version': '~> 3.5.0'}}
+    cloud_provider_definition = {'google': {'source': 'hashicorp/google', 'version': '~> 4.61.0'}}
 
     default_ssh_user = 'user'
 

@@ -474,10 +474,11 @@ class TestsCloudInit:
                 f'{config} must be present in cloud_init_modules'
 
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.exclude_on(['<rhel8.2'])
     def test_wheel_group_not_set_to_default_user(self, host):
         """
         Make sure there is no wheel in default_user's group in "/etc/cloud/cloud.cfg".
-        BugZilla 1549638
+        BugZilla 1549638, 1785648
         Customer Case 01965459
         """
         assert not host.file('/etc/cloud/cloud.cfg').contains('wheel'), \

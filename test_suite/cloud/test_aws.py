@@ -299,9 +299,10 @@ class TestsAWS:
             f'Package "{required_rhui_pkg}" should be present'
 
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_amazon_timesync_service_is_used(self, host):
         """
-        BugZilla 1679763
+        BugZilla 1679763, 1961156
         """
         timesync_service_ipv4 = '169.254.169.123'
         line = f'server {timesync_service_ipv4} iburst minpoll 4 maxpoll 4'

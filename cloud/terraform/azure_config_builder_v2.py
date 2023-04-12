@@ -5,7 +5,7 @@ from cloud.terraform.base_config_builder import BaseConfigBuilder
 
 class AzureConfigBuilderV2(BaseConfigBuilder):
     cloud_name = 'azure'
-    cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.41.0'}}
+    cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.51.0'}}
 
     default_x86_vm_size = 'Standard_DS1_v2'
     default_arm64_vm_size = 'Standard_D2pls_v5'

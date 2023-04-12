@@ -3,7 +3,7 @@ from cloud.terraform.base_config_builder import BaseConfigBuilder
 
 class AWSConfigBuilder(BaseConfigBuilder):
     cloud_name = 'aws'
-    cloud_provider_definition = {'aws': {'source': 'hashicorp/aws', 'version': '~> 3.27'}}
+    cloud_provider_definition = {'aws': {'source': 'hashicorp/aws', 'version': '~> 4.62.0'}}
 
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
