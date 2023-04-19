@@ -21,9 +21,12 @@ Some steps below will be automated in later versions of the tool.
 
 ### AWS
 - You must have a working AWS account.
-- The code is prepared to work with authentication via the use of environment variables:
+- The code is prepared to work with authentication via the use of credentials file (easier) or environment variables:
+  - If you use the credentials file, you have to export your profile with the variable `AWS_PROFILE`
+  - https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
   - https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
 - **Inbound rules** must be set to **allow SSH** connection from (at least) your public IP address in the default Security Group or VPC.
+- All regions that are going to be used have to be enabled in your aws account
 
 ### Azure
 - You must have a working Azure account.
@@ -69,6 +72,16 @@ options:
   -d, --debug           Use this option to enable debugging mode. Default is DISABLED
   -s, --stop-cleanup    Use this option to enable stop cleanup process until a key is pressed. 
                         Helpful when you need to connect through ssh to an instance. Default is DISABLED
+  -e ENVIRONMENT, --environment ENVIRONMENT
+                        Use this option to set what invironment CIV is going to run on.
+                        This can change CIV bahaviour like how "-s" works. this option can be
+                        set to "automated" or "local". Default is "local"
+  -c CONFIG_FILE, --config-file CONFIG_FILE
+                        Use this option to pass CLI options through a config file.
+                        This config should be in yaml format, examples can be found at the end of this README
+  --tags TAGS           Use this option to add tags to created cloud resources and modify CIV behaviour.
+                        This tags should be passed in json format as in this example:
+                        --tags '{"key1": "value1", "key2": "value2"}'
 ```
 
 Example of running CIV locally:
@@ -99,7 +112,18 @@ podman run \
   -e AWS_SECRET_ACCESS_KEY="<your_aws_secret_key>" \
   -e AWS_REGION="<your_aws_default_region>" \
   -v <some_local_dir_path>:/tmp:Z \
-  quay.io/cloudexperience/cloud-image-val-test:latest \
+  quay.io/cloudexperience/cloud-image-val:latest \
+  python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -p -o /tmp/report.xml
+```
+
+As an alternative, you could also use your credentials stored in ~/.aws/credentials by exporting the variable AWS_PROFILE and binding the ~/.aws/ folder to the container:
+```
+podman run \
+  -a stdout -a stderr \
+  -e AWS_PROFILE="<your_aws_profile>" \
+  -v <some_local_dir_path>:/tmp:Z \
+  -v $HOME/.aws/:/home/civ/.aws/:Z \
+  quay.io/cloudexperience/cloud-image-val:latest \
   python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -p -o /tmp/report.xml
 ```
 
@@ -171,3 +195,16 @@ This way, the test cases can be categorized, markers can be applied to certain g
 - Make sure to check if the test applies to all cloud providers (`generic`) or if only applies to certain clouds.
   - That's why we have different directories that are for specific clouds (`test_suite/cloud`)
   - If the test applies to some clouds and does not apply to others, then it's better to add it under the generic directory, and then inside the test, skip whenever appropriate.
+
+### Config file
+You can also provide th CLI parameters through a config file in yaml format. This file is always created, even if you provide the parameters through the CLI, the default file is /tmp/civ_config.yml. Here is an example of a config file:
+```
+config_file: /tmp/civ_config.yml
+debug: true
+environment: local
+output_file: /tmp/civ.xml
+resources_file: cloud/sample/resources_aws_marketplace.json
+tags:
+  key1: value1
+  key2: value2
+```

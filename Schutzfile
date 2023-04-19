@@ -2,7 +2,7 @@
   "fedora-36": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
@@ -79,7 +79,7 @@
   "fedora-37": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
@@ -153,31 +153,74 @@
       }
     ]
   },
+  "fedora-38": {
+    "dependencies": {
+      "osbuild": {
+        "commit": "cfed69adca973fa3eb0b93afea75a480e3d7e744"
+      }
+    },
+    "repos": [
+      {
+        "file": "/etc/yum.repos.d/fedora.repo",
+        "x86_64": [
+          {
+            "title": "fedora",
+            "name": "fedora",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/f38/f38-x86_64-branched-20230316"
+          }
+        ],
+        "aarch64": [
+          {
+            "title": "fedora",
+            "name": "fedora",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/f38/f38-aarch64-branched-20230316"
+          }
+        ]
+      },
+      {
+        "file": "/etc/yum.repos.d/fedora-modular.repo",
+        "x86_64": [
+          {
+            "title": "fedora-modular",
+            "name": "fedora-modular",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/f38/f38-x86_64-branched-modular-20230316"
+          }
+        ],
+        "aarch64": [
+          {
+            "title": "fedora-modular",
+            "name": "fedora-modular",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/f38/f38-aarch64-branched-modular-20230316"
+          }
+        ]
+      }
+    ]
+  },
   "rhel-8.4": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "rhel-8.6": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "rhel-8.7": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "rhel-8.8": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
@@ -223,21 +266,21 @@
   "rhel-9.0": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "rhel-9.1": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "rhel-9.2": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
@@ -283,21 +326,21 @@
   "centos-8": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "centos-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     }
   },
   "centos-stream-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
@@ -343,7 +386,7 @@
   "centos-stream-8": {
     "dependencies": {
       "osbuild": {
-        "commit": "345b2a599788e0ce3090025c06a7480e7497a94d"
+        "commit": "76a80bd8c590dba4480305efcb067145db3bf347"
       }
     },
     "repos": [
