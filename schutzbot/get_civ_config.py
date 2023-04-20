@@ -77,8 +77,7 @@ def get_method_from_changed_line(line_num, diff):
     raw_line = diff[line_num][1:].strip()
 
     if raw_line[0:3] == 'def':
-        print(f'A new method was created, the filter cannot be applied. Method: {raw_line}')
-        return None
+        method = find_method_name('above', line_num + 1, diff)
     elif raw_line[0:1] == '@':
         method = find_method_name('below', line_num, diff)
     else:

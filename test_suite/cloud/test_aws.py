@@ -514,6 +514,23 @@ class TestsAWS:
             assert host.package(package_to_check).is_installed, \
                 f'{package_to_check} is not installed'
 
+    @pytest.mark.pub
+    @pytest.mark.run_on(['rhel'])
+    def test_yum_package_install_kernel_debug(self, host):
+        """
+        BugZilla: 2117700
+        Test that kernel-debug and kernel-debug-devel matching current kernel version are available in repo
+        Open Question: which versions does this test apply? using all rhel versions for now
+        """
+        if test_lib.is_rhel_atomic_host(host):
+            pytest.skip('Not applicable to Atomic host AMIs')
+
+        print(f"kernel version: {host.check_output('uname -r')}")
+
+        with host.sudo():
+            assert host.run_test('yum -y install install kernel-debug-devel-$(uname -r)')
+            assert host.run_test('yum -y install install kernel-debug-$(uname -r)')
+
     @pytest.mark.run_on(['all'])
     def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
         """
