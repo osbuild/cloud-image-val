@@ -122,7 +122,7 @@ podman run \
   -a stdout -a stderr \
   -e AWS_PROFILE="<your_aws_profile>" \
   -v <some_local_dir_path>:/tmp:Z \
-  -v $HOME/.aws/:/home/civ/.aws/:Z \
+  -v $HOME/.aws/:/opt/app-root/src/.aws/:Z \
   quay.io/cloudexperience/cloud-image-val:latest \
   python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -p -o /tmp/report.xml
 ```

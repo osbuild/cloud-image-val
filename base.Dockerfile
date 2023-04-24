@@ -1,8 +1,6 @@
 FROM registry.access.redhat.com/ubi8/python-39:latest
 
-USER 0 
-
-WORKDIR /home/civ
+USER 0
 
 # Copy cloud-image-val project
 COPY ./requirements.txt ./
