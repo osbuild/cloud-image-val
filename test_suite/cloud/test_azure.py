@@ -310,6 +310,8 @@ class TestsAzure:
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
 
         print(result.stdout)
+        print(str(host.run('rpm -qa | grep rhui').stdout))
+        print(str(host.run('yum -v repolist').stdout))
 
         assert result.rc == 0, 'The certificate appears to have expired. Check the test case output for more details.'
 

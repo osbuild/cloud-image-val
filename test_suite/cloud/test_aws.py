@@ -290,6 +290,8 @@ class TestsAWS:
                 'rh-amazon-rhui-client-sap',
             ]
 
+        print(str(host.run('rpm -qa | grep rhui').stdout))
+
         if unwanted_rhui_pkgs:
             for pkg in unwanted_rhui_pkgs:
                 assert host.run(f'rpm -qa | grep {pkg}').exit_status != 0, \
