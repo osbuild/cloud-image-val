@@ -28,7 +28,7 @@ class TerraformController:
         self.wait_for_all_instances_ssh_up()
 
     def wait_for_all_instances_ssh_up(self):
-        seconds_to_wait = 120
+        seconds_to_wait = 180
         instances = self.get_instances()
 
         threads = []
