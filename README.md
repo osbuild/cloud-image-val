@@ -95,12 +95,12 @@ You can simply use the latest container version of the tool, which already has a
 
 Example (using podman, but it should work the same way with docker):
 ```
-podman pull quay.io/cloudexperience/cloud-image-val-test:latest
+podman pull quay.io/cloudexperience/cloud-image-val:latest
 ```
 
 Then you can connect to the container in interactive mode and run CIV as if you were running it in local:
 ```
-podman run -it quay.io/cloudexperience/cloud-image-val-test:latest
+podman run -it quay.io/cloudexperience/cloud-image-val:latest
 ```
 
 Or, you can pass the environment variables and even map a local directory so that the resultant HTML report is stored there.
