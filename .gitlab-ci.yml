@@ -124,6 +124,7 @@ Prepare-rhel-internal:
       - aws/rhel-9.2-nightly-x86_64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["true"]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
     RUNNER:
@@ -131,6 +132,7 @@ Prepare-rhel-internal:
       - aws/rhel-9.2-nightly-aarch64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["true"]
 
 .fedora_runners: &fedora_runners
     RUNNER:
