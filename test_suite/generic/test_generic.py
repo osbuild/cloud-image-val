@@ -575,6 +575,8 @@ class TestsNetworking:
         Make sure that eht0 default adapter is correctly setup:
             1. NETWORKING=yes in /etc/sysconfig/network
             2. DEVICE=eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+
+        Does not apply to >fedora35: https://fedoramagazine.org/converting-networkmanager-from-ifcfg-to-keyfiles/
         """
         device_name = 'eth0'
 
