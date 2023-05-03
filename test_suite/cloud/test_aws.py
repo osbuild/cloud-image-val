@@ -350,7 +350,6 @@ class TestsAWS:
                         f'{line} must not be specified in AMIs that are not SAP'
 
     @pytest.mark.run_on(['all'])
-    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_hostkey_permissions(self, host):
         """
         Check that ssh files permission set are correct.
@@ -364,7 +363,11 @@ class TestsAWS:
             # - https://src.fedoraproject.org/rpms/openssh/c/b615362fd0b4da657d624571441cb74983de6e3f?branch=rawhide
             # - https://src.fedoraproject.org/rpms/openssh/c/7a21555354a2c5e724aa4c287b640c24bf108780?branch=rawhide
             expected_mode = 0o600
+
+        print(host.run('rpm -q cloud-init').stdout)
+
         for file in files_to_check:
+            print(host.run(f'stat -c "%a %n" /etc/ssh/{file}*').stdout)
             if host.file(f'/etc/ssh/{file}').exists:
                 assert host.file(f'/etc/ssh/{file}').mode == expected_mode, \
                     'ssh files permissions are not set correctly'
