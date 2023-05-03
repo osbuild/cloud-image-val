@@ -249,18 +249,28 @@ class TestsAWS:
             required_pkgs.extend(
                 ['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])
 
-            required_pkgs.append('uuidd')  # BugZilla 1959813
+            # BugZilla 1959813
+            required_pkgs.append('uuidd')
 
+            # BugZilla 1959923, 1961168
             required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
-                                  'iptraf-ng', 'krb5-workstation', 'libaio'])  # BugZilla 1959923, 1961168
+                                  'iptraf-ng', 'krb5-workstation', 'libaio'])
 
+            # BugZilla 1959923, 1961168
             required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
-                                  'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])  # BugZilla 1959923, 1961168
+                                  'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])
 
             required_pkgs.extend(
                 ['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
 
-            required_pkgs.append('tuned-profiles-sap-hana')  # BugZilla 1959962
+            # BugZilla 1959962
+            required_pkgs.append('tuned-profiles-sap-hana')
+
+            # CLOUDX-367
+            if product_version >= 8.6:
+                required_pkgs.append('ansible-core')
+            else:
+                required_pkgs.append('ansible')
 
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
