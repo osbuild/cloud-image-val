@@ -571,11 +571,6 @@ class TestsAWS:
             # print the gpg public keys installed
             print(host.check_output('rpm -qa | grep gpg-pubkey'))
 
-            if host.system_info.distribution == 'fedora':
-                num_of_gpg_keys = 1
-            else:
-                num_of_gpg_keys = 2
-
             gpg_pubkey_base_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
 
             # check no pkg signature is none
@@ -589,9 +584,26 @@ class TestsAWS:
             assert int(host.check_output(key_ids_command)) == 1, \
                 'Number of key IDs for rhui pkgs should be 1'
 
-            # check correct number of gpg keys installed
-            assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
-                f'There should be {num_of_gpg_keys} gpg key(s) installed'
+    @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
+    def test_number_gpg_keys(self, host):
+        """
+        Check that the number of GPGs is correct
+        """
+        with host.sudo():
+            # print the gpg public keys installed
+            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+
+            if host.system_info.distribution == 'fedora':
+                num_of_gpg_keys = 1
+            elif host.system_info.distribution == 'rhel' and float(host.system_info.release) >= 9.0:
+                num_of_gpg_keys = 3
+            else:
+                num_of_gpg_keys = 2
+
+        # check correct number of gpg keys installed
+        assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
+            f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
     @pytest.mark.run_on(['all'])
     def test_timezone_is_utc(self, host):
