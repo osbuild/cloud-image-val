@@ -43,39 +43,49 @@ def get_failed_tests_analysis(data):
     return analysis
 
 
-def get_formatted_analysis(analysis, format):
+def get_formatted_analysis(report_data, format):
+    summary = get_tests_summary(report_data)
+    analysis = get_failed_tests_analysis(report_data)
+    test_environment = report_data['environment']
+
     if format == 'table':
-        formatted_analysis = get_analysis_as_spreadsheet_table(analysis)
+        formatted_analysis = get_analysis_as_spreadsheet_table(summary, analysis, test_environment)
     elif format == 'jira':
-        formatted_analysis = get_analysis_as_jira_markup(analysis)
+        formatted_analysis = get_analysis_as_jira_markup(summary, analysis)
     else:
-        formatted_analysis = get_analysis_as_cli(analysis)
+        formatted_analysis = get_analysis_as_cli(summary, analysis)
 
     return '\n'.join(formatted_analysis)
 
 
-def get_formatted_summary(data):
+def get_tests_summary(data):
     summary_data = data['summary']
 
     passed_total = summary_data['passed']
     failed_total = summary_data['failed'] if 'failed' in summary_data else 0
+
     failed_and_passed_total = passed_total + failed_total
 
     success_ratio = round((passed_total * 100 / failed_and_passed_total), 2)
 
+    return {
+        'passed_total': passed_total,
+        'failed_total': failed_total,
+        'failed_and_passed_total': failed_and_passed_total,
+        'success_ratio': success_ratio
+    }
+
+
+def get_analysis_as_cli(summary, analysis):
     summary_lines = [
         '-' * 100,
-        f'Total passed:\t{passed_total}',
-        f'Total failed:\t{failed_total}',
-        f'Success ratio:\t{success_ratio}%',
+        f"Total passed:\t{summary['passed_total']}",
+        f"Total failed:\t{summary['failed_total']}",
+        f"Success ratio:\t{summary['success_ratio']}%",
         '-' * 100
     ]
 
-    return '\n'.join(summary_lines)
-
-
-def get_analysis_as_cli(analysis):
-    rows = []
+    rows = summary_lines
 
     for test_case, error_data in analysis.items():
         for err_msg, count in error_data.items():
@@ -104,17 +114,32 @@ def __parse_error_message(error_message):
         result = re.match(regex_error_command, extracted_message)
         if result:
             error_details = result.groupdict()
-            composed_error_message = [
-                '{0}: {1}'.format(k, v.replace(r'\n\n', f'\n{spaced_indentation}'))
-                for k, v in error_details.items()
-            ]
-            extracted_message = '\n'.join(composed_error_message)
 
-    return extracted_message.replace(r'\n', f'\n{spaced_indentation}')
+            composed_error_message = []
+            for key, value in error_details.items():
+                formatted_value = value.replace(r'\n\n', '\n')
+                formatted_value = formatted_value.replace(r"\n", "\n")
+                formatted_value = formatted_value.replace("\n\"", "\"")
+                formatted_value = formatted_value.replace("\n'", "\'")
+                formatted_value = formatted_value.replace("\"", '\"\"')
+
+                composed_error_message.append(f'{key}: {formatted_value.strip()}')
+
+            extracted_message = '\n\n'.join(composed_error_message)
+
+    return extracted_message
 
 
-def get_analysis_as_jira_markup(analysis):
-    rows = []
+def get_analysis_as_jira_markup(summary, analysis):
+    summary_lines = [
+        '-' * 4,
+        f"Total passed:\t{summary['passed_total']}",
+        f"Total failed:\t{summary['failed_total']}",
+        f"Success ratio:\t{summary['success_ratio']}%",
+        '-' * 4
+    ]
+
+    rows = summary_lines
 
     for test_case, error_data in analysis.items():
         for err_msg, count in error_data.items():
@@ -125,25 +150,29 @@ def get_analysis_as_jira_markup(analysis):
     return rows
 
 
-def get_analysis_as_spreadsheet_table(analysis):
+def get_analysis_as_spreadsheet_table(summary, analysis, test_environment):
     default_test_owner = 'Jenkins'
     default_status = 'Not Started'
     default_rerun_value = 'FALSE'
     default_delimiter = '\t'
 
-    rows = [
-        'TestCase',
-        'Owner',
-        'Status',
-        'Fails again in rerun',
-        'Rate Failure',
-        'Comments'
+    jenkins_url = '=HYPERLINK("{0}/Report", "{1}")'.format(test_environment['BUILD_URL'], 'Jenkins Report')
+
+    summary_lines = [
+        "\t".join(['Total passed:', f"{summary['passed_total']}", '', '', '', 'Pub Task']),
+        "\t".join(['Total failed:', str(summary['failed_total']), '', '', 'Jenkins Report (rerun)', jenkins_url]),
+        "\t".join(['Success ratio:', f"{summary['success_ratio']}%"])
     ]
+
+    rows = summary_lines
 
     for test_case, error_data in analysis.items():
         for err_msg, count in error_data.items():
-            formatted_err_msg = __parse_error_message(err_msg).replace(spaced_indentation, '')
-            formatted_err_msg = formatted_err_msg.replace('\n', ' | ')
+            formatted_err_msg = __parse_error_message(err_msg)
+
+            if '\n' in formatted_err_msg:
+                formatted_err_msg.replace("\"", '\"\"')
+                formatted_err_msg = f"\"{formatted_err_msg}\""
 
             row_details = [
                 test_case,
@@ -165,18 +194,14 @@ if __name__ == '__main__':
     with open(args.report_file) as f:
         report_data = json.load(f)
 
-    formatted_summary = get_formatted_summary(report_data)
-    print(formatted_summary)
-
     if 'failed' not in report_data['summary']:
         print('Congratulations! No test failures found.')
         exit(0)
 
-    analysis = get_failed_tests_analysis(report_data)
-    formatted_analysis = get_formatted_analysis(analysis, format=args.format)
+    formatted_analysis = get_formatted_analysis(report_data, format=args.format)
 
     print(formatted_analysis)
 
     if args.output_file:
         with open(args.output_file, 'w') as f:
-            f.write(f'{formatted_summary}\n{formatted_analysis}')
+            f.write(formatted_analysis)
