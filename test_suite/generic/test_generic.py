@@ -739,12 +739,11 @@ class TestsKdump:
         QE: xiawu@redhat.com
         """
         with host.sudo():
-            if 'Kdump is operational' not in host.check_output('kdumpctl status 2>&1'):
+            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools")}')
 
-                        print(f' - kdumpctl showmem: {host.check_output('kdumpctl showmem')}')
-                        print(f' - kdumpctl showmem: {host.check_output('dmesg | grep crashkernel')}')
-                        print(f' - kdumpctl showmem: {host.check_output('journalctl --no-pager -u kdump.service')}')
-                        print(f' - kdumpctl showmem: {host.check_output('journalctl --no-pager -k')}')
-                        print(f' - kdumpctl showmem: {host.check_output('rpm -qa | grep kexec-tools')}')
-            else:
+            if 'Kdump is operational' not in host.run('kdumpctl status 2>&1').stdout:
+                print(f' - kdumpctl showmem: {host.run("kdumpctl showmem").stdout}')
+                print(f' - dmesg grep crashkernel: {host.run("dmesg | grep crashkernel").stdout}')
+                print(f' - journalctl kdump service: {host.run("journalctl --no-pager -u kdump.service").stdout}')
+                print(f' - journalctl kernel: {host.run("journalctl --no-pager -k").stdout}')
                 pytest.fail('Kdump is not operational')
