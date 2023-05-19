@@ -336,13 +336,17 @@ class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
         with host.sudo():
+            print(f' - openssh-server version: {host.package("openssh-server").version}')
+
             sshd = host.service('sshd')
-            assert sshd.is_running, 'ssh.service is not active'
+            if not sshd.is_running:
+                print(f' - journalctl -u sshd.service: {host.check_output("journalctl -u sshd.service")}')
+                pytest.fail('ssh.service is not active')
 
             pass_auth_config_name = 'PasswordAuthentication'
 
-            assert host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'), \
-                f'{pass_auth_config_name} should be disabled (set to "no")'
+            if not host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'):
+                pytest.fail(f'{pass_auth_config_name} should be disabled')
 
     @pytest.mark.run_on(['rhel', 'centos'])
     def test_sysconfig_kernel(self, host):
