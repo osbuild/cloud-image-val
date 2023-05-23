@@ -12,6 +12,7 @@ class BaseConfigBuilder:
     }
 
     resource_name_prefix = 'civ'
+    resource_tags_key = 'tags'
 
     def __init__(self, resources_dict, ssh_key_path, config):
         self.resources_dict = resources_dict
@@ -46,7 +47,9 @@ class BaseConfigBuilder:
     def get_random_numbers(self):
         return f'{random.randrange(1, 10 ** 5):03}'
 
-    def add_tags(self, config_dict, resource, tags_key="tags"):
+    def add_tags(self, config_dict, resource):
+        tags_key = self.resource_tags_key
+
         if config_dict["tags"]:
             if tags_key in resource:
                 resource[tags_key] = {**resource[tags_key], **config_dict["tags"]}
