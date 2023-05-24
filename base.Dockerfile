@@ -15,7 +15,7 @@ RUN dnf install -y \
     keychain
 
 # Install terraform
-RUN tf_version="1.4.2"; \
+RUN tf_version="1.4.6"; \
     if [[ $(uname -m) == "aarch64" ]]; \
     then wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_arm64.zip; \
     else wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_amd64.zip; fi; \
