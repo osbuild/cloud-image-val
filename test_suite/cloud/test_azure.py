@@ -298,20 +298,29 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel'])
     def test_rhui_certificate_date(self, host):
         """
-        Verify /etc/pki/rhui/product/content.crt exists
-        Check end time
+        Verify /etc/pki/rhui/product/content.crt exists.
+        Starting from RHEL 9.2, the certificate file was renamed to content-base.crt.
+        Check end time of the certificate to see if it has expired
         """
         cert_file = '/etc/pki/rhui/product/content.crt'
+
+        if float(host.system_info.release) >= 9.2:
+            cert_file = '/etc/pki/rhui/product/content-base.crt'
 
         if test_lib.is_rhel_sap(host):
             cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
 
+        rhui_package = str(host.run('rpm -qa | grep rhui').stdout)
+
+        print(f'Rpm package found: {rhui_package}')
+        print(f"Rpm package files: {str(host.run(f'rpm -ql {rhui_package}').stdout)}")
+        print(f"Yum Repolist: {str(host.run('yum -v repolist').stdout)}")
+
         with host.sudo():
+            assert host.file(cert_file).exists(), 'The RHUI certificate was not found.'
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
 
         print(result.stdout)
-        print(str(host.run('rpm -qa | grep rhui').stdout))
-        print(str(host.run('yum -v repolist').stdout))
 
         assert result.rc == 0, 'The certificate appears to have expired. Check the test case output for more details.'
 
