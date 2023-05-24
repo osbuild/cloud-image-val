@@ -730,15 +730,24 @@ class TestsAuthConfig:
             f'{file_to_check} has unexpected content'
 
 
-@pytest.mark.order(2)
+@pytest.mark.order(3)
 class TestsKdump:
     @pytest.mark.pub
-    @pytest.mark.run_on(['rhel'])
     @pytest.mark.run_on(['rhel'])
     def test_kdump_status(self, host):
         """
         Verify that kdump is enabled
+
+        Kdump contacts
+        Devel: kasong@redhat.com, ruyang@redhat.com, piliu@redhat.com
+        QE: xiawu@redhat.com
         """
         with host.sudo():
-            assert 'Kdump is operational' in host.check_output('kdumpctl status 2>&1'), \
-                'Kdump is not operational'
+            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools")}')
+
+            if 'Kdump is operational' not in host.run('kdumpctl status 2>&1').stdout:
+                print(f' - kdumpctl showmem: {host.run("kdumpctl showmem").stdout}')
+                print(f' - dmesg grep crashkernel: {host.run("dmesg | grep crashkernel").stdout}')
+                print(f' - journalctl kdump service: {host.run("journalctl --no-pager -u kdump.service").stdout}')
+                print(f' - journalctl kernel: {host.run("journalctl --no-pager -k").stdout}')
+                pytest.fail('Kdump is not operational')

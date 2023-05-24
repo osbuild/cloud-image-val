@@ -52,7 +52,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
     def __new_aws_instance(self, instance):
         if not instance['instance_type']:
             # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
-            instance['instance_type'] = 't3.large'
+            instance['instance_type'] = 't3.medium'
 
         name_tag = instance['name'].replace('.', '-')
         name = self.create_resource_name([name_tag])
