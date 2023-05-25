@@ -317,7 +317,7 @@ class TestsAzure:
         print(f"Yum Repolist: {str(host.run('yum -v repolist').stdout)}")
 
         with host.sudo():
-            assert host.file(cert_file).exists(), 'The RHUI certificate was not found.'
+            assert host.file(cert_file).exists, 'The RHUI certificate was not found.'
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
 
         print(result.stdout)
