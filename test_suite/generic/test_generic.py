@@ -381,7 +381,7 @@ class TestsServices:
 @pytest.mark.run_on(['rhel'])
 @pytest.mark.exclude_on(['<rhel8.3'])
 class TestsSubscriptionManager:
-    def test_subscription_manager_auto(self, host):
+    def test_subscription_manager_auto(self, host, instance_data):
         """
         BugZilla 8.4: 1932802, 1905398
         BugZilla 7.9: 2077086, 2077085
@@ -391,6 +391,25 @@ class TestsSubscriptionManager:
             'auto_registration = 1',
             'manage_repos = 0'
         ]
+
+        if instance_data['cloud'] == 'aws':
+            region = instance_data['availability_zone'][:-1]
+
+            # Refer to "Supported AWS AutoReg Regions" Google Spreadsheet (RHUI Team)
+            # https://docs.google.com/spreadsheets/d/15bcP0a9fBaxHVbk6tXiBL8Hn5fLjkHx9GjNf06ctISI/
+            unsupported_aws_regions = [
+                'ap-south-2',
+                'ap-southeast-4',
+                'eu-south-2',
+                'eu-central-2',
+                'us-gov-east-1',
+                'us-gov-west-1',
+                'cn-northwest-1',
+                'cn-north-1'
+            ]
+
+            if region in unsupported_aws_regions:
+                pytest.skip(f'The {region} AWS region is not supported for auto-registration yet.')
 
         with host.sudo():
             for config in expected_config:
@@ -424,8 +443,7 @@ class TestsSubscriptionManager:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
-                        pytest.fail(
-                            'insights-client command expected to succeed after auto-registration is complete')
+                        pytest.fail('insights-client command did not succeed after auto-registration completed')
 
                     break
 
