@@ -45,14 +45,14 @@ class TestSuiteRunner:
     @pytest.mark.parametrize(
         'test_filter, test_marker, test_debug, test_parallel, expected_command_string',
         [(None, None, False, False,
-          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")}'),
          (test_filter, test_marker, False, False,
-          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
@@ -61,23 +61,23 @@ class TestSuiteRunner:
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
          (None, None, False, True,
-          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--numprocesses={len(test_instances)} --maxprocesses=40 '
+          f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5'),
          (None, None, True, True,
-          'py.test path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--numprocesses={len(test_instances)} --maxprocesses=40 '
+          f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError" '
           '--reruns 3 --reruns-delay 5 '
           '-v')]
