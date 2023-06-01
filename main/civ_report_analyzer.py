@@ -156,7 +156,9 @@ def get_analysis_as_spreadsheet_table(summary, analysis, test_environment):
     default_rerun_value = 'FALSE'
     default_delimiter = '\t'
 
-    jenkins_url = '=HYPERLINK("{0}/Report", "{1}")'.format(test_environment['BUILD_URL'], 'Jenkins Report')
+    jenkins_url = 'Jenkins Report'
+    if 'BUILD_URL' in test_environment:
+        jenkins_url = '=HYPERLINK("{0}/Report", "{1}")'.format(test_environment['BUILD_URL'], 'Jenkins Report')
 
     summary_lines = [
         "\t".join(['Total passed:', f"{summary['passed_total']}", '', '', '', 'Pub Task']),
