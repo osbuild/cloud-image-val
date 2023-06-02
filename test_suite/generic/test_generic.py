@@ -761,7 +761,7 @@ class TestsKdump:
         QE: xiawu@redhat.com
         """
         with host.sudo():
-            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools")}')
+            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools").stdout}')
 
             if 'Kdump is operational' not in host.run('kdumpctl status 2>&1').stdout:
                 print(f' - kdumpctl showmem: {host.run("kdumpctl showmem").stdout}')

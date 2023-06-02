@@ -2,7 +2,7 @@ import os
 
 
 class SuiteRunner:
-    max_processes = 40  # based on the number of threads used by ami-val
+    max_processes = 162  # This is the maximum amount of images we have successfully tested in parallel (AWS)
 
     # Rerun failed tests in case ssh times out or connection is refused by host
     rerun_failing_tests_regex = '|'.join([
@@ -48,7 +48,7 @@ class SuiteRunner:
         all_hosts = self.get_all_instances_hosts_with_users()
 
         command_with_args = [
-            'py.test',
+            'pytest',
             ' '.join(self.get_test_suite_paths()),
             f'--hosts={all_hosts}',
             f'--connection={self.connection_backend}',
