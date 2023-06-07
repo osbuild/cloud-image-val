@@ -494,10 +494,12 @@ class TestsAWS:
             file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
 
         with host.sudo():
-            assert host.file(
-                file_to_check).exists, f'{file_to_check} should exist in RHEL {rhel_version}'
-            assert host.file(file_to_check).contains('install_items+=" sgdisk "'), \
-                f'Expected configuration was not found in "{file_to_check}"'
+            if not host.file(file_to_check).exists:
+                print(host.run("ls -R /etc/dracut* /usr/lib/dracut/dracut*"))
+                pytest.fail(f'{file_to_check} should exist in RHEL {rhel_version}')
+            if not host.file(file_to_check).contains('install_items+=" sgdisk "'):
+                print(host.file(file_to_check)).content_string
+                pytest.fail(f'Expected configuration was not found in "{file_to_check}"')
 
     @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
     def test_dracut_conf_xen(self, host):
