@@ -336,7 +336,7 @@ class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
         with host.sudo():
-            print(f' - openssh-server version: {host.package("openssh-server").version}')
+            print(f' - openssh-server version: {host.run("rpm -qa | grep openssh-server").stdout}')
 
             sshd = host.service('sshd')
             if not sshd.is_running:
