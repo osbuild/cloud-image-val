@@ -358,9 +358,15 @@ class TestsAWS:
         """
         files_to_check = ['ssh_host_ecdsa_key',
                           'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+        expected_mode = 0o640
+        if host.system_info.distribution == 'fedora' and int(host.system_info.release) >= 38:
+            # On Fedora 38, ssh_keys group no longer exists and ssh-keygen no longer chmods to 640, see
+            # - https://src.fedoraproject.org/rpms/openssh/c/b615362fd0b4da657d624571441cb74983de6e3f?branch=rawhide
+            # - https://src.fedoraproject.org/rpms/openssh/c/7a21555354a2c5e724aa4c287b640c24bf108780?branch=rawhide
+            expected_mode = 0o600
         for file in files_to_check:
             if host.file(f'/etc/ssh/{file}').exists:
-                assert host.file(f'/etc/ssh/{file}').mode >= 0o640, \
+                assert host.file(f'/etc/ssh/{file}').mode == expected_mode, \
                     'ssh files permissions are not set correctly'
 
     @pytest.mark.run_on(['rhel'])
