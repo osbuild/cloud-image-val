@@ -344,8 +344,14 @@ class TestsServices:
                 pytest.fail('ssh.service is not active')
 
             pass_auth_config_name = 'PasswordAuthentication'
+            pass_auth_config_file = '/etc/ssh/sshd_config'
 
-            if not host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'):
+            if host.system_info.distribution == 'fedora' and int(host.system_info.release) >= 38:
+                # cloud-init >= 22.3 puts extra sshd configs into a separate file
+                # see https://github.com/canonical/cloud-init/pull/1618
+                pass_auth_config_file = '/etc/ssh/sshd_config.d/50-cloud-init.conf'
+
+            if not host.file(pass_auth_config_file).contains(f'^{pass_auth_config_name} no'):
                 pytest.fail(f'{pass_auth_config_name} should be disabled')
 
     @pytest.mark.run_on(['rhel', 'centos'])
