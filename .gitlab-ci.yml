@@ -136,7 +136,6 @@ Prepare-rhel-internal:
 
 .fedora_runners: &fedora_runners
     RUNNER:
-      - aws/fedora-36-x86_64
       - aws/fedora-37-x86_64
 
 .IB_tests:
