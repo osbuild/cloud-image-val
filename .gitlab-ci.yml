@@ -118,21 +118,22 @@ Prepare-rhel-internal:
       - aws/rhel-9.2-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
 
-.rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
-    RUNNER:
-      - aws/rhel-8.8-nightly-x86_64
-      - aws/rhel-9.2-nightly-x86_64
-    INTERNAL_NIGHTLY: ["internal"]
-    INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["true"]
+# Remove 8.8 and 9.2 internal, waiting until IB adds 8.9 and 9.3
+# .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
+#     RUNNER:
+#       - aws/rhel-8.8-nightly-x86_64
+#       - aws/rhel-9.2-nightly-x86_64
+#     INTERNAL_NIGHTLY: ["internal"]
+#     INTERNAL_NETWORK: ["true"]
+#     NIGHTLY: ["true"]
 
-.rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
-    RUNNER:
-      - aws/rhel-8.8-nightly-aarch64
-      - aws/rhel-9.2-nightly-aarch64
-    INTERNAL_NIGHTLY: ["internal"]
-    INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["true"]
+# .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
+#     RUNNER:
+#       - aws/rhel-8.8-nightly-aarch64
+#       - aws/rhel-9.2-nightly-aarch64
+#     INTERNAL_NIGHTLY: ["internal"]
+#     INTERNAL_NETWORK: ["true"]
+#     NIGHTLY: ["true"]
 
 .fedora_runners: &fedora_runners
     RUNNER:
@@ -160,8 +161,8 @@ IB-aws:
       - *fedora_runners
       - *rhel_runners
       - *rhel_runners_aarch64
-      - *rhel_runners_x86_64_internal_nightlies
-      - *rhel_runners_aarch64_internal_nightlies
+      # - *rhel_runners_x86_64_internal_nightlies
+      # - *rhel_runners_aarch64_internal_nightlies
 
 IB-azure:
   stage: test
@@ -174,7 +175,7 @@ IB-azure:
     matrix:
       - *fedora_runners
       - *rhel_runners
-      - *rhel_runners_x86_64_internal_nightlies
+#      - *rhel_runners_x86_64_internal_nightlies
 
 container_main:
   extends: .deps
