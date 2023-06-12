@@ -146,11 +146,14 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 sudo dnf -y install jq
 
 # Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(get_last_passed_commit)
+# GIT_COMMIT=$(get_last_passed_commit)
+GIT_COMMIT='80523a01d2ec5842e327e2561695e8d2db38b122'
 
 setup_repo osbuild-composer "${GIT_COMMIT}" 5
 
-OSBUILD_GIT_COMMIT=$(cat Schutzfile | jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.osbuild.commit')
+# OSBUILD_GIT_COMMIT=$(cat Schutzfile | jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.osbuild.commit')
+OSBUILD_GIT_COMMIT='8669d0ad4ca2941da21191cacec738b5b5ec734d'
+
 if [[ "${OSBUILD_GIT_COMMIT}" != "null" ]]; then
   setup_repo osbuild "${OSBUILD_GIT_COMMIT}" 10
 fi

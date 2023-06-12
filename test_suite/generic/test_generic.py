@@ -335,8 +335,26 @@ class TestsGeneric:
 class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
+        sshd_config_file = '/etc/ssh/sshd_config'
+
         with host.sudo():
             print(f' - openssh-server version: {host.package("openssh-server").version}')
+            print(f' - cloud-init version: {host.package("cloud-init").version}')
+
+            if host.file(sshd_config_file).exists:
+                print(f'{sshd_config_file} file content:')
+                print(f'{host.file(sshd_config_file).content_string}')
+            else:
+                print(f'{sshd_config_file} file not found.')
+
+            cloud_init_sshd_config_file = '/etc/ssh/sshd_config.d/50-cloud-init.conf'
+            if host.file(cloud_init_sshd_config_file).exists:
+                print(f'{cloud_init_sshd_config_file} file content:')
+                print(f'{host.file(cloud_init_sshd_config_file).content_string}')
+
+                sshd_config_file = cloud_init_sshd_config_file
+            else:
+                print(f'{cloud_init_sshd_config_file} file not found.')
 
             sshd = host.service('sshd')
             if not sshd.is_running:
@@ -345,7 +363,7 @@ class TestsServices:
 
             pass_auth_config_name = 'PasswordAuthentication'
 
-            if not host.file('/etc/ssh/sshd_config').contains(f'^{pass_auth_config_name} no'):
+            if not host.file(sshd_config_file).contains(f'^{pass_auth_config_name} no'):
                 pytest.fail(f'{pass_auth_config_name} should be disabled')
 
     @pytest.mark.run_on(['rhel', 'centos'])
