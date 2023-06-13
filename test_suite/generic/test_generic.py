@@ -6,6 +6,8 @@ import pytest
 from lib import test_lib
 from lib import console_lib
 
+from packaging import version
+
 
 @pytest.mark.order(1)
 class TestsGeneric:
@@ -336,7 +338,7 @@ class TestsServices:
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
         with host.sudo():
-            print(f' - openssh-server version: {host.package("openssh-server").version}')
+            print(f' - openssh-server version: {host.run("rpm -qa | grep openssh-server").stdout}')
 
             sshd = host.service('sshd')
             if not sshd.is_running:
@@ -767,10 +769,17 @@ class TestsKdump:
         QE: xiawu@redhat.com
         """
         with host.sudo():
-            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools").stdout}')
+            kernel_version = host.check_output('uname -r').split("-")[0]
+            arch = host.system_info.arch
 
+            # BugZilla 2214235
+            if version.parse(kernel_version) < version.parse("4.18.0") and arch == 'aarch64':
+                pytest.skip(f'Skip on arm64 with kernel version {kernel_version}')
+
+            print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools").stdout}')
             if 'Kdump is operational' not in host.run('kdumpctl status 2>&1').stdout:
                 print(f' - kdumpctl showmem: {host.run("kdumpctl showmem").stdout}')
+                print(f' - kernel version: {kernel_version}')
                 print(f' - dmesg grep crashkernel: {host.run("dmesg | grep crashkernel").stdout}')
                 print(f' - journalctl kdump service: {host.run("journalctl --no-pager -u kdump.service").stdout}')
                 print(f' - journalctl kernel: {host.run("journalctl --no-pager -k").stdout}')
