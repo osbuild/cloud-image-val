@@ -335,6 +335,7 @@ class TestsGeneric:
 
 @pytest.mark.order(3)
 class TestsServices:
+    @pytest.mark.jira_skip(['CLOUDX-484', 'COMPOSER-1959'])
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
         with host.sudo():
@@ -735,6 +736,7 @@ class TestsAuthConfig:
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
+    @pytest.mark.jira_skip(['CLOUDX-484', 'COMPOSER-1959'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
