@@ -656,6 +656,7 @@ class TestsNetworking:
             assert host.file(file_to_check).contains(expect_config), \
                 f'{expect_config} config is not set'
 
+    @pytest.mark.jira_skip(['CLOUDX-488'])
     @pytest.mark.run_on(['rhel'])
     def test_networkmanager_conf_plugins(self, host, instance_data):
         """
