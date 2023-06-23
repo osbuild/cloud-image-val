@@ -54,8 +54,8 @@ class AWSConfigBuilder(BaseConfigBuilder):
             # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
             instance['instance_type'] = 't3.medium'
 
-        name_tag = instance['name'].replace('.', '-')
-        name = self.create_resource_name([name_tag])
+        name_tag_value = instance['name'].replace('.', '-')
+        name = self.create_resource_name([name_tag_value])
 
         aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
         if instance['region'] not in aliases:
@@ -66,11 +66,13 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
             'key_name': instance['aws_key_pair'],
-            'tags': {'name': name_tag},
             'depends_on': [
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]
         }
+
+        self.config['tags']['name'] = name_tag_value
+
         self.add_tags(self.config, new_instance)
 
         self.resources_tf['resource']['aws_instance'][name] = new_instance
