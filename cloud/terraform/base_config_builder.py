@@ -50,8 +50,8 @@ class BaseConfigBuilder:
     def add_tags(self, config_dict, resource):
         tags_key = self.resource_tags_key
 
-        if config_dict["tags"]:
+        if config_dict['tags']:
             if tags_key in resource:
-                resource[tags_key] = {**resource[tags_key], **config_dict["tags"]}
+                resource[tags_key] = {**resource[tags_key], **config_dict['tags']}
             else:
-                resource[tags_key] = config_dict["tags"]
+                resource[tags_key] = config_dict['tags']
