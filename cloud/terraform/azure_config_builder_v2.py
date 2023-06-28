@@ -99,7 +99,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         azure_vhd_regex = (
             r"https:\/\/(?P<storage_account>.*)\.blob.*\/(?P<product_name>\D*)\-(?P<version>[\d]+\.[\d]+(?:\.[\d]+)?)\-"
-            r"(?P<date>\d{4}\d{2}\d{2})\.\bsp\.(?P<build_nr>\d+)\.(?P<arch>\S*)\.\bvhd"
+            r"(?P<date>\d{4}\d{2}\d{2})\.\b(?:sp\.)?(?P<build_nr>\d+)\.(?P<arch>\S*)\.\bvhd"
         )
 
         azure_vhd_regex_image_builder = (
