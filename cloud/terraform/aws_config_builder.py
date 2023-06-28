@@ -66,12 +66,11 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'ami': instance['ami'],
             'provider': f'aws.{instance["region"]}',
             'key_name': instance['aws_key_pair'],
+            'tags': {'name': name_tag_value},
             'depends_on': [
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]
         }
-
-        self.config['tags']['name'] = name_tag_value
 
         self.add_tags(self.config, new_instance)
 
