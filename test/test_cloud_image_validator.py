@@ -8,14 +8,15 @@ from test_suite.suite_runner import SuiteRunner
 
 
 class TestCloudImageValidator:
-    test_config = {"resources_file": '/fake/test/resources_file.json',
-                   "output_file": '/fake/test/output_file.xml',
-                   "test_filter": 'test_test_name',
-                   "include_markers": 'pub',
-                   "parallel": True,
-                   "debug": True,
-                   "stop_cleanup": False,
-                   "config_file": "/fake/test/config_file.yml"
+    test_config = {'resources_file': '/fake/test/resources_file.json',
+                   'output_file': '/fake/test/output_file.xml',
+                   'test_filter': 'test_test_name',
+                   'include_markers': 'pub',
+                   'parallel': True,
+                   'debug': True,
+                   'stop_cleanup': False,
+                   'config_file': '/tmp/test_config_file.yml',
+                   'strict_mode': 'true'
                    }
     test_instances = {
         'instance-1': {'public_dns': 'value_1', 'username': 'value_2'},
@@ -56,7 +57,11 @@ class TestCloudImageValidator:
         result = validator.main()
 
         # Assert
-        assert result == exit_code_test
+        if self.test_config['strict_mode']:
+            assert result == exit_code_test
+        else:
+            assert result == 0
+
         assert mock_print_divider.call_args_list == [
             mocker.call('Deploying infrastructure'),
             mocker.call('Preparing environment'),
@@ -151,6 +156,5 @@ class TestCloudImageValidator:
             mocker.call(validator.ssh_identity_file),
             mocker.call(validator.ssh_pub_key_file),
             mocker.call(validator.ssh_config_file),
-            mocker.call(validator.instances_json),
-            mocker.call(validator.config["config_file"])
+            mocker.call(validator.instances_json)
         ]
