@@ -299,12 +299,14 @@ class TestsAzure:
     def test_rhui_certificate_date(self, host):
         """
         Verify /etc/pki/rhui/product/content.crt exists.
-        Starting from RHEL 9.2, the certificate file was renamed to content-base.crt.
+        Starting from RHEL 8.8 & 9.2, the certificate file was renamed to content-base.crt.
         Check end time of the certificate to see if it has expired
         """
         cert_file = '/etc/pki/rhui/product/content.crt'
 
-        if float(host.system_info.release) >= 9.2:
+        product_release = float(host.system_info.release)
+        if int(product_release) == 9 and product_release >= 9.2 or \
+                int(product_release) == 8 and product_release >= 8.8:
             cert_file = '/etc/pki/rhui/product/content-base.crt'
 
         if test_lib.is_rhel_sap(host):
@@ -317,7 +319,11 @@ class TestsAzure:
         print(f"Yum Repolist: {str(host.run('yum -v repolist').stdout)}")
 
         with host.sudo():
+            print('RHUI cert file:')
+            print(host.run(f'ls -l {cert_file} 2>&1').stdout)
+
             assert host.file(cert_file).exists, 'The RHUI certificate was not found.'
+
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
 
         print(result.stdout)
