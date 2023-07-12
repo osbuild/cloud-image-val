@@ -694,11 +694,12 @@ class TestsNetworking:
             assert host.file(file_to_check).contains(expect_config), \
                 f'{expect_config} config is not set'
 
-    @pytest.mark.jira_skip(['CLOUDX-488'])
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.exclude_on(['>rhel9.2'])
     def test_networkmanager_conf_plugins(self, host, instance_data):
         """
         Check /etc/NetworkManager/NetworkManager.conf
+        JIRA: CLOUDX-488
         """
         if instance_data['cloud'] == 'gcloud':
             pytest.skip('This test does not apply to GCP.')
@@ -706,6 +707,13 @@ class TestsNetworking:
         file_to_check = '/etc/NetworkManager/NetworkManager.conf'
 
         with host.sudo():
+            grep_filter = r'\[main\]'
+            print(host.run(f'grep "{grep_filter}" -A2 {file_to_check}').stdout)
+
+            cmd = 'NetworkManager --print-config'
+            print(cmd)
+            print(host.run(cmd).stdout)
+
             assert host.file(file_to_check).contains('^plugins = ifcfg-rh,$'), \
                 f'Unexpected or missing plugin(s) in {file_to_check}'
 
