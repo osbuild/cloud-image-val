@@ -335,27 +335,65 @@ class TestsGeneric:
 
 @pytest.mark.order(3)
 class TestsServices:
-    @pytest.mark.jira_skip(['CLOUDX-484', 'COMPOSER-1959'])
     @pytest.mark.run_on(['all'])
     def test_sshd(self, host):
+        """
+        Verify that SSH password authentication is disabled.
+
+        By default, the configuration is in /etc/ssh/sshd_config
+        Starting from Fedora 38, the configuration is in /etc/ssh/sshd_config.d/50-cloud-init.conf
+        Starting from RHEL 9.3 and 8.9, the configuration is in /etc/ssh/sshd_config.d/50-redhat.conf
+
+        JIRA: CLOUDX-484, COMPOSER-1959
+        """
+
+        # cloud-init >= 22.3 puts extra sshd configs into a separate file
+        # see https://github.com/canonical/cloud-init/pull/1618
+        possible_sshd_auth_config_settings = [
+            {
+                'path': '/etc/ssh/sshd_config',
+                'config_key': 'PasswordAuthentication',
+                'config_value': 'no'
+            },
+            {
+                'path': '/etc/ssh/sshd_config.d/50-cloud-init.conf',
+                'config_key': 'PasswordAuthentication',
+                'config_value': 'no'
+            },
+            {
+                'path': '/etc/ssh/sshd_config.d/50-redhat.conf',
+                'config_key': 'ChallengeResponseAuthentication',
+                'config_value': 'no'
+            },
+        ]
+
         with host.sudo():
             print(f' - openssh-server version: {host.run("rpm -qa | grep openssh-server").stdout}')
 
             sshd = host.service('sshd')
             if not sshd.is_running:
                 print(f' - journalctl -u sshd.service: {host.check_output("journalctl -u sshd.service")}')
-                pytest.fail('ssh.service is not active')
+                pytest.fail('ssh.service is not running')
 
-            pass_auth_config_name = 'PasswordAuthentication'
-            pass_auth_config_file = '/etc/ssh/sshd_config'
+            is_sshd_auth_forced_to_disabled = False
+            for possible_config in possible_sshd_auth_config_settings:
+                file_path = possible_config['path']
+                config_key = possible_config['config_key']
+                config_value = possible_config['config_value']
 
-            if host.system_info.distribution == 'fedora' and int(host.system_info.release) >= 38:
-                # cloud-init >= 22.3 puts extra sshd configs into a separate file
-                # see https://github.com/canonical/cloud-init/pull/1618
-                pass_auth_config_file = '/etc/ssh/sshd_config.d/50-cloud-init.conf'
+                if host.file(file_path).exists and host.file(file_path).contains(f'^{config_key} {config_value}'):
+                    print(host.run(f'ls -l {file_path}').stdout)
 
-            if not host.file(pass_auth_config_file).contains(f'^{pass_auth_config_name} no'):
-                pytest.fail(f'{pass_auth_config_name} should be disabled')
+                    print('SSH password authentication config found:')
+                    print(f'\tFile path:\t{file_path}')
+                    print(f'\tConfig key:\t{config_key}')
+                    print(f'\tConfig value:\t{config_value}')
+
+                    print('-' * 50)
+
+                    is_sshd_auth_forced_to_disabled = True
+
+        assert is_sshd_auth_forced_to_disabled, 'Password authentication via ssh must be disabled.'
 
     @pytest.mark.run_on(['rhel', 'centos'])
     def test_sysconfig_kernel(self, host):
@@ -737,11 +775,13 @@ class TestsAuthConfig:
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.jira_skip(['CLOUDX-484', 'COMPOSER-1959'])
+    @pytest.mark.jira_skip(['CLOUDX-511'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
+        Bugzilla: 1983683
         """
+
         self.__check_pam_d_file_content(host, 'smartcard-auth')
 
     def test_system_auth(self, host):
