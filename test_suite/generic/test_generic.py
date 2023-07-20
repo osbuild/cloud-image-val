@@ -695,8 +695,7 @@ class TestsNetworking:
                 f'{expect_config} config is not set'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['>rhel9.2'])
-    def test_networkmanager_conf_plugins(self, host, instance_data):
+    def test_network_manager_conf_plugins(self, host, instance_data):
         """
         Check /etc/NetworkManager/NetworkManager.conf
         JIRA: CLOUDX-488
@@ -704,10 +703,18 @@ class TestsNetworking:
         if instance_data['cloud'] == 'gcloud':
             pytest.skip('This test does not apply to GCP.')
 
+        cloud_init_version = host.package('cloud-init').version
+        print(f'cloud-init version installed: cloud-init-{cloud_init_version}')
+
+        # Stating from cloud-init-23.1.1, NetworkManager plugins are not forced via config by cloud-init.
+        if cloud_init_version >= '23.1.1':
+            pytest.skip(f'This test is not applicable starting from cloud-init-{cloud_init_version}')
+
         file_to_check = '/etc/NetworkManager/NetworkManager.conf'
 
         with host.sudo():
             grep_filter = r'\[main\]'
+            print(f'{file_to_check} [main] section content (first two lines):')
             print(host.run(f'grep "{grep_filter}" -A2 {file_to_check}').stdout)
 
             cmd = 'NetworkManager --print-config'
