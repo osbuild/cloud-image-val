@@ -211,7 +211,7 @@ class TestsAWS:
         assert len(
             found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
 
-    # TODO: divide by type of image and version
+    # TODO: Refactor this test case. E.g. divide it by type of image and version
     @pytest.mark.run_on(['rhel'])
     def test_required_packages_are_installed(self, host):
         """
@@ -246,8 +246,7 @@ class TestsAWS:
             required_pkgs.extend(['rhel-system-roles-sap', 'ansible'])
 
             # BugZilla 1959813
-            required_pkgs.extend(
-                ['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])
+            required_pkgs.extend(['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])
 
             # BugZilla 1959813
             required_pkgs.append('uuidd')
@@ -260,8 +259,7 @@ class TestsAWS:
             required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
                                   'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])
 
-            required_pkgs.extend(
-                ['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
+            required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
 
             # BugZilla 1959962
             required_pkgs.append('tuned-profiles-sap-hana')
@@ -272,17 +270,25 @@ class TestsAWS:
             else:
                 required_pkgs.append('ansible')
 
+        # CLOUDX-451
+        if int(product_version) == 9 and product_version >= 9.3 or \
+                int(product_version) == 8 and product_version >= 8.9:
+            if host.system_info.arch != 'aarch64':
+                # Legacy BIOS boot mode related package
+                required_pkgs.append('grub2-pc')
+
+                # UEFI boot mode related packages, not applicable to arm64 AMIs
+                required_pkgs.extend(['efibootmgr', 'grub2-efi-x64', 'shim-x64'])
+
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
 
         if product_version < 8.0:
             required_pkgs = required_pkgs_v7
 
-        missing_pkgs = [
-            pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
+        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
-        assert len(
-            missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
+        assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
@@ -623,6 +629,31 @@ class TestsAWS:
         BugZilla 1187669
         """
         assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_hybrid_boot_mode_config(self, host):
+        """
+        Check that hybrid boot mode is correctly configured. Only applicable to x86_64 AMIs.
+        JIRA: COMPOSER-1851
+        """
+        if host.system_info.arch == 'aarch64':
+            pytest.skip('Hybrid boot mode is only available in x86_64 AMIs.')
+
+        path_to_check = '/sys/firmware/efi'
+
+        product_version = float(host.system_info.release)
+        if int(product_version) == 9 and product_version >= 9.3 or \
+                int(product_version) == 8 and product_version >= 8.9:
+            with host.sudo():
+                assert host.file(path_to_check).exists, \
+                    f'{path_to_check} is expected to exist in EFI-booted images.'
+
+                result = host.run('efibootmgr 2>&1')
+                if result.exit_status != 0:
+                    print(result.stdout)
+                    pytest.fail('efibootmgr command failed in EFI-booted image.')
+        else:
+            pytest.skip('This test case is only applicable to RHEL-8.9+ and RHEL-9.3+.')
 
 
 # TODO: Almost all these tests are cloud-agnostic
