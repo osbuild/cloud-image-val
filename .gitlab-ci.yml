@@ -1,0 +1,193 @@
+stages:
+  - init
+  - build
+  - test
+  - finish
+
+.deps:
+  before_script:
+    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - curl -fsSL https://get.docker.com -o get-docker.sh
+    - sudo sh get-docker.sh
+    - sudo systemctl start docker
+    - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
+  variables:
+    RUNNER: aws/fedora-37-x86_64
+    INTERNAL_NETWORK: "true"
+    QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val
+  tags:
+    - terraform
+
+.tests:
+  extends: .deps
+  after_script:
+    - schutzbot/update_github_status.sh update || true
+    - echo https://redhat.gitlab.io/-/services/products/image-builder/ci/cloud-image-val-ci/-/jobs/${CI_JOB_ID}/artifacts/report.html
+  retry: 1
+  artifacts:
+    paths:
+      - report.html
+    when: always
+
+init:
+  stage: init
+  script:
+    - schutzbot/update_github_status.sh start
+
+container:
+  extends: .deps
+  stage: build
+  script:
+    - sudo docker run --privileged --rm tonistiigi/binfmt --install all
+    - sudo docker buildx create --use
+    - export build_cmd="sudo docker buildx build --push --platform linux/arm64,linux/amd64"
+    - if python schutzbot/update-base.py | grep -q "true" ; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
+    - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
+
+Prepare-rhel-internal:
+  stage: build
+  before_script:
+    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+  script:
+    - schutzbot/prepare-rhel-internal.sh
+  artifacts:
+    paths:
+      - rhel-${RHEL_MAJOR}.json
+      - rhel${RHEL_MAJOR}internal.repo
+      - COMPOSE_ID
+  tags:
+    - terraform
+  parallel:
+    matrix:
+      - RUNNER:
+          # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
+          # artifacts from all previous jobs and the last one wins
+          - aws/rhel-8.8-nightly-x86_64
+          - aws/rhel-9.2-nightly-x86_64
+        INTERNAL_NETWORK: ["true"]
+
+.aws:
+  stage: test
+  extends: .tests
+  rules:
+    - if: $CI_COMMIT_REF_SLUG != "main"
+  script:
+    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - |
+      sudo docker run \
+      -a stdout -a stderr \
+      -e AWS_ACCESS_KEY_ID="${CLOUDX_AWS_ACCESS_KEY_ID}" \
+      -e AWS_SECRET_ACCESS_KEY="${CLOUDX_AWS_SECRET_ACCESS_KEY}" \
+      -e AWS_REGION="${AWS_REGION}" \
+      -v ${PWD}:/tmp:Z \
+      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+      python cloud-image-val.py -r cloud/sample/resources_aws_marketplace.json -d -p -o /tmp/report.xml
+
+.azure:
+  stage: test
+  extends: .tests
+  rules:
+    - if: $CI_COMMIT_REF_SLUG != "main"
+  script:
+    - sudo docker pull "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}"
+    - |
+      sudo docker run \
+      -a stdout -a stderr \
+      -e ARM_CLIENT_ID="${CLOUDX_AZURE_CLIENT_ID}" \
+      -e ARM_CLIENT_SECRET="${CLOUDX_AZURE_CLIENT_SECRET}" \
+      -e ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID_MARKETPLACE}" \
+      -e ARM_TENANT_ID="${AZURE_TENANT_ID_MARKETPLACE}" \
+      -v ${PWD}:/tmp:Z \
+      "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" \
+      python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
+
+.rhel_runners: &rhel_runners
+    RUNNER:
+      - aws/centos-stream-8-x86_64
+      - aws/rhel-8.4-ga-x86_64
+      - aws/rhel-8.7-ga-x86_64
+      - aws/rhel-9.1-ga-x86_64
+      - aws/rhel-8.9-nightly-x86_64
+      - aws/rhel-9.3-nightly-x86_64
+      - aws/centos-stream-9-x86_64
+    INTERNAL_NETWORK: ["true"]
+
+.rhel_runners_aarch64: &rhel_runners_aarch64
+    RUNNER:
+      - aws/rhel-8.9-nightly-aarch64
+      - aws/rhel-9.3-nightly-aarch64
+    INTERNAL_NETWORK: ["true"]
+
+.rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
+    RUNNER:
+      - aws/rhel-8.9-nightly-x86_64
+      - aws/rhel-9.3-nightly-x86_64
+    INTERNAL_NIGHTLY: ["internal"]
+    INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["true"]
+
+.rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
+    RUNNER:
+      - aws/rhel-8.9-nightly-aarch64
+      - aws/rhel-9.3-nightly-aarch64
+    INTERNAL_NIGHTLY: ["internal"]
+    INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["true"]
+
+.fedora_runners: &fedora_runners
+    RUNNER:
+      - aws/fedora-37-x86_64
+
+.IB_tests:
+  extends: .tests
+  variables:
+    ARTIFACTS: "/tmp/"
+  before_script:
+    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+  after_script:
+    - !reference [.tests, after_script]
+    - cp /tmp/report.html ./report.html
+
+IB-aws:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+      - *rhel_runners_aarch64
+      # - *rhel_runners_x86_64_internal_nightlies
+      # - *rhel_runners_aarch64_internal_nightlies
+
+IB-azure:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+#      - *rhel_runners_x86_64_internal_nightlies
+
+container_main:
+  extends: .deps
+  stage: finish
+  rules:
+    - if: $CI_COMMIT_REF_SLUG == "main"
+  script:
+    - sudo dnf install skopeo -y
+    - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
+
+finish:
+  stage: finish
+  script:
+    - schutzbot/update_github_status.sh finish
