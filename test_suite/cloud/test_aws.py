@@ -501,24 +501,32 @@ class TestsAWS:
     def test_dracut_conf_sgdisk(self, host):
         """
         Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"
+        JIRA: CLOUDX-373
         """
-        assert host.package(
-            'gdisk').is_installed, 'Package "gdisk" is expected to be installed'
+        assert host.package('gdisk').is_installed, 'Package "gdisk" is expected to be installed'
 
-        rhel_version = float(host.system_info.release)
-
-        if rhel_version < 8.4:
-            file_to_check = '/etc/dracut.conf.d/sgdisk.conf'
-        else:
-            file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
+        # Before RHEL 8.5, AMIs were built using ks file. So the path is different.
+        files_to_check = [
+            '/etc/dracut.conf.d/sgdisk.conf',
+            '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
+        ]
 
         with host.sudo():
-            if not host.file(file_to_check).exists:
-                print(host.run("ls -R /etc/dracut* /usr/lib/dracut/dracut*"))
-                pytest.fail(f'{file_to_check} should exist in RHEL {rhel_version}')
-            if not host.file(file_to_check).contains('install_items+=" sgdisk "'):
-                print(host.file(file_to_check)).content_string
-                pytest.fail(f'Expected configuration was not found in "{file_to_check}"')
+            test_lib.print_host_command_output(host, 'ls -R /etc/dracut* /usr/lib/dracut/dracut*')
+
+            file_found = False
+            config_ok = False
+
+            for file in files_to_check:
+                if host.file(file).exists:
+                    file_found = True
+                    test_lib.print_host_command_output(host, f'cat {file}')
+
+                    if host.file(file).contains('install_items+=" sgdisk "'):
+                        config_ok = True
+
+        assert file_found, 'sgdisk.conf file not found.'
+        assert config_ok, 'Expected configuration was not found in sgdisk.conf'
 
     @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
     def test_dracut_conf_xen(self, host):
