@@ -1,4 +1,5 @@
 import os
+import re
 import time
 
 import pytest
@@ -420,8 +421,29 @@ class TestsServices:
 
             print(result.stdout)
 
-            assert result.rc != 0 and result.stdout == '', \
-                'There are failing services'
+            failing_services = []
+
+            failing_service_regex = r'^● (?P<service>.*).service\s+'
+
+            failing_services_lines = result.stdout.split('\n')
+            for line in failing_services_lines:
+                regex_match = re.match(failing_service_regex, line)
+
+                if regex_match:
+                    failing_service_data = regex_match.groupdict()
+
+                    service_name = failing_service_data['service']
+                    failing_services.append(service_name)
+
+                    test_lib.print_host_command_output(host, f'systemctl status {service_name}')
+
+                    test_lib.print_host_command_output(
+                        host,
+                        f'rpm -qf "$(systemctl show --value --property=FragmentPath {service_name})"'
+                    )
+
+            assert len(failing_services) == 0, \
+                f'There are failing services: {",".join(failing_services)}'
 
 
 @pytest.mark.pub

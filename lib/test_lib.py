@@ -2,7 +2,7 @@ from os import path
 import re
 import time
 
-from lib import ssh_lib
+from lib import ssh_lib, console_lib
 
 
 def is_rhel_atomic_host(host):
@@ -192,3 +192,20 @@ def filter_host_log_file_by_keywords(host,
             print(result.stderr)
 
         return None
+
+
+def print_host_command_output(host, command, use_sudo=True):
+    console_lib.print_divider(command)
+
+    if use_sudo:
+        with host.sudo():
+            result = host.run(command)
+    else:
+        result = host.run(command)
+
+    if result.failed:
+        print(f'Exit code: {result.exit_status}\n')
+        print(f'Stdout:\n{result.stdout}\n')
+        print(f'Stderr:\n{result.stderr}\n')
+    else:
+        print(result.stdout)
