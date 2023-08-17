@@ -61,7 +61,7 @@ def get_formatted_analysis(report_data, format):
 def get_tests_summary(data):
     summary_data = data['summary']
 
-    passed_total = summary_data['passed']
+    passed_total = summary_data['passed'] if 'passed' in summary_data else 0
     failed_total = summary_data['failed'] if 'failed' in summary_data else 0
 
     failed_and_passed_total = passed_total + failed_total
