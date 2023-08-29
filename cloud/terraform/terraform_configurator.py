@@ -68,7 +68,7 @@ class TerraformConfigurator:
 
     def __dump_to_json(self, content, file):
         with open(file, 'w') as config_file:
-            json.dump(content, config_file)
+            json.dump(content, config_file, indent=4)
 
     def print_configuration(self):
         console_lib.print_divider('Terraform configuration')

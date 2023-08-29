@@ -103,7 +103,7 @@ class CloudImageValidator:
 
     def _write_instances_to_json(self, instances):
         with open(self.instances_json, 'w') as file:
-            json.dump(instances, file)
+            json.dump(instances, file, indent=4)
 
     def run_tests_in_all_instances(self, instances):
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
