@@ -316,14 +316,14 @@ class TestsAWS:
                 'rh-amazon-rhui-client-sap',
             ]
 
-        print(str(host.run('rpm -qa | grep rhui').stdout))
+        test_lib.print_host_command_output(host, 'rpm -qa | grep rhui')
 
         if unwanted_rhui_pkgs:
             for pkg in unwanted_rhui_pkgs:
-                assert host.run(f'rpm -qa | grep {pkg}').exit_status != 0, \
+                assert host.run(f'rpm -qa | grep {pkg}').failed, \
                     f'Unexpected rhui package installed: {pkg}'
 
-        assert host.run(f'rpm -qa | grep {required_rhui_pkg}').exit_status == 0, \
+        assert host.run(f'rpm -qa | grep {required_rhui_pkg}').succeeded, \
             f'Package "{required_rhui_pkg}" should be present'
 
     @pytest.mark.run_on(['rhel'])
