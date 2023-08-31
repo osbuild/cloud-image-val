@@ -29,8 +29,6 @@ def instance_data_aws_cli(host, instance_data_aws_web):
 
 @pytest.mark.order(2)
 class TestsAWS:
-    # TODO: Verify that this test case applies to the correct distros and product versions
-    @pytest.mark.jira_skip(['CLOUDX-558'])
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_etc_machine_id_permissions(self, host, instance_data):
         """
