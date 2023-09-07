@@ -298,37 +298,45 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel'])
     def test_rhui_certificate_date(self, host):
         """
-        Verify /etc/pki/rhui/product/content.crt exists.
+        Verify /etc/pki/rhui/product/content{*}.crt exists.
         Starting from RHEL 8.8 & 9.2, the certificate file was renamed to content-base.crt.
         Check end time of the certificate to see if it has expired
         """
-        cert_file = '/etc/pki/rhui/product/content.crt'
-
-        product_release = float(host.system_info.release)
-        if int(product_release) == 9 and product_release >= 9.2 or \
-                int(product_release) == 8 and product_release >= 8.8:
-            cert_file = '/etc/pki/rhui/product/content-base.crt'
-
-        if test_lib.is_rhel_sap(host):
-            cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
-
-        rhui_package = str(host.run('rpm -qa | grep rhui').stdout)
-
-        print(f'Rpm package found: {rhui_package}')
-        print(f"Rpm package files: {str(host.run(f'rpm -ql {rhui_package}').stdout)}")
-        print(f"Yum Repolist: {str(host.run('yum -v repolist').stdout)}")
-
         with host.sudo():
-            print('RHUI cert file:')
-            print(host.run(f'ls -l {cert_file} 2>&1').stdout)
+            rhui_package = host.run('rpm -qa | grep rhui').stdout
 
-            assert host.file(cert_file).exists, 'The RHUI certificate was not found.'
+            print(f'Rpm package found: {rhui_package}')
+            test_lib.print_host_command_output(host, f'rpm -ql {rhui_package}')
+            test_lib.print_host_command_output(host, 'yum -v repolist')
+
+            cert_file = ''
+            cert_found = False
+
+            if test_lib.is_rhel_sap(host):
+                cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
+                cert_found = host.file(cert_file).exists
+            else:
+                possible_cert_files = [
+                    '/etc/pki/rhui/product/content.crt',
+                    '/etc/pki/rhui/product/content-base.crt'
+                ]
+
+                for cert in possible_cert_files:
+                    if host.file(cert).exists:
+                        cert_file = cert
+                        cert_found = True
+                        break
+
+            assert cert_found, 'The RHUI certificate was not found.'
+
+            test_lib.print_host_command_output(host, f'ls -l {cert_file} 2>&1')
 
             result = host.run(f'openssl x509 -noout -in {cert_file} -enddate -checkend 0')
 
-        print(result.stdout)
+            print(result.stdout)
 
-        assert result.rc == 0, 'The certificate appears to have expired. Check the test case output for more details.'
+            assert result.succeeded, \
+                'The certificate appears to have expired. Check the test case output for more details.'
 
     @pytest.mark.run_on(['rhel'])
     def test_cmdline_console(self, host):
