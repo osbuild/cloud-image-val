@@ -11,7 +11,8 @@ class SuiteRunner:
         'ConnectionResetError',
         'TimeoutError',
         'SSHException',
-        'NoValidConnectionsError'
+        'NoValidConnectionsError',
+        'Error while installing Development tools group'
     ])
 
     connection_backend = 'paramiko'
