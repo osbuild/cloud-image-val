@@ -301,6 +301,10 @@ class TestsAWS:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_rhui_pkg_is_installed(self, host):
+        with host.sudo():
+            # CLOUDX-590
+            assert host.run_test('rm -f /var/lib/rpm/__db.*'), 'Failed to remove the RPM db files'
+            assert host.run_test('rpm --rebuilddb'), 'Failed to rebuild the RPM db files'
         unwanted_rhui_pkgs = None
 
         if test_lib.is_rhel_high_availability(host):
