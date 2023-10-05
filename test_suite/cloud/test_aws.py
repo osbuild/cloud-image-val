@@ -854,7 +854,7 @@ class TestsAWSNetworking:
         if 'Not Found' in registered_ipv6:
             pytest.skip('No IPv6 enabled in this Subnet')
 
-        assert registered_ipv6 in host.interface('eth0', 'inet6').addresses(), \
+        assert registered_ipv6 in host.interface('eth0', 'inet6').addresses, \
             f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
 
     @pytest.mark.run_on(['rhel'])
