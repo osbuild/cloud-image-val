@@ -42,7 +42,7 @@ class BaseConfigBuilder:
         combinations.extend(resource_names_combination)
         combinations.append(self.get_random_numbers())
 
-        return separator.join(combinations)
+        return separator.join(combinations)[:62]  # Some AZ resources have 63-chars limit
 
     def get_random_numbers(self):
         return f'{random.randrange(1, 10 ** 5):03}'

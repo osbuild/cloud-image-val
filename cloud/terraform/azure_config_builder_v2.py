@@ -52,7 +52,10 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         for instance in self.resources_dict['instances']:
             if 'name' in instance:
-                instance['hostname'] = instance['name'].replace(' ', '_').replace('.', '-')
+                instance['hostname'] = instance['name'].lower()\
+                    .replace(' ', '-')\
+                    .replace('.', '-')\
+                    .replace('_', '-')
             else:
                 instance['hostname'] = self.create_resource_name(['vm'])
 
