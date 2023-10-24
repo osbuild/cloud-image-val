@@ -43,13 +43,18 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_public_ip'] = {}
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
-        # Only applicable if vhd_uri is provided in resources.json
+        # Only needed if "vhd_uri" is provided in resources.json
         self.resources_tf['resource']['azurerm_shared_image_gallery'] = {}
         self.resources_tf['resource']['azurerm_shared_image'] = {}
         self.resources_tf['resource']['azurerm_shared_image_version'] = {}
+        # Only needed if "image_definition" with a "plan" is provided in resources.json
+        self.resources_tf['resource']['azurerm_marketplace_agreement'] = {}
 
         for instance in self.resources_dict['instances']:
-            instance['hostname'] = self.create_resource_name(['vm'])
+            if 'name' in instance:
+                instance['hostname'] = instance['name'].replace(' ', '_').replace('.', '-')
+            else:
+                instance['hostname'] = self.create_resource_name(['vm'])
 
             if 'location' in instance:
                 instance['location'] = instance['location'].lower().replace(' ', '')
@@ -63,6 +68,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
                 self.__new_azure_shared_image_gallery(instance)
                 self.__new_azure_shared_image(instance)
                 self.__new_azure_shared_image_version(instance)
+            elif 'image_definition' in instance and 'plan' in instance:
+                self.__new_azure_marketplace_agreement(instance)
 
             self.__new_azure_public_ip(instance)
             self.__new_azure_nic(instance)
@@ -76,6 +83,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         if not self.resources_tf['resource']['azurerm_shared_image_version']:
             del self.resources_tf['resource']['azurerm_shared_image_version']
+
+        if not self.resources_tf['resource']['azurerm_marketplace_agreement']:
+            del self.resources_tf['resource']['azurerm_marketplace_agreement']
 
         return self.resources_tf
 
@@ -193,6 +203,20 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.add_tags(self.config, new_image)
 
         self.resources_tf['resource']['azurerm_shared_image_version'][name] = new_image
+
+    def __new_azure_marketplace_agreement(self, instance):
+        name = self.create_resource_name([instance['hostname'], 'license', 'agreement'])
+        instance['azurerm_marketplace_agreement'] = name
+
+        new_license_agreement = {
+            'publisher': instance['image_definition']['publisher'],
+            'offer': instance['image_definition']['offer'],
+            'plan': instance['plan']
+        }
+
+        self.add_tags(self.config, new_license_agreement)
+
+        self.resources_tf['resource']['azurerm_marketplace_agreement'][name] = new_license_agreement
 
     def __new_azure_virtual_network(self, instance):
         name = self.create_resource_name([instance['location'], 'network'])
@@ -323,9 +347,11 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             new_instance['source_image_reference'] = instance['image_definition']
             if 'plan' in instance:
                 new_instance['plan'] = instance['plan']
+                new_instance['depends_on'].append('azurerm_marketplace_agreement.{}'
+                                                  .format(instance['azurerm_marketplace_agreement']))
         elif 'vhd_uri' in instance:
-            new_instance['depends_on'].append(
-                'azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
+            new_instance['depends_on'].append('azurerm_shared_image_version.{}'
+                                              .format(instance['azurerm_shared_image_version']))
             new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image_gallery'],
                                                                          instance['azurerm_shared_image'])
 
