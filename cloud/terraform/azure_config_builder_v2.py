@@ -214,7 +214,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         new_license_agreement = {
             'publisher': instance['image_definition']['publisher'],
             'offer': instance['image_definition']['offer'],
-            'plan': instance['plan']
+            'plan': instance['plan']['name']
         }
 
         self.add_tags(self.config, new_license_agreement)
