@@ -9,6 +9,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
     default_x86_vm_size = 'Standard_DS1_v2'
     default_arm64_vm_size = 'Standard_D2pls_v5'
+    default_hyper_v_generation = 'V2'
     default_admin_username = 'azure'
     default_location = 'eastus'
     default_publisher = 'RedHat'
@@ -49,7 +50,16 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_shared_image_version'] = {}
 
         for instance in self.resources_dict['instances']:
-            instance['hostname'] = self.create_resource_name(['vm'])
+            if 'name' in instance:
+                formatted_instance_name = instance['name'].lower() \
+                    .replace(' ', '-') \
+                    .replace('.', '-') \
+                    .replace('_', '-')
+
+                instance['hostname'] = self.create_resource_name(['vm', formatted_instance_name])
+
+            else:
+                instance['hostname'] = self.create_resource_name(['vm'])
 
             if 'location' in instance:
                 instance['location'] = instance['location'].lower().replace(' ', '')
@@ -150,6 +160,11 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'sku': version
         }
 
+        if 'hyper_v_generation' in instance and instance['hyper_v_generation']:
+            hyper_v_gen = instance['hyper_v_generation']
+        else:
+            hyper_v_gen = self.default_hyper_v_generation
+
         new_image_definition = {
             'name': name,
             'gallery_name': instance['azurerm_shared_image_gallery'],
@@ -157,12 +172,13 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'location': instance['location'],
             'os_type': 'Linux',
             'identifier': identifier,
-            'hyper_v_generation': 'V2',
+            'hyper_v_generation': hyper_v_gen,
             'architecture': arch,
             'depends_on': [
                 'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
             ]
         }
+
         self.add_tags(self.config, new_image_definition)
 
         self.resources_tf['resource']['azurerm_shared_image'][name] = new_image_definition
@@ -337,7 +353,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         :param storage_account_name: The name of the Storage Account in Azure
         :return: String
         """
-        return '/subscriptions/{0}/resourceGroups/rh-resource/providers/Microsoft.Storage/storageAccounts/{1}'\
+        return '/subscriptions/{0}/resourceGroups/rh-resource/providers/Microsoft.Storage/storageAccounts/{1}' \
             .format(self.subscription_id, storage_account_name)
 
     def __get_azure_image_uri(self, azure_image_gallery_name, azure_image_name):
