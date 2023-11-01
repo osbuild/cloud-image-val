@@ -1,0 +1,8 @@
+discover:
+    how: fmf
+provision:
+    how: virtual
+    image: fedora
+execute:
+    how: tmt
+
