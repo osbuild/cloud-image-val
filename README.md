@@ -82,6 +82,8 @@ options:
   --tags TAGS           Use this option to add tags to created cloud resources and modify CIV behaviour.
                         This tags should be passed in json format as in this example:
                         --tags '{"key1": "value1", "key2": "value2"}'
+  -rp, --report-portal  Use this option to upload the JUnit XML test results to your Report Portal project.
+                        Make sure to set the correct environment variables as explained in the README doc.
 ```
 
 Example of running CIV locally:

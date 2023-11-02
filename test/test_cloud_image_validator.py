@@ -15,7 +15,8 @@ class TestCloudImageValidator:
                    'parallel': True,
                    'debug': True,
                    'stop_cleanup': False,
-                   'config_file': '/tmp/test_config_file.yml',
+                   'report_portal': False,
+                   'config_file': '/tmp/test_config_file.yml'
                    }
     test_instances = {
         'instance-1': {'public_dns': 'value_1', 'username': 'value_2'},
@@ -134,7 +135,8 @@ class TestCloudImageValidator:
         validator.run_tests_in_all_instances(self.test_instances)
 
         mock_run_tests.assert_called_once_with(
-            validator.config["output_file"], self.test_config["test_filter"], self.test_config["include_markers"])
+            validator.config["output_file"], self.test_config["test_filter"], self.test_config["include_markers"],
+            self.test_config["report_portal"])
 
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(

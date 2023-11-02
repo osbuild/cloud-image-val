@@ -16,3 +16,4 @@ paramiko==3.1.0
 awscli==1.27.119
 requests==2.28.1
 packaging==23.2
+pytest-reportportal==5.3.0

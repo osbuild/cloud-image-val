@@ -34,18 +34,21 @@ class SuiteRunner:
     def run_tests(self,
                   output_filepath,
                   test_filter=None,
-                  include_markers=None):
+                  include_markers=None,
+                  report_portal=None):
         if os.path.exists(output_filepath):
             os.remove(output_filepath)
 
         return os.system(self.compose_testinfra_command(output_filepath,
                                                         test_filter,
-                                                        include_markers))
+                                                        include_markers,
+                                                        report_portal))
 
     def compose_testinfra_command(self,
                                   output_filepath,
                                   test_filter,
-                                  include_markers):
+                                  include_markers,
+                                  report_portal):
         all_hosts = self.get_all_instances_hosts_with_users()
 
         command_with_args = [
@@ -76,6 +79,9 @@ class SuiteRunner:
 
         if self.debug:
             command_with_args.append('-v')
+
+        if report_portal:
+            command_with_args.append('--reportportal')
 
         return ' '.join(command_with_args)
 

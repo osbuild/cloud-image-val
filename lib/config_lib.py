@@ -1,6 +1,24 @@
 import os.path
 
 import yaml
+import configparser
+
+
+class PytestConfig:
+    def set_report_portal_config(self):
+        # Get the configuration from the env
+        rp_api_key = os.getenv('RP_API_KEY')
+        rp_endpoint = os.getenv('RP_ENDPOINT')
+        rp_project = os.getenv('RP_PROJECT')
+
+        config = configparser.ConfigParser()
+        config.read('pytest.ini')
+        config.set('pytest', 'rp_api_key', rp_api_key)
+        config.set('pytest', 'rp_endpoint', rp_endpoint)
+        config.set('pytest', 'rp_project', rp_project)
+
+        with open('pytest.ini', 'w') as configfile:
+            config.write(configfile)
 
 
 class CIVConfig:
@@ -87,6 +105,7 @@ class CIVConfig:
             'parallel': False,
             'stop_cleanup': None,
             'test_filter': None,
+            'report_portal': None
         }
 
         return config_defaults
