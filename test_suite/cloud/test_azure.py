@@ -1,8 +1,10 @@
 import json
-import pytest
 
-from lib import test_lib
+import pytest
+from packaging import version
+
 from lib import console_lib
+from lib import test_lib
 
 
 @pytest.fixture
@@ -64,7 +66,7 @@ class TestsAzure:
         file_to_check = '/etc/sysconfig/authconfig'
 
         with host.sudo():
-            if float(host.system_info.release) < 8.0:
+            if version.parse(host.system_info.release) < version.parse('8.0'):
                 # In RHEL-7, check authconfig content
                 local_file = 'data/azure/authconfig'
 
@@ -85,7 +87,7 @@ class TestsAzure:
 
         blocklist = ['nouveau', 'lbm-nouveau', 'floppy', 'amdgpu']
 
-        if float(host.system_info.release) < 9.0:
+        if version.parse(host.system_info.release) < version.parse('9.0'):
             blocklist.extend(['skx_edac', 'intel_cstate'])
 
         with host.sudo():
@@ -126,7 +128,7 @@ class TestsAzure:
             9: 'grub_rhel9'
         }
 
-        rhel_major_version = int(float(host.system_info.release))
+        rhel_major_version = version.parse(host.system_info.release).major
 
         local_file = 'data/azure/{}'.format(grub_files_by_rhel_major_version[rhel_major_version])
         remote_file = '/etc/default/grub'
@@ -150,7 +152,7 @@ class TestsAzure:
             'hv_vmbus'
         ]
 
-        if float(host.system_info.release) < 9.0:
+        if version.parse(host.system_info.release) < version.parse('9.0'):
             hyperv_driver_list.append('hyperv_fb')
         else:
             hyperv_driver_list.append('hyperv_drm')
@@ -192,7 +194,7 @@ class TestsAzure:
         with host.sudo():
             base_command = 'fdisk -l | grep "Linux LVM"'
 
-            if float(host.system_info.release) < 8.0:
+            if version.parse(host.system_info.release) < version.parse('8.0'):
                 cmd = f'{base_command} | awk "{{print $4}}"'
             else:
                 cmd = f'{base_command} | awk "{{print $5}}"'
@@ -256,8 +258,8 @@ class TestsAzure:
             'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
         ]
 
-        product_version = float(host.system_info.release)
-        if product_version < 8.0:
+        product_version = version.parse(host.system_info.release)
+        if product_version < version.parse('8.0'):
             wanted_pkgs.append('dhclient')
         else:
             wanted_pkgs.extend(['insights-client', 'dhcp-client'])
@@ -284,7 +286,7 @@ class TestsAzure:
         Check /etc/cloud/cloud.cfg.d/05_logging.cfg
         * For RHEL-7 it is 06_logging_override.cfg
         """
-        if float(host.system_info.release) < 8.0:
+        if version.parse(host.system_info.release) < version.parse('8.0'):
             file_to_check = '/etc/cloud/cloud.cfg.d/06_logging_override.cfg'
             local_file = 'data/azure/06_logging_override.cfg'
         else:

@@ -1,6 +1,8 @@
 import json
 import re
+
 import pytest
+from packaging import version
 
 from lib import test_lib
 
@@ -114,10 +116,10 @@ class TestsAWS:
         assert host.service(
             auditd_service).is_running, f'{auditd_service} expected to be running'
 
-        rhel_version = float(host.system_info.release)
-        if rhel_version >= 8.6:
+        rhel_version = version.parse(host.system_info.release)
+        if rhel_version >= version.parse('8.6'):
             checksums = checksums_by_version['8.6+']
-        elif rhel_version >= 8.0:
+        elif rhel_version >= version.parse('8.0'):
             checksums = checksums_by_version['8.0+']
         else:
             checksums = checksums_by_version['7.0+']
@@ -197,13 +199,13 @@ class TestsAWS:
             'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
         ]
 
-        product_version = float(host.system_info.release)
+        product_version = version.parse(host.system_info.release)
 
         # BugZilla 1888695
-        if 8.3 > product_version >= 8.0:
+        if version.parse('8.3') > product_version >= version.parse('8.0'):
             unwanted_pkgs.remove('rng-tools')
 
-        if product_version < 8.5:
+        if product_version < version.parse('8.5'):
             unwanted_pkgs.remove('qemu-guest-agent')
 
         if test_lib.is_rhel_sap(host):
@@ -243,11 +245,11 @@ class TestsAWS:
             'grub2', 'tar', 'rsync', 'chrony'
         ]
 
-        product_version = float(host.system_info.release)
-        if product_version >= 8.5:
+        product_version = version.parse(host.system_info.release)
+        if product_version >= version.parse('8.5'):
             required_pkgs.append('NetworkManager-cloud-setup')
 
-        if 8.3 > product_version >= 8.0:
+        if version.parse('8.3') > product_version >= version.parse('8.0'):
             required_pkgs.append('rng-tools')
 
         if test_lib.is_rhel_sap(host):
@@ -273,14 +275,14 @@ class TestsAWS:
             required_pkgs.append('tuned-profiles-sap-hana')
 
             # CLOUDX-367
-            if product_version >= 8.6:
+            if product_version >= version.parse('8.6'):
                 required_pkgs.append('ansible-core')
             else:
                 required_pkgs.append('ansible')
 
         # CLOUDX-451
-        if int(product_version) == 9 and product_version >= 9.3 or \
-                int(product_version) == 8 and product_version >= 8.9:
+        if product_version.major == 9 and product_version.minor >= 3 or \
+                product_version.major == 8 and product_version.minor >= 9:
             if host.system_info.arch != 'aarch64':
                 # Legacy BIOS boot mode related package
                 required_pkgs.append('grub2-pc')
@@ -291,7 +293,7 @@ class TestsAWS:
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
 
-        if product_version < 8.0:
+        if product_version < version.parse('8.0'):
             required_pkgs = required_pkgs_v7
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
@@ -376,7 +378,8 @@ class TestsAWS:
         files_to_check = ['ssh_host_ecdsa_key',
                           'ssh_host_ed25519_key', 'ssh_host_rsa_key']
         expected_mode = 0o640
-        if host.system_info.distribution == 'fedora' and int(host.system_info.release) >= 38:
+        if host.system_info.distribution == 'fedora' and \
+                version.parse(host.system_info.release) >= version.parse('38'):
             # On Fedora 38, ssh_keys group no longer exists and ssh-keygen no longer chmods to 640, see
             # - https://src.fedoraproject.org/rpms/openssh/c/b615362fd0b4da657d624571441cb74983de6e3f?branch=rawhide
             # - https://src.fedoraproject.org/rpms/openssh/c/7a21555354a2c5e724aa4c287b640c24bf108780?branch=rawhide
@@ -471,7 +474,7 @@ class TestsAWS:
         """
         ena_support = bool(instance_data_aws_cli['EnaSupport'])
 
-        if float(host.system_info.release) < 7.4:
+        if version.parse(host.system_info.release) < version.parse('7.4'):
             assert not ena_support, \
                 'ENA support expected to be disabled in RHEL older than 7.4'
         else:
@@ -487,7 +490,7 @@ class TestsAWS:
         if test_lib.is_rhel_atomic_host(host):
             pytest.skip('Not applicable to RHEL Atomic Host AMIs')
 
-        if float(host.system_info.release) < 8.4:
+        if version.parse(host.system_info.release) < version.parse('8.4'):
             expect_config = "enabled=0"
         else:
             expect_config = "enabled=1"
@@ -633,7 +636,8 @@ class TestsAWS:
 
             if host.system_info.distribution == 'fedora':
                 num_of_gpg_keys = 1
-            elif host.system_info.distribution == 'rhel' and float(host.system_info.release) >= 9.0:
+            elif host.system_info.distribution == 'rhel' and \
+                    version.parse(host.system_info.release) >= version.parse('9.0'):
                 num_of_gpg_keys = 3
             else:
                 num_of_gpg_keys = 2
@@ -661,9 +665,9 @@ class TestsAWS:
 
         path_to_check = '/sys/firmware/efi'
 
-        product_version = float(host.system_info.release)
-        if int(product_version) == 9 and product_version >= 9.3 or \
-                int(product_version) == 8 and product_version >= 8.9:
+        product_version = version.parse(host.system_info.release)
+        if product_version.major == 9 and product_version.minor >= 3 or \
+                product_version.major == 8 and product_version.minor >= 9:
             with host.sudo():
                 assert host.file(path_to_check).exists, \
                     f'{path_to_check} is expected to exist in EFI-booted images.'

@@ -1,15 +1,15 @@
 import json
-import time
-import pytest
-import re
 import os
+import re
+import time
+
+import pytest
 import requests
-
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-
+from packaging import version
 from py.xml import html
 from pytest_html import extras
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from lib import test_lib
 
@@ -17,10 +17,8 @@ from lib import test_lib
 def __get_host_info(host):
     host_info = {}
     host_info['distro'] = host.system_info.distribution
-    host_info['version'] = float(host.system_info.release)
+    host_info['version'] = version.parse(host.system_info.release)
     host_info['distro_version'] = f'{host_info["distro"]}{host_info["version"]}'
-    if host_info['distro'] in ['centos', 'fedora'] and host_info['distro_version'][-2:] == '.0':
-        host_info['distro_version'] = host_info['distro_version'][:-2]
     host_info['skip_message'] = f'This test doesn\'t apply to {host_info["distro_version"]}'
     return host_info
 
@@ -28,7 +26,7 @@ def __get_host_info(host):
 def __parse_distro_version(distro_version):
     res = re.search(r'\d+(\.\d+)?', distro_version)
     if res:
-        return float(res.group(0))
+        return version.parse(res.group(0))
 
 
 def __check_wait_marker(request):
@@ -55,15 +53,15 @@ def __check_exclude_on_marker(request, host_info):
     # with a relational operator. If it does, do not run the test
     for item in exclude_on_marker_list:
         if host_info['distro'] in item:
-            item_distro_verion = __parse_distro_version(item)
+            item_distro_version = __parse_distro_version(item)
 
-            if item[0] == '<' and host_info['version'] < item_distro_verion:
+            if item[0] == '<' and host_info['version'] < item_distro_version:
                 pytest.skip(host_info['skip_message'])
 
-            if item[0] == '>' and host_info['version'] > item_distro_verion:
+            if item[0] == '>' and host_info['version'] > item_distro_version:
                 pytest.skip(host_info['skip_message'])
 
-            if item[1] == '=' and host_info['version'] == item_distro_verion:
+            if item[1] == '=' and host_info['version'] == item_distro_version:
                 pytest.skip(host_info['skip_message'])
 
 
@@ -83,15 +81,15 @@ def __check_run_on_marker(request, host_info):
     # with a relational operator. If no element matches, we do not run the test
     for item in run_on_marker_list:
         if host_info['distro'] in item:
-            item_distro_verion = __parse_distro_version(item)
+            item_distro_version = __parse_distro_version(item)
 
-            if item[0] == '<' and host_info['version'] < item_distro_verion:
+            if item[0] == '<' and host_info['version'] < item_distro_version:
                 return
 
-            if item[0] == '>' and host_info['version'] > item_distro_verion:
+            if item[0] == '>' and host_info['version'] > item_distro_version:
                 return
 
-            if item[1] == '=' and host_info['version'] == item_distro_verion:
+            if item[1] == '=' and host_info['version'] == item_distro_version:
                 return
 
     pytest.skip(host_info['skip_message'])
@@ -128,7 +126,8 @@ def __check_jira_skip_marker(request):
         if status != 'Closed':
             pytest.skip(f'Test skipped because Jira ticket {ticket_id} is not Closed yet')
         else:
-            print(f'WARNING: Jira ticket {ticket_id} is already closed. Please remove it from the marker and put it in the docstring')
+            print(
+                f'WARNING: Jira ticket {ticket_id} is already closed. Please remove it from the marker and put it in the docstring')
 
 
 @pytest.fixture(autouse=True, scope='function')
