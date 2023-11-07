@@ -107,29 +107,29 @@ Prepare-rhel-internal:
       - aws/rhel-8.4-ga-x86_64
       - aws/rhel-8.7-ga-x86_64
       - aws/rhel-9.1-ga-x86_64
-      - aws/rhel-8.9-nightly-x86_64
-      - aws/rhel-9.3-nightly-x86_64
+      - aws/rhel-8.10-nightly-x86_64
+      - aws/rhel-9.4-nightly-x86_64
       - aws/centos-stream-9-x86_64
     INTERNAL_NETWORK: ["true"]
 
 .rhel_runners_aarch64: &rhel_runners_aarch64
     RUNNER:
-      - aws/rhel-8.9-nightly-aarch64
-      - aws/rhel-9.3-nightly-aarch64
+      - aws/rhel-8.10-nightly-aarch64
+      - aws/rhel-9.4-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
     RUNNER:
-      - aws/rhel-8.9-nightly-x86_64
-      - aws/rhel-9.3-nightly-x86_64
+      - aws/rhel-8.10-nightly-x86_64
+      - aws/rhel-9.4-nightly-x86_64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
     NIGHTLY: ["true"]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
     RUNNER:
-      - aws/rhel-8.9-nightly-aarch64
-      - aws/rhel-9.3-nightly-aarch64
+      - aws/rhel-8.10-nightly-aarch64
+      - aws/rhel-9.4-nightly-aarch64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
     NIGHTLY: ["true"]
