@@ -128,9 +128,9 @@ class TestsAzure:
             9: 'grub_rhel9'
         }
 
-        rhel_major_version = version.parse(host.system_info.release).major
+        system_release_major_version = version.parse(host.system_info.release).major
 
-        local_file = 'data/azure/{}'.format(grub_files_by_rhel_major_version[rhel_major_version])
+        local_file = 'data/azure/{}'.format(grub_files_by_rhel_major_version[system_release_major_version])
         remote_file = '/etc/default/grub'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
@@ -258,8 +258,8 @@ class TestsAzure:
             'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
         ]
 
-        product_version = version.parse(host.system_info.release)
-        if product_version < version.parse('8.0'):
+        system_release = version.parse(host.system_info.release)
+        if system_release < version.parse('8.0'):
             wanted_pkgs.append('dhclient')
         else:
             wanted_pkgs.extend(['insights-client', 'dhcp-client'])

@@ -116,10 +116,10 @@ class TestsAWS:
         assert host.service(
             auditd_service).is_running, f'{auditd_service} expected to be running'
 
-        rhel_version = version.parse(host.system_info.release)
-        if rhel_version >= version.parse('8.6'):
+        system_release = version.parse(host.system_info.release)
+        if system_release >= version.parse('8.6'):
             checksums = checksums_by_version['8.6+']
-        elif rhel_version >= version.parse('8.0'):
+        elif system_release >= version.parse('8.0'):
             checksums = checksums_by_version['8.0+']
         else:
             checksums = checksums_by_version['7.0+']
@@ -199,13 +199,13 @@ class TestsAWS:
             'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
         ]
 
-        product_version = version.parse(host.system_info.release)
+        system_release = version.parse(host.system_info.release)
 
         # BugZilla 1888695
-        if version.parse('8.3') > product_version >= version.parse('8.0'):
+        if version.parse('8.3') > system_release >= version.parse('8.0'):
             unwanted_pkgs.remove('rng-tools')
 
-        if product_version < version.parse('8.5'):
+        if system_release < version.parse('8.5'):
             unwanted_pkgs.remove('qemu-guest-agent')
 
         if test_lib.is_rhel_sap(host):
@@ -245,11 +245,11 @@ class TestsAWS:
             'grub2', 'tar', 'rsync', 'chrony'
         ]
 
-        product_version = version.parse(host.system_info.release)
-        if product_version >= version.parse('8.5'):
+        system_release = version.parse(host.system_info.release)
+        if system_release >= version.parse('8.5'):
             required_pkgs.append('NetworkManager-cloud-setup')
 
-        if version.parse('8.3') > product_version >= version.parse('8.0'):
+        if version.parse('8.3') > system_release >= version.parse('8.0'):
             required_pkgs.append('rng-tools')
 
         if test_lib.is_rhel_sap(host):
@@ -275,14 +275,14 @@ class TestsAWS:
             required_pkgs.append('tuned-profiles-sap-hana')
 
             # CLOUDX-367
-            if product_version >= version.parse('8.6'):
+            if system_release >= version.parse('8.6'):
                 required_pkgs.append('ansible-core')
             else:
                 required_pkgs.append('ansible')
 
         # CLOUDX-451
-        if product_version.major == 9 and product_version.minor >= 3 or \
-                product_version.major == 8 and product_version.minor >= 9:
+        if system_release.major == 9 and system_release.minor >= 3 or \
+                system_release.major == 8 and system_release.minor >= 9:
             if host.system_info.arch != 'aarch64':
                 # Legacy BIOS boot mode related package
                 required_pkgs.append('grub2-pc')
@@ -293,7 +293,7 @@ class TestsAWS:
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
 
-        if product_version < version.parse('8.0'):
+        if system_release < version.parse('8.0'):
             required_pkgs = required_pkgs_v7
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
@@ -665,9 +665,9 @@ class TestsAWS:
 
         path_to_check = '/sys/firmware/efi'
 
-        product_version = version.parse(host.system_info.release)
-        if product_version.major == 9 and product_version.minor >= 3 or \
-                product_version.major == 8 and product_version.minor >= 9:
+        system_release = version.parse(host.system_info.release)
+        if system_release.major == 9 and system_release.minor >= 3 or \
+                system_release.major == 8 and system_release.minor >= 9:
             with host.sudo():
                 assert host.file(path_to_check).exists, \
                     f'{path_to_check} is expected to exist in EFI-booted images.'
