@@ -3,11 +3,10 @@ import re
 import time
 
 import pytest
-
-from lib import test_lib
-from lib import console_lib
-
 from packaging import version
+
+from lib import console_lib
+from lib import test_lib
 
 
 @pytest.mark.order(1)
@@ -57,9 +56,9 @@ class TestsGeneric:
         """
         Check that crashkernel is enabled in image.
         """
-        product_release_version = float(host.system_info.release)
+        system_release = version.parse(host.system_info.release)
 
-        if product_release_version < 9.0:
+        if system_release < version.parse('9.0'):
             expected_content = 'crashkernel=auto'
         else:
             with host.sudo():
@@ -136,9 +135,9 @@ class TestsGeneric:
         BugZilla 1938930
         Issue RHELPLAN-60817
         """
-        product_version = float(host.system_info.release)
+        system_release = version.parse(host.system_info.release)
 
-        if product_version < 8.0:
+        if system_release < version.parse('8.0'):
             rpm_to_check = 'redhat-release-server'
         else:
             rpm_to_check = 'redhat-release'
@@ -148,7 +147,7 @@ class TestsGeneric:
 
             cert_version = host.check_output('rct cat-cert /etc/pki/product-default/*.pem | grep Version')
 
-            assert f'Version: {product_version}' in cert_version, \
+            assert f'Version: {system_release}' in cert_version, \
                 'Inconsistent version in pki certificate'
 
     @pytest.mark.run_on(['all'])
@@ -183,7 +182,7 @@ class TestsGeneric:
         if test_lib.is_rhel_atomic_host(host):
             pytest.skip('Not run in atomic images')
 
-        product_version = float(host.system_info.release)
+        system_release = version.parse(host.system_info.release)
 
         release_file = 'redhat-release'
         if host.system_info.distribution == 'fedora':
@@ -191,10 +190,10 @@ class TestsGeneric:
 
         with host.sudo():
             command_to_run = "rpm -q --qf '%{VERSION}' --whatprovides " + release_file
-            package_release_version = float(host.check_output(command_to_run))
+            package_release = version.parse(host.check_output(command_to_run))
 
-        assert product_version == package_release_version, \
-            f'product version ({product_version}) does not match package release version'
+        assert system_release == package_release, \
+            f'Product version ({system_release}) does not match package release version'
 
     @pytest.mark.run_on(['rhel'])
     def test_root_is_locked(self, host):
@@ -228,7 +227,7 @@ class TestsGeneric:
 
         with host.sudo():
             if host.file('/sys/firmware/efi').exists:
-                if float(host.system_info.release) < 8.0:
+                if version.parse(host.system_info.release) < version.parse('8.0'):
                     linked_to = '/boot/efi/EFI/redhat/grubenv'
 
             assert host.file(grub2_file).linked_to == linked_to
@@ -326,7 +325,7 @@ class TestsGeneric:
         file_to_check = '/etc/yum/pluginconf.d/langpacks.conf'
 
         with host.sudo():
-            if float(host.system_info.release) < 8.0:
+            if version.parse(host.system_info.release) < version.parse('8.0'):
                 assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
                     f'{file_to_check} has unexpected content'
             else:
@@ -700,7 +699,8 @@ class TestsNetworking:
         }
 
         # EXDSP-813
-        if instance_data['cloud'] == 'azure' and float(host.system_info.release) == 8.5:
+        if instance_data['cloud'] == 'azure' and \
+                version.parse(host.system_info.release) == version.parse('8.5'):
             pytest.skip("There is a known issue affecting RHEL 8.5 on Azure images and won't be fixed (EXDSP-813).")
 
         with host.sudo():
@@ -828,8 +828,8 @@ class TestsAuthConfig:
         self.__check_pam_d_file_content(host, 'system-auth')
 
     def __check_pam_d_file_content(self, host, file_name):
-        product_major_version = int(float(host.system_info.release))
-        local_file = f'data/generic/{file_name}_rhel{product_major_version}'
+        system_release_major_version = version.parse(host.system_info.release).major
+        local_file = f'data/generic/{file_name}_rhel{system_release_major_version}'
         file_to_check = f'/etc/pam.d/{file_name}'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
@@ -853,7 +853,7 @@ class TestsKdump:
             arch = host.system_info.arch
 
             # BugZilla 2214235
-            if version.parse(kernel_version) < version.parse("4.18.0") and arch == 'aarch64':
+            if version.parse(kernel_version) < version.parse('4.18.0') and arch == 'aarch64':
                 pytest.skip(f'Skip on arm64 with kernel version {kernel_version}')
 
             print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools").stdout}')
