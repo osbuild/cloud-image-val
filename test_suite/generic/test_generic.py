@@ -18,9 +18,15 @@ class TestsGeneric:
         """
         if instance_data['cloud'] == 'azure':
             pytest.skip('Skipping on fedora due to old image definitions')
-        with host.sudo():
-            assert 'no matches' in host.check_output('x=$(ausearch -m avc 2>&1 &); echo $x'), \
-                'There should not be any avc denials (selinux)'
+
+        command_to_run = 'x=$(ausearch -m avc 2>&1 &); echo $x'
+        result = test_lib.print_host_command_output(host,
+                                                    command_to_run,
+                                                    capture_result=True)
+
+        no_avc_denials_found = 'no matches' in result.stdout
+
+        assert no_avc_denials_found, 'There should not be any avc denials (selinux)'
 
     @pytest.mark.run_on(['all'])
     def test_bash_history_is_empty(self, host):
