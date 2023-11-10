@@ -194,7 +194,7 @@ def filter_host_log_file_by_keywords(host,
         return None
 
 
-def print_host_command_output(host, command, use_sudo=True):
+def print_host_command_output(host, command, capture_result=False, use_sudo=True):
     console_lib.print_divider(command)
 
     if use_sudo:
@@ -209,3 +209,6 @@ def print_host_command_output(host, command, use_sudo=True):
         print(f'Stderr:\n{result.stderr}\n')
     else:
         print(result.stdout)
+
+    if capture_result:
+        return result
