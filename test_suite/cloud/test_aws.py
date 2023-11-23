@@ -94,6 +94,14 @@ class TestsAWS:
         - Config files should have the correct MD5 checksums
         """
         checksums_by_version = {
+            '9.4+': {
+                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            '8.10+': {
+                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
             '8.6+': {
                 '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
@@ -117,7 +125,11 @@ class TestsAWS:
             auditd_service).is_running, f'{auditd_service} expected to be running'
 
         system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('8.6'):
+        if system_release >= version.parse('9.4'):
+            checksums = checksums_by_version['9.4+']
+        elif version.parse('9.0') > system_release >= version.parse('8.10'):
+            checksums = checksums_by_version['8.10+']
+        elif system_release >= version.parse('8.6'):
             checksums = checksums_by_version['8.6+']
         elif system_release >= version.parse('8.0'):
             checksums = checksums_by_version['8.0+']
