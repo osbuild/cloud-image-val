@@ -127,7 +127,7 @@ class TestsAWS:
         system_release = version.parse(host.system_info.release)
         if system_release >= version.parse('9.4'):
             checksums = checksums_by_version['9.4+']
-        elif system_release >= version.parse('8.10'):
+        elif version.parse('9.0') > system_release >= version.parse('8.10'):
             checksums = checksums_by_version['8.10+']
         elif system_release >= version.parse('8.6'):
             checksums = checksums_by_version['8.6+']
