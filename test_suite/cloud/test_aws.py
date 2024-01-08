@@ -317,8 +317,14 @@ class TestsAWS:
     def test_rhui_pkg_is_installed(self, host):
         with host.sudo():
             # CLOUDX-590
-            assert host.run_test('rm -f /var/lib/rpm/__db.*'), 'Failed to remove the RPM db files'
-            assert host.run_test('rpm --rebuilddb'), 'Failed to rebuild the RPM db files'
+            if host.run('rm -f /var/lib/rpm/__db.*').failed or host.run('rpm --rebuilddb').failed:
+                change_permissions_cmd = 'chmod 755 /var/lock /var/lock/rpm ' \
+                                   '&& chown root.lock /var/lock ' \
+                                   '&& chown root.root /var/lock/rpm'
+                assert host.run_test(change_permissions_cmd), 'Failed to change permissions'
+                if host.file('/var/lock/rpm/transaction').exists:
+                    assert host.run_test('rm -f /var/lock/rpm/transaction'), 'Failed to remove the transaction file'
+
         unwanted_rhui_pkgs = None
 
         if test_lib.is_rhel_high_availability(host):
