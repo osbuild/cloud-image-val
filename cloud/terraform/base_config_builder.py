@@ -38,9 +38,23 @@ class BaseConfigBuilder:
         :param separator: String to be used as a separator of the items passed in resource_names_combination
         :return: String composed of a prefix, resource names combination and a suffix with random numbers.
         """
-        combinations = [self.resource_name_prefix]
-        combinations.extend(resource_names_combination)
-        combinations.append(self.get_random_numbers())
+        tf_resource_name_max_chars = 63
+        random_num = self.get_random_numbers()
+
+        # If any of the names already have prefixes, those will be removed to avoid redundancy.
+        # Example: We received ['civ-network', 'vnc'] as resource_names_combination argument.
+        # Considering self.resource_name_prefix is "civ" and separator "-", combined_name will contain: "network-vnc"
+        combined_name = separator.join(resource_names_combination).replace(
+            f'{self.resource_name_prefix}{separator}', '')
+
+        # We calculate the full length after concatenation with prefix, two separators and random numbers
+        end_index = tf_resource_name_max_chars - len(self.resource_name_prefix) - len(random_num) - (len(separator) * 2)
+
+        combinations = [
+            self.resource_name_prefix,
+            combined_name[0:end_index],
+            random_num
+        ]
 
         return separator.join(combinations)
 
