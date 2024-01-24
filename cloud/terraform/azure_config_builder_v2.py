@@ -315,6 +315,10 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'public_key': f'${{file("{self.ssh_key_path}")}}'
         }
 
+        boot_diagnostics = {
+            'storage_account_uri': None
+        }
+
         new_instance = {
             'name': instance_hostname,
             'location': instance['location'],
@@ -326,6 +330,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
                 azure_resource_name=instance['azurerm_network_interface'])],
             'os_disk': os_disk,
             'admin_ssh_key': admin_ssh_key,
+            'boot_diagnostics': boot_diagnostics,
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
