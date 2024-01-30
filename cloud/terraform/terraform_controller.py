@@ -41,12 +41,7 @@ class TerraformController:
         [t.join() for t in threads]
 
     def get_instances(self):
-        output = os.popen('terraform show --json')
-        output = output.read()
-
-        json_output = json.loads(output)
-
-        resources = json_output['values']['root_module']['resources']
+        resources = self.get_terraform_resources()
 
         if self.cloud_name == 'aws':
             instances_info = self.get_instances_aws(resources)
@@ -58,6 +53,14 @@ class TerraformController:
             raise Exception(f'Unsupported cloud provider: {self.cloud_name}')
 
         return instances_info
+
+    def get_terraform_resources(self):
+        output = os.popen('terraform show --json')
+        output = output.read()
+
+        json_output = json.loads(output)
+
+        return json_output['values']['root_module']['resources']
 
     def get_instances_aws(self, resources):
         instances_info = {}
