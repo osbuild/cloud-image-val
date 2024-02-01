@@ -319,8 +319,8 @@ class TestsAWS:
             # CLOUDX-590
             if host.run('rm -f /var/lib/rpm/__db.*').failed or host.run('rpm --rebuilddb').failed:
                 change_permissions_cmd = 'chmod 755 /var/lock /var/lock/rpm ' \
-                                   '&& chown root.lock /var/lock ' \
-                                   '&& chown root.root /var/lock/rpm'
+                    '&& chown root.lock /var/lock ' \
+                    '&& chown root.root /var/lock/rpm'
                 assert host.run_test(change_permissions_cmd), 'Failed to change permissions'
                 if host.file('/var/lock/rpm/transaction').exists:
                     assert host.run_test('rm -f /var/lock/rpm/transaction'), 'Failed to remove the transaction file'
