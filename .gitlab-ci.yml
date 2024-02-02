@@ -62,8 +62,8 @@ Prepare-rhel-internal:
       - RUNNER:
           # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
           # artifacts from all previous jobs and the last one wins
-          - aws/rhel-8.8-nightly-x86_64
-          - aws/rhel-9.2-nightly-x86_64
+          - aws/rhel-8.10-nightly-x86_64
+          - aws/rhel-9.4-nightly-x86_64
         INTERNAL_NETWORK: ["true"]
 
 .aws:
@@ -105,10 +105,12 @@ Prepare-rhel-internal:
     RUNNER:
       - aws/centos-stream-8-x86_64
       - aws/rhel-8.4-ga-x86_64
-      - aws/rhel-8.7-ga-x86_64
-      - aws/rhel-9.1-ga-x86_64
+      - aws/rhel-8.9-ga-x86_64
+      - aws/rhel-9.3-ga-x86_64
       - aws/rhel-8.10-nightly-x86_64
+      - aws/rhel-8.10-nightly-aarch64
       - aws/rhel-9.4-nightly-x86_64
+      - aws/rhel-9.4-nightly-aarch64
       - aws/centos-stream-9-x86_64
     INTERNAL_NETWORK: ["true"]
 
@@ -136,7 +138,8 @@ Prepare-rhel-internal:
 
 .fedora_runners: &fedora_runners
     RUNNER:
-      - aws/fedora-37-x86_64
+      - aws/fedora-38-x86_64
+      - aws/fedora-39-x86_64
 
 .IB_tests:
   extends: .tests
