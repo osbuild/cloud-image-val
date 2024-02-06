@@ -585,11 +585,12 @@ class TestsCloudInit:
         """
         Verify file /etc/cloud/cloud.cfg is not changed
         """
-        package_to_check = 'cloud-init'
+        cloud_cfg = '/etc/cloud/cloud.cfg'
+        verify_cmd = f'rpm -Vf {cloud_cfg} | grep -e "^S.5.*{cloud_cfg}$"'
 
         with host.sudo():
-            assert host.run_test(f'rpm -V {package_to_check}'), \
-                f'There should not be changes in {package_to_check} package'
+            assert not host.run(verify_cmd).stdout, \
+                f'There should not be changes in {cloud_cfg} package'
 
     @pytest.mark.run_on(['rhel9.0'])
     def test_cloud_cfg_netdev_rhel9(self, host):
