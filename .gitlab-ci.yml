@@ -108,9 +108,7 @@ Prepare-rhel-internal:
       - aws/rhel-8.9-ga-x86_64
       - aws/rhel-9.3-ga-x86_64
       - aws/rhel-8.10-nightly-x86_64
-      - aws/rhel-8.10-nightly-aarch64
       - aws/rhel-9.4-nightly-x86_64
-      - aws/rhel-9.4-nightly-aarch64
       - aws/centos-stream-9-x86_64
     INTERNAL_NETWORK: ["true"]
 
