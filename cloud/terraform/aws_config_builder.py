@@ -94,6 +94,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
         security_group_name = self.create_resource_name([region, 'security-group'])
 
         if self.__test_resource_exists_in_region(tf_resource_type, region):
+            instance[tf_resource_type] = security_group_name
             return
 
         instance[tf_resource_type] = security_group_name
@@ -213,10 +214,12 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
         declared_filesystem_id = 'aws_efs_file_system.{}.id'.format(instance['aws_efs_file_system'])
         declared_subnet_id = 'aws_subnet.{}.id'.format(instance['aws_subnet'])
+        declared_security_group_id = 'aws_security_group.{}.id'.format(instance['aws_security_group'])
 
         new_efs_mount_target = {
             'file_system_id': f'${{{declared_filesystem_id}}}',
-            'subnet_id': f'${{{declared_subnet_id}}}'
+            'subnet_id': f'${{{declared_subnet_id}}}',
+            'security_groups': [f'${{{declared_security_group_id}}}']
         }
 
         self.resources_tf['resource'][tf_resource_type][efs_mount_target_name] = new_efs_mount_target
@@ -243,6 +246,11 @@ class AWSConfigBuilder(BaseConfigBuilder):
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]
         }
+
+        if 'aws_security_group' in instance:
+            # declared_security_group_id = 'aws_security_group.{}.id'.format(instance['aws_security_group'])
+            # new_instance['security_groups'] = [f'${{{declared_security_group_id}}}']
+            print(f'Found {instance["aws_security_group"]} security group for instance {instance["name"]}')
 
         self.add_tags(self.config, new_instance)
 
