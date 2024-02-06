@@ -4,7 +4,7 @@ import re
 import pytest
 from packaging import version
 
-from lib import test_lib
+from lib import test_lib, ssh_lib
 
 
 @pytest.fixture
@@ -922,3 +922,17 @@ class TestsAWSSecurity:
         """
         assert not host.package('firewalld').is_installed, \
             'firewalld should not be installed in RHEL AMIs'
+
+
+@pytest.mark.order(5)
+class TestPackages:
+    @pytest.mark.run_on(['rhel9.4'])
+    def test_efs_utils(self, host):
+        efs_utils_rpm = '/tmp/efs-utils-1.35.1-7.el9.noarch.rpm'
+        efs_utils_selinux_rpm = '/tmp/efs-utils-selinux-1.35.1-7.el9.noarch.rpm'
+
+        ssh_lib.copy_file_to_host(host, '/home/nmunoz/testing/civ_container/efs-utils-1.35.1-7.el9.noarch.rpm', efs_utils_rpm)
+        ssh_lib.copy_file_to_host(host, '/home/nmunoz/testing/civ_container/efs-utils-selinux-1.35.1-7.el9.noarch.rpm', efs_utils_selinux_rpm)
+
+        test_lib.print_host_command_output(host, f'rpm -Uvh {efs_utils_rpm}')
+        test_lib.print_host_command_output(host, f'rpm -Uvh {efs_utils_selinux_rpm}')
