@@ -581,16 +581,17 @@ class TestsCloudInit:
             'wheel should not be configured as default_user group'
 
     @pytest.mark.run_on(['rhel'])
-    def test_cloud_cfg(self, host):
+    def test_cloud_configs(self, host):
         """
-        Verify file /etc/cloud/cloud.cfg is not changed
+        Verify files /etc/cloud/cloud.cfg and
+        /etc/cloud/cloud.cfg.d/* are not changed
         """
         cloud_cfg = '/etc/cloud/cloud.cfg'
-        verify_cmd = f'rpm -Vf {cloud_cfg} | grep -e "^S.5.*{cloud_cfg}$"'
+        verify_cmd = f'rpm -Vf {cloud_cfg} | grep -e "^S.5.*{cloud_cfg}"'
 
         with host.sudo():
             assert not host.run(verify_cmd).stdout, \
-                f'There should not be changes in {cloud_cfg} package'
+                f'There should not be changes in {cloud_cfg} or {cloud_cfg}.d/'
 
     @pytest.mark.run_on(['rhel9.0'])
     def test_cloud_cfg_netdev_rhel9(self, host):
