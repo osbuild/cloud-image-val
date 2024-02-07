@@ -112,9 +112,10 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             r"(?P<date>\d{4}\d{2}\d{2})\.\b(?:sp\.)?(?P<build_nr>\d+)\.(?P<arch>\S*)\.\bvhd"
         )
 
+        # thozza NB: the 'version' number may contain dot to separate the major and minor version
         azure_vhd_regex_image_builder = (
             r"https:\/\/(?P<storage_account>.*)\.blob.*\/image-(?P<product_name>.*)-"
-            r"(?P<version>\d+)-(?P<arch>x86_64|aarch64).*.vhd"
+            r"(?P<version>(?:[\d]+\.)?\d+)-(?P<arch>x86_64|aarch64).*.vhd"
         )
 
         matches = re.match(azure_vhd_regex, vhd_uri, re.IGNORECASE)
