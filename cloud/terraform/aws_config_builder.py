@@ -194,7 +194,9 @@ class AWSConfigBuilder(BaseConfigBuilder):
         instance[tf_resource_type] = efs_filesystem_name
 
         new_efs_filesystem = {
-            'creation_token': efs_filesystem_name
+            'creation_token': efs_filesystem_name,
+            'encrypted': 'true',
+            'tags': {'name': efs_filesystem_name}
         }
 
         self.add_tags(self.config, new_efs_filesystem)
