@@ -111,12 +111,14 @@ Prepare-rhel-internal:
       - aws/rhel-9.4-nightly-x86_64
       - aws/centos-stream-9-x86_64
     INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["false"]
 
 .rhel_runners_aarch64: &rhel_runners_aarch64
     RUNNER:
       - aws/rhel-8.10-nightly-aarch64
       - aws/rhel-9.4-nightly-aarch64
     INTERNAL_NETWORK: ["true"]
+    NIGHTLY: ["false"]
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
     RUNNER:
@@ -124,7 +126,6 @@ Prepare-rhel-internal:
       - aws/rhel-9.4-nightly-x86_64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["true"]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
     RUNNER:
@@ -132,12 +133,12 @@ Prepare-rhel-internal:
       - aws/rhel-9.4-nightly-aarch64
     INTERNAL_NIGHTLY: ["internal"]
     INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["true"]
 
 .fedora_runners: &fedora_runners
     RUNNER:
       - aws/fedora-38-x86_64
       - aws/fedora-39-x86_64
+    NIGHTLY: ["false"]
 
 .IB_tests:
   extends: .tests
@@ -156,13 +157,27 @@ IB-aws:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
+  rules:
+    - if: $NIGHTLY == "false"
   parallel:
     matrix:
       - *fedora_runners
       - *rhel_runners
       - *rhel_runners_aarch64
-      # - *rhel_runners_x86_64_internal_nightlies
-      # - *rhel_runners_aarch64_internal_nightlies
+
+IB-aws-nightly-compose:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
+  rules:
+    - if: $NIGHTLY == "true"
+  parallel:
+    matrix:
+      - *rhel_runners_x86_64_internal_nightlies
+      - *rhel_runners_aarch64_internal_nightlies
 
 IB-azure:
   stage: test
@@ -171,11 +186,25 @@ IB-azure:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
+  rules:
+    - if: $NIGHTLY == "false"
   parallel:
     matrix:
       - *fedora_runners
       - *rhel_runners
-#      - *rhel_runners_x86_64_internal_nightlies
+
+IB-azure-nightly-compose:
+  stage: test
+  extends: .IB_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
+  rules:
+    - if: $NIGHTLY == "true"
+  parallel:
+    matrix:
+      - *rhel_runners_x86_64_internal_nightlies
 
 container_main:
   extends: .deps
