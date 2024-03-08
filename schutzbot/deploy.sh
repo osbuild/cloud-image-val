@@ -74,17 +74,18 @@ function get_last_passed_commit {
         # Last executed pipeline ID
         pipeline_id=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}" | jq '.last_pipeline.id')
 
-        warning_date=$(date -d "- 3 days" +%s)
+        number_of_days=7
+        warning_date=$(date -d "- $number_of_days days" +%s)
         created_at=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.started_at')
         if [[ $(date -d "${created_at}" +%s) -lt "${warning_date}" ]]; then
-            echo "We are using an old scheduled pipeline id, Please update it"
+            echo "We are using an old scheduled pipeline id (more than $number_of_days days ago). Please update it"
             exit 1
         fi
 
         statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
         for status in ${statuses}; do 
-            if [ "$status" != "success" ]; then 
-                echo "Error in last nightly pipeline"
+            if [ "$status" == "failed" ]; then
+                echo "Last nightly pipeline ('rpmbuild' stage) failed in osbuild-composer CI. We will not run nightly-internal jobs in CIV."
                 exit 1
             fi 
         done
