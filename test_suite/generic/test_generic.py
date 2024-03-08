@@ -585,7 +585,13 @@ class TestsCloudInit:
         """
         Verify files /etc/cloud/cloud.cfg and
         /etc/cloud/cloud.cfg.d/* are not changed
+
+        JIRA: CLOUDX-812
         """
+        if float(host.system_info.release) <= 8.4 and test_lib.is_rhel_sap(host):
+            # Test skipped since it's applicable to RHEL-SAP kickstart-generated images
+            pytest.skip('This test is not applicable for RHEL-SAP 8.4 and older.')
+
         cloud_cfg = '/etc/cloud/cloud.cfg'
         verify_cmd = f'rpm -Vf {cloud_cfg} | grep -e "^S.5.*{cloud_cfg}"'
 
