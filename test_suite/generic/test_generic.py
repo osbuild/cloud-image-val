@@ -16,6 +16,11 @@ class TestsGeneric:
         """
         Check there is no avc denials (selinux).
         """
+        if host.system_info.distribution == 'rhel' and \
+                float(host.system_info.release) == 9.4:
+            pytest.skip('RHEL-24346: Skipping on RHEL-9.4 due to a known issue with NetworkManager.')
+
+        # CLOUDX-320: This "if" is pending to be removed
         if instance_data['cloud'] == 'azure':
             pytest.skip('Skipping on fedora due to old image definitions')
 
