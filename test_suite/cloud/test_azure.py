@@ -104,13 +104,11 @@ class TestsAzure:
                 assert item in files_content, f'{item} is not blocklisted'
 
     @pytest.mark.run_on(['all'])
-    def test_sshd_config_client_alive_interval(self, host, instance_data):
+    @pytest.mark.exclude_on(['fedora'])
+    def test_sshd_config_client_alive_interval(self, host):
         """
         Verify ClientAliveInterval 180 in /etc/ssh/sshd_config
         """
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
-
         sshd_config_file = '/etc/ssh/sshd_config'
         with host.sudo():
             assert host.file(sshd_config_file).contains('ClientAliveInterval 180'), \
@@ -230,13 +228,11 @@ class TestsAzure:
         print(console_lib.print_debug(debug))
 
     @pytest.mark.run_on(['all'])
-    def test_services_running(self, host, instance_data):
+    @pytest.mark.exclude_on(['fedora'])
+    def test_services_running(self, host):
         """
         Verify the necessary services are running
         """
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
-
         service_list = [
             'waagent', 'cloud-init-local', 'cloud-init',
             'cloud-config', 'cloud-final', 'hypervkvpd', 'sshd'
@@ -269,13 +265,11 @@ class TestsAzure:
         assert len(missing_pkgs) == 0, f'One or more packages are missing: {", ".join(missing_pkgs)}'
 
     @pytest.mark.run_on(['all'])
-    def test_waagent_resourcedisk_format(self, host, instance_data):
+    @pytest.mark.exclude_on(['fedora'])
+    def test_waagent_resourcedisk_format(self, host):
         """
         Verify the ResourceDisk.Format is disabled in waagent.conf
         """
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
-
         with host.sudo():
             assert host.file('/etc/waagent.conf').contains('ResourceDisk.Format=n'), \
                 'ResourceDisk.Format=n has to be present in /etc/waagent.conf'
