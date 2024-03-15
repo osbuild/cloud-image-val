@@ -1,5 +1,6 @@
 import os
 import json
+import re
 
 from threading import Thread
 from lib import ssh_lib
@@ -63,8 +64,20 @@ class TerraformController:
         return json_output['values']['root_module']['resources']
 
     def get_instances_aws(self, resources):
-        instances_info = {}
+        regional_efs_file_systems = {}
+        for resource in resources:
+            if resource['type'] == 'aws_efs_file_system':
+                efs_dns_name = resource['values']['dns_name']
+                result = re.match(r'fs-.*\.efs\.(.*).amazon', efs_dns_name)
 
+                if not result:
+                    raise Exception(f'Could not et EFS file system region in DNS name: {efs_dns_name}')
+
+                efs_region = result.group(1)
+
+                regional_efs_file_systems[efs_region] = efs_dns_name
+
+        instances_info = {}
         # 'address' key corresponds to the tf resource id
         for resource in resources:
             if resource['type'] != 'aws_instance':
@@ -73,7 +86,7 @@ class TerraformController:
             ami_name = resource['values']['ami']
             username = self.tf_configurator.get_aws_username_by_ami_name(ami_name)
 
-            instances_info[resource['address']] = {
+            instance_data = {
                 'cloud': 'aws',
                 'name': resource['name'],
                 'instance_id': resource['values']['id'],
@@ -83,6 +96,12 @@ class TerraformController:
                 'ami': ami_name,
                 'username': username,
             }
+
+            instance_region = instance_data['availability_zone'][:-1]
+            if instance_region in regional_efs_file_systems.keys():
+                instance_data['efs_file_system_dns_name'] = regional_efs_file_systems[instance_region]
+
+            instances_info[resource['address']] = instance_data
 
         return instances_info
 
