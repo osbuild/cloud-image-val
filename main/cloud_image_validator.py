@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 
 from pprint import pprint
 from cloud.terraform.terraform_controller import TerraformController
@@ -42,8 +43,8 @@ class CloudImageValidator:
 
             exit_code = wait_status >> 8
 
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             exit_code = self.infra_error_exit_code
 
         finally:

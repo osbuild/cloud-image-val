@@ -4,7 +4,7 @@ import re
 import pytest
 from packaging import version
 
-from lib import test_lib, ssh_lib
+from lib import test_lib
 
 
 @pytest.fixture
@@ -927,12 +927,15 @@ class TestsAWSSecurity:
 @pytest.mark.order(5)
 class TestPackages:
     @pytest.mark.run_on(['rhel9.4'])
-    def test_efs_utils(self, host):
-        efs_utils_rpm = '/tmp/efs-utils-1.35.1-7.el9.noarch.rpm'
-        efs_utils_selinux_rpm = '/tmp/efs-utils-selinux-1.35.1-7.el9.noarch.rpm'
+    def test_efs_utils_mount(self, host, instance_data):
+        efs_dns_name = instance_data['efs_file_system_dns_name']
+        print(f'EFS file system dns name found for current instance: {efs_dns_name}')
 
-        ssh_lib.copy_file_to_host(host, '/home/nmunoz/testing/civ_container/efs-utils-1.35.1-7.el9.noarch.rpm', efs_utils_rpm)
-        ssh_lib.copy_file_to_host(host, '/home/nmunoz/testing/civ_container/efs-utils-selinux-1.35.1-7.el9.noarch.rpm', efs_utils_selinux_rpm)
+        with host.sudo():
+            mount_point = '~/efs'
 
-        test_lib.print_host_command_output(host, f'rpm -Uvh {efs_utils_rpm}')
-        test_lib.print_host_command_output(host, f'rpm -Uvh {efs_utils_selinux_rpm}')
+            host.run(f'mkdir {mount_point}')
+
+            efs_mount_command = f'mount -t efs {efs_dns_name}:/ {mount_point}'
+
+            host.run_test(efs_mount_command)
