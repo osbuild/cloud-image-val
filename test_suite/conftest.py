@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 import time
@@ -8,10 +9,19 @@ import requests
 from packaging import version
 from py.xml import html
 from pytest_html import extras
+from reportportal_client import RPLogger
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 from lib import test_lib
+
+
+@pytest.fixture(scope="session")
+def rp_logger():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logging.setLoggerClass(RPLogger)
+    return logger
 
 
 def __get_host_info(host):

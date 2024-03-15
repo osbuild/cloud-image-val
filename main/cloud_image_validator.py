@@ -114,7 +114,8 @@ class CloudImageValidator:
 
         return runner.run_tests(self.config['output_file'],
                                 self.config['test_filter'],
-                                self.config['include_markers'])
+                                self.config['include_markers'],
+                                self.config['report_portal'])
 
     def cleanup(self):
         self.infra_controller.destroy_infra()

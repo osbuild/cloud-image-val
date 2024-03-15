@@ -3,8 +3,9 @@ import os
 from pprint import pprint
 from argparse import ArgumentParser, RawTextHelpFormatter
 from main.cloud_image_validator import CloudImageValidator
-from lib.config_lib import CIVConfig
+from lib.config_lib import CIVConfig, PytestConfig
 from lib import console_lib
+
 
 parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
 
@@ -54,6 +55,11 @@ parser.add_argument('--tags',
                          'This tags should be passed in json format as in this example:\n'
                          '--tags \'{"key1": "value1", "key2": "value2"}\'',
                     default=None)
+parser.add_argument('-rp', '--report-portal',
+                    help='Use this option to upload the JUnit XML test results to your Report Portal project.\n'
+                         'Make sure to set the correct environment variables as explained in the README doc.',
+                    action='store_true',
+                    default=None)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -63,6 +69,9 @@ if __name__ == '__main__':
         os.environ['PYTHONPATH'] = ''
     os.environ['PYTHONPATH'] = ':'.join(
         [f'{os.path.dirname(__file__)}', os.environ['PYTHONPATH']])
+
+    rp_config = PytestConfig()
+    rp_config.set_report_portal_config()
 
     config_manager = CIVConfig(args)
 

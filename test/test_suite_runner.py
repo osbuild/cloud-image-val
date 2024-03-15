@@ -11,6 +11,7 @@ class TestSuiteRunner:
     test_filter = 'test_test_name'
     test_marker = 'pub'
     test_connection = 'paramiko'
+    test_report_portal = ''
 
     @pytest.fixture
     def suite_runner(self):
@@ -31,7 +32,7 @@ class TestSuiteRunner:
         mock_os_system = mocker.patch('os.system')
 
         # Act
-        suite_runner.run_tests(test_output_filepath, self.test_filter, self.test_marker)
+        suite_runner.run_tests(test_output_filepath, self.test_filter, self.test_marker, self.test_report_portal)
 
         # Assert
         mock_os_path_exists.assert_called_once_with(test_output_filepath)
@@ -40,18 +41,19 @@ class TestSuiteRunner:
         mock_os_system.assert_called_once_with(test_composed_command)
         mock_compose_testinfra_command.assert_called_once_with(test_output_filepath,
                                                                self.test_filter,
-                                                               self.test_marker)
+                                                               self.test_marker,
+                                                               self.test_report_portal)
 
     @pytest.mark.parametrize(
-        'test_filter, test_marker, test_debug, test_parallel, expected_command_string',
-        [(None, None, False, False,
+        'test_filter, test_marker, test_debug, test_parallel, test_report_portal, expected_command_string',
+        [(None, None, False, False, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")}'),
-         (test_filter, test_marker, False, False,
+         (test_filter, test_marker, False, False, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
@@ -60,7 +62,7 @@ class TestSuiteRunner:
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
-         (None, None, False, True,
+         (None, None, False, True, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
@@ -71,7 +73,7 @@ class TestSuiteRunner:
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
           '--reruns 3 --reruns-delay 5'),
-         (None, None, True, True,
+         (None, None, True, True, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
@@ -91,6 +93,7 @@ class TestSuiteRunner:
                                        test_marker,
                                        test_debug,
                                        test_parallel,
+                                       test_report_portal,
                                        expected_command_string):
         # Arrange
         test_hosts = 'user1@host1,user2@host2'
@@ -108,7 +111,8 @@ class TestSuiteRunner:
         # Act, Assert
         assert suite_runner.compose_testinfra_command(self.test_output_filepath,
                                                       test_filter,
-                                                      test_marker) == expected_command_string
+                                                      test_marker,
+                                                      test_report_portal) == expected_command_string
 
         mock_get_all_instances_hosts_with_users.assert_called_once()
 
