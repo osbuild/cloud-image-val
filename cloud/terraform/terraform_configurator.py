@@ -3,6 +3,7 @@ import json
 from pprint import pprint
 
 from cloud.terraform.aws_config_builder import AWSConfigBuilder
+from cloud.terraform.aws_config_builder_efs import AWSConfigBuilderEfs
 from cloud.terraform.azure_config_builder_v2 import AzureConfigBuilderV2
 from cloud.terraform.gcloud_config_builder import GCloudConfigBuilder
 from lib import console_lib
@@ -53,6 +54,8 @@ class TerraformConfigurator:
         cloud_name = self.resources_dict['provider']
 
         if cloud_name == 'aws':
+            if 'aws-efs' in self.config['tags']:
+                return AWSConfigBuilderEfs(self.resources_dict, self.ssh_key_path, self.config)
             return AWSConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
         elif cloud_name == 'azure':
             return AzureConfigBuilderV2(self.resources_dict, self.ssh_key_path, self.config)

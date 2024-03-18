@@ -19,7 +19,7 @@ class BaseConfigBuilder:
         self.ssh_key_path = ssh_key_path
         self.config = config
 
-        self.resources_tf = {'resource': {}, 'data': {}}
+        self.resources_tf = {'resource': {}}
         self.providers_tf = {'provider': {self.cloud_providers[self.cloud_name]: []}}
 
     def build_resources(self) -> dict:
