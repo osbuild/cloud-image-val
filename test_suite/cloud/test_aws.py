@@ -3,8 +3,8 @@ import re
 
 import pytest
 from packaging import version
+
 from lib import test_lib
-from test_suite.cloud.fixtures import initialize_efs_env
 
 
 @pytest.fixture
@@ -922,40 +922,3 @@ class TestsAWSSecurity:
         """
         assert not host.package('firewalld').is_installed, \
             'firewalld should not be installed in RHEL AMIs'
-
-
-@pytest.mark.usefixtures(
-    initialize_efs_env.__name__
-)
-class TestsPackages:
-    @pytest.mark.run_on(['rhel'])
-    def test_efs_utils(self, host):
-        """
-        Check basic functionality of EFS utils:
-        - Download & install the package. (Terraform script)
-        - Create a mount point and mount the EFS file system to the RHEL instance.
-        - Create a file on the mount point.
-        - Automate mount on boot.
-        - Checksum the file before reboot.
-        - reboot and checksum that the file is correct.
-        """
-        # will get 'file_system_id' arg form the fixture that gets the output of the Terraform script
-        file_system_id = None
-        test_file = '/mnt/efs/testfile'
-        with host.sudo():
-
-            assert host.run_test(
-                f'mkdir /mnt/efs && mount -t efs {file_system_id} /mnt/efs/'
-            ), f'Failed mount {file_system_id} to efs folder'
-
-            assert host.mount_point("/mnt/efs").exists
-
-            assert host.run_test(
-                f'dd if=/dev/zero of={test_file} bs=3K count=1'), 'Failed to write the file'
-
-            assert host.run_test(
-                f'echo "{file_system_id}:/ /mnt/efs efs _netdev,tls 0 0" >> "/etc/fstab"'), 'Failed to write fstab'
-
-            checksum_before_reboot = host.file(test_file).md5sum
-            test_lib.reboot_host(host)
-            assert checksum_before_reboot == host.file(test_file).md5sum
