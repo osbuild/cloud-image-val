@@ -1,16 +1,16 @@
-import os.path
+import os
 
 import yaml
 
 
 class CIVConfig:
-    config_path = '/tmp/civ_config.yaml'
+    config_path = 'civ_config.yaml'
     command_line_args = {}
 
     config_file_arg_name = 'config_file'
 
     def __init__(self, args=None):
-        if args.config_file is not None:
+        if args and args.config_file:
             self.config_path = args.config_file
 
         self.command_line_args = args.__dict__
@@ -87,6 +87,7 @@ class CIVConfig:
             'parallel': False,
             'stop_cleanup': None,
             'test_filter': None,
+            'test_suites': None,
         }
 
         return config_defaults

@@ -18,6 +18,11 @@ parser.add_argument('-o', '--output-file',
 parser.add_argument('-t', '--test-filter',
                     help='Use this option to filter tests execution by test name',
                     default=None)
+parser.add_argument('--test-suites',
+                    help='Use this option to specify which test suites will be use for test run.'
+                         'If no test suite is provided, default test suites will be used (see test_suite/)',
+                    nargs='+',
+                    default=None)
 parser.add_argument('-m', '--include-markers',
                     help='Use this option to specify which tests to run that match a pytest markers expression.\n'
                          'The only marker currently supported is "pub" (see pytest.ini for more details)\n'
