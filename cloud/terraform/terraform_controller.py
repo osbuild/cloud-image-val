@@ -71,7 +71,7 @@ class TerraformController:
                 result = re.match(r'fs-.*\.efs\.(.*).amazon', efs_dns_name)
 
                 if not result:
-                    raise Exception(f'Could not et EFS file system region in DNS name: {efs_dns_name}')
+                    raise Exception(f'Could not get EFS file system region in DNS name: {efs_dns_name}')
 
                 efs_region = result.group(1)
 

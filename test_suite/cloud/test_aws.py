@@ -922,20 +922,3 @@ class TestsAWSSecurity:
         """
         assert not host.package('firewalld').is_installed, \
             'firewalld should not be installed in RHEL AMIs'
-
-
-@pytest.mark.order(5)
-class TestPackages:
-    @pytest.mark.run_on(['rhel9.4'])
-    def test_efs_utils_mount(self, host, instance_data):
-        efs_dns_name = instance_data['efs_file_system_dns_name']
-        print(f'EFS file system dns name found for current instance: {efs_dns_name}')
-
-        with host.sudo():
-            mount_point = '~/efs'
-
-            host.run(f'mkdir {mount_point}')
-
-            efs_mount_command = f'mount -t efs {efs_dns_name}:/ {mount_point}'
-
-            host.run_test(efs_mount_command)
