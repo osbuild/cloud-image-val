@@ -8,6 +8,7 @@ class TestSuiteRunner:
     test_instances = ['test instance 1', 'test instance 2']
     test_ssh_config = '/path/to/ssh_config'
     test_output_filepath = 'test/output/filepath.xml'
+    test_test_suite_paths = ['test_path_1', 'test_path_2']
     test_filter = 'test_test_name'
     test_marker = 'pub'
     test_connection = 'paramiko'
@@ -23,35 +24,39 @@ class TestSuiteRunner:
         test_output_filepath = '/test/output/filepath'
         test_composed_command = 'test composed command'
 
-        mock_compose_testinfra_command = mocker.MagicMock(return_value=test_composed_command)
-        suite_runner.compose_testinfra_command = mock_compose_testinfra_command
+        mock_compose_pytest_command = mocker.MagicMock(return_value=test_composed_command)
+        suite_runner.compose_pytest_command = mock_compose_pytest_command
 
         mock_os_path_exists = mocker.patch('os.path.exists', return_value=True)
         mock_os_remove = mocker.patch('os.remove')
         mock_os_system = mocker.patch('os.system')
 
         # Act
-        suite_runner.run_tests(test_output_filepath, self.test_filter, self.test_marker)
+        suite_runner.run_tests(self.test_test_suite_paths,
+                               test_output_filepath,
+                               self.test_filter,
+                               self.test_marker)
 
         # Assert
         mock_os_path_exists.assert_called_once_with(test_output_filepath)
         mock_os_remove.assert_called_once_with(test_output_filepath)
 
         mock_os_system.assert_called_once_with(test_composed_command)
-        mock_compose_testinfra_command.assert_called_once_with(test_output_filepath,
-                                                               self.test_filter,
-                                                               self.test_marker)
+        mock_compose_pytest_command.assert_called_once_with(self.test_test_suite_paths,
+                                                            test_output_filepath,
+                                                            self.test_filter,
+                                                            self.test_marker)
 
     @pytest.mark.parametrize(
-        'test_filter, test_marker, test_debug, test_parallel, expected_command_string',
-        [(None, None, False, False,
+        'test_test_suites, test_filter, test_marker, test_debug, test_parallel, expected_command_string',
+        [(None, None, None, False, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")}'),
-         (test_filter, test_marker, False, False,
+         (None, test_filter, test_marker, False, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
@@ -60,7 +65,7 @@ class TestSuiteRunner:
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
-         (None, None, False, True,
+         (None, None, None, False, True,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
@@ -71,8 +76,8 @@ class TestSuiteRunner:
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
           '--reruns 3 --reruns-delay 5'),
-         (None, None, True, True,
-          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
+         (test_test_suite_paths, None, None, True, True,
+          'pytest test_path_1 test_path_2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
@@ -84,14 +89,15 @@ class TestSuiteRunner:
           '--reruns 3 --reruns-delay 5 '
           '-v')]
     )
-    def test_compose_testinfra_command(self,
-                                       mocker,
-                                       suite_runner,
-                                       test_filter,
-                                       test_marker,
-                                       test_debug,
-                                       test_parallel,
-                                       expected_command_string):
+    def test_compose_pytest_command(self,
+                                    mocker,
+                                    suite_runner,
+                                    test_test_suites,
+                                    test_filter,
+                                    test_marker,
+                                    test_debug,
+                                    test_parallel,
+                                    expected_command_string):
         # Arrange
         test_hosts = 'user1@host1,user2@host2'
         test_suite_paths = ['path1', 'path2']
@@ -103,12 +109,13 @@ class TestSuiteRunner:
         suite_runner.get_all_instances_hosts_with_users = mock_get_all_instances_hosts_with_users
 
         mock_get_test_suite_paths = mocker.MagicMock(return_value=test_suite_paths)
-        suite_runner.get_test_suite_paths = mock_get_test_suite_paths
+        suite_runner.get_default_test_suite_paths = mock_get_test_suite_paths
 
         # Act, Assert
-        assert suite_runner.compose_testinfra_command(self.test_output_filepath,
-                                                      test_filter,
-                                                      test_marker) == expected_command_string
+        assert suite_runner.compose_pytest_command(test_test_suites,
+                                                   self.test_output_filepath,
+                                                   test_filter,
+                                                   test_marker) == expected_command_string
 
         mock_get_all_instances_hosts_with_users.assert_called_once()
 
@@ -140,13 +147,13 @@ class TestSuiteRunner:
         [('other', ['generic/test_generic.py']),
          ('aws', ['generic/test_generic.py', 'cloud/test_aws.py'])],
     )
-    def test_get_test_suite_paths(self,
-                                  mocker,
-                                  suite_runner,
-                                  test_cloud_provider,
-                                  expected_suite_paths):
+    def test_get_default_test_suite_paths(self,
+                                          mocker,
+                                          suite_runner,
+                                          test_cloud_provider,
+                                          expected_suite_paths):
         suite_runner.cloud_provider = test_cloud_provider
 
         mocker.patch('os.path.dirname', return_value='')
 
-        assert suite_runner.get_test_suite_paths() == expected_suite_paths
+        assert suite_runner.get_default_test_suite_paths() == expected_suite_paths

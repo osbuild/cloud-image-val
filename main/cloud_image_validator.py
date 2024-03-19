@@ -112,7 +112,8 @@ class CloudImageValidator:
                              parallel=self.config['parallel'],
                              debug=self.config['debug'])
 
-        return runner.run_tests(self.config['output_file'],
+        return runner.run_tests(self.config['test_suites'],
+                                self.config['output_file'],
                                 self.config['test_filter'],
                                 self.config['include_markers'])
 

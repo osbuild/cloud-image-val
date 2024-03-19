@@ -32,25 +32,37 @@ class SuiteRunner:
         self.debug = debug
 
     def run_tests(self,
+                  test_suite_paths,
                   output_filepath,
                   test_filter=None,
                   include_markers=None):
         if os.path.exists(output_filepath):
             os.remove(output_filepath)
 
-        return os.system(self.compose_testinfra_command(output_filepath,
-                                                        test_filter,
-                                                        include_markers))
+        pytest_composed_command = self.compose_pytest_command(test_suite_paths,
+                                                              output_filepath,
+                                                              test_filter,
+                                                              include_markers)
 
-    def compose_testinfra_command(self,
-                                  output_filepath,
-                                  test_filter,
-                                  include_markers):
+        if self.debug:
+            print('Composed pytest command:')
+            print(pytest_composed_command)
+
+        return os.system(pytest_composed_command)
+
+    def compose_pytest_command(self,
+                               test_suite_paths,
+                               output_filepath,
+                               test_filter,
+                               include_markers):
         all_hosts = self.get_all_instances_hosts_with_users()
+
+        if not test_suite_paths:
+            test_suite_paths = self.get_default_test_suite_paths()
 
         command_with_args = [
             'pytest',
-            ' '.join(self.get_test_suite_paths()),
+            ' '.join(test_suite_paths),
             f'--hosts={all_hosts}',
             f'--connection={self.connection_backend}',
             f'--ssh-config {self.ssh_config}',
@@ -79,9 +91,9 @@ class SuiteRunner:
 
         return ' '.join(command_with_args)
 
-    def get_test_suite_paths(self):
+    def get_default_test_suite_paths(self):
         """
-        :return: A String array of test file absolute paths that will be executed in the cloud instances
+        :return: A list of test suite file paths that will be used in case there are no test suites passed as argument
         """
         test_suites_to_run = ['generic/test_generic.py']
 
