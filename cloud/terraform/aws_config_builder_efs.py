@@ -75,8 +75,6 @@ class AWSConfigBuilderEfs(BaseConfigBuilder):
 
         instance[tf_data_type] = vpc_name
 
-        # aws_providers = self.providers_tf['provider']['aws']
-
         get_vpc = {
             'provider': f'aws.{region}',
             'default': True
