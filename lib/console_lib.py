@@ -2,13 +2,16 @@ def color_print(text):
     print('\033[95m' + text + '\033[0m')
 
 
-def print_divider(text):
-    divider_length = 75
-    free_spaces = int((divider_length / 2) - (len(text) / 2))
+def print_divider(text, upper=True, lower=True, center_text=True, length=75):
+    free_spaces = int((length / 2) - (len(text) / 2)) if center_text else 0
 
-    color_print('-' * divider_length)
+    if upper:
+        color_print('-' * length)
+
     color_print(' ' * free_spaces + text)
-    color_print('-' * divider_length)
+
+    if lower:
+        color_print('-' * length)
 
 
 def print_debug(vars):
