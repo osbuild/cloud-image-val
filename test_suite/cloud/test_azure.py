@@ -115,20 +115,18 @@ class TestsAzure:
                 f'ClientAliveInterval not set correctly in {sshd_config_file}'
 
     @pytest.mark.pub
-    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.run_on(['>=rhel7.0', '>=rhel8.0', '>=rhel9.0'])
     def test_grub_params(self, host):
         """
         Verify /etc/default/grub params
         """
-        grub_files_by_rhel_major_version = {
-            7: 'grub_rhel7',
-            8: 'grub_rhel8',
-            9: 'grub_rhel9'
-        }
+        release_version = version.parse(host.system_info.release)
 
-        system_release_major_version = version.parse(host.system_info.release).major
+        if release_version >= version.parse('9.3'):
+            local_file = 'data/azure/grub_rhel9.3+'
+        else:
+            local_file = f'data/azure/grub_rhel{release_version.major}'
 
-        local_file = 'data/azure/{}'.format(grub_files_by_rhel_major_version[system_release_major_version])
         remote_file = '/etc/default/grub'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
