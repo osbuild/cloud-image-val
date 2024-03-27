@@ -54,7 +54,7 @@ class TerraformConfigurator:
         cloud_name = self.resources_dict['provider']
 
         if cloud_name == 'aws':
-            if 'aws-efs' in self.config['tags']:
+            if self.config['tags'] and 'aws-efs' in self.config['tags'].keys():
                 return AWSConfigBuilderEfs(self.resources_dict, self.ssh_key_path, self.config)
             return AWSConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
         elif cloud_name == 'azure':
