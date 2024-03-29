@@ -604,7 +604,7 @@ class TestsCloudInit:
             assert not host.run(verify_cmd).stdout, \
                 f'There should not be changes in {cloud_cfg} or {cloud_cfg}.d/'
 
-    @pytest.mark.run_on(['rhel9.0'])
+    @pytest.mark.run_on(['>=rhel9.0'])
     def test_cloud_cfg_netdev_rhel9(self, host):
         """
         Verify _netdev is in cloud.cfg
