@@ -227,11 +227,14 @@ class TestsAWS:
         if test_lib.is_rhel_high_availability(host):
             unwanted_pkgs.append('rh-amazon-rhui-client')
 
-        found_pkgs = [
-            pkg for pkg in unwanted_pkgs if host.package(pkg).is_installed]
+        found_pkgs = []
+        with host.sudo():
+            for pkg in unwanted_pkgs:
+                if host.package(pkg).is_installed:
+                    found_pkgs.append(pkg)
+                    print(host.check_output(f'rpm -q {pkg}'))
 
-        assert len(
-            found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
+        assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
 
     # TODO: Refactor this test case. E.g. divide it by type of image and version
     @pytest.mark.run_on(['rhel'])
@@ -319,8 +322,8 @@ class TestsAWS:
             # CLOUDX-590
             if host.run('rm -f /var/lib/rpm/__db.*').failed or host.run('rpm --rebuilddb').failed:
                 change_permissions_cmd = 'chmod 755 /var/lock /var/lock/rpm ' \
-                    '&& chown root.lock /var/lock ' \
-                    '&& chown root.root /var/lock/rpm'
+                                         '&& chown root.lock /var/lock ' \
+                                         '&& chown root.root /var/lock/rpm'
                 assert host.run_test(change_permissions_cmd), 'Failed to change permissions'
                 if host.file('/var/lock/rpm/transaction').exists:
                     assert host.run_test('rm -f /var/lock/rpm/transaction'), 'Failed to remove the transaction file'
