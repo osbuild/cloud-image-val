@@ -8,7 +8,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
         for region in all_regions:
-            self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]\
+            self.providers_tf['provider'][self.cloud_providers[self.cloud_name]] \
                 .append(self.__new_aws_provider(region))
 
         return self.providers_tf
@@ -57,7 +57,8 @@ class AWSConfigBuilder(BaseConfigBuilder):
         name_tag_value = instance['name'].replace('.', '-')
         name = self.create_resource_name([name_tag_value])
 
-        aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
+        aliases = [provider['alias'] for provider in
+                   self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]]
         if instance['region'] not in aliases:
             raise Exception('Cannot add an instance if region provider is not set up')
 

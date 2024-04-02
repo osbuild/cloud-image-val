@@ -19,7 +19,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
         for region in all_regions:
-            self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]\
+            self.providers_tf['provider'][self.cloud_providers[self.cloud_name]] \
                 .append(self.__new_gcloud_provider(self.project, region))
 
         return self.providers_tf
@@ -36,6 +36,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
             'project': project,
             'region': region,
             'zone': zone,
+            'alias': region,
         }
 
     def build_resources(self):
@@ -43,19 +44,19 @@ class GCloudConfigBuilder(BaseConfigBuilder):
         self.resources_tf['resource']['google_compute_firewall'] = {}
         self.resources_tf['resource']['google_compute_instance'] = {}
 
-        network_name = self.create_resource_name(['vpc'])
-
-        self.__new_gcloud_network(network_name)
-        self.__new_gcloud_firewall_rule(network_name)
-
         for instance in self.resources_dict['instances']:
+            network_name = self.create_resource_name(['vpc', instance['region']])
+
+            self.__new_gcloud_network(network_name, instance)
+            self.__new_gcloud_firewall_rule(network_name, instance)
+
             instance['google_compute_network'] = network_name
             self.__new_gcloud_instance(instance)
 
         return self.resources_tf
 
-    def __new_gcloud_firewall_rule(self, network_name):
-        name = self.create_resource_name(['firewall-rule'])
+    def __new_gcloud_firewall_rule(self, network_name, instance):
+        name = self.create_resource_name(['firewall-rule', instance['region']])
 
         allow_rule = {
             'protocol': 'tcp',
@@ -63,6 +64,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
         }
 
         new_rule = {
+            'provider': f'google.{instance["region"]}',
             'name': name,
             'network': network_name,
             'target_tags': [self.ssh_enabled_tag],
@@ -75,8 +77,9 @@ class GCloudConfigBuilder(BaseConfigBuilder):
 
         self.resources_tf['resource']['google_compute_firewall'][name] = new_rule
 
-    def __new_gcloud_network(self, network_name):
+    def __new_gcloud_network(self, network_name, instance):
         new_vpc = {
+            'provider': f'google.{instance["region"]}',
             'name': network_name,
             'auto_create_subnetworks': True
         }
@@ -91,7 +94,8 @@ class GCloudConfigBuilder(BaseConfigBuilder):
         formatted_name = instance['name'].replace('.', '-').replace('_', '-')
         name = self.create_resource_name([formatted_name])
 
-        aliases = [provider['region'] for provider in self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]]
+        aliases = [provider['alias'] for provider in
+                   self.providers_tf['provider'][self.cloud_providers[self.cloud_name]]]
         if instance['region'] not in aliases:
             raise Exception('Cannot add an instance if region provider is not set up')
 
@@ -120,6 +124,7 @@ class GCloudConfigBuilder(BaseConfigBuilder):
         }
 
         new_instance = {
+            'provider': f'google.{instance["region"]}',
             'name': name,
             'machine_type': instance['instance_type'],
             'boot_disk': boot_disk,
