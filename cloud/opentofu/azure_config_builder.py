@@ -1,4 +1,4 @@
-from cloud.terraform.base_config_builder import BaseConfigBuilder
+from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
 
 class AzureConfigBuilder(BaseConfigBuilder):
@@ -137,12 +137,12 @@ class AzureConfigBuilder(BaseConfigBuilder):
         ip_configuration = {
             'name': self.create_resource_name(['ip-config']),
             'subnet_id': self.__get_azure_network_resource_uri(
-                terraform_resource_type='azurerm_subnet',
+                tf_resource_type='azurerm_subnet',
                 azure_resource_name=instance['azurerm_subnet'],
                 azure_virtual_network_name=instance['azurerm_virtual_network']),
             'private_ip_address_allocation': 'Dynamic',
             'public_ip_address_id': self.__get_azure_network_resource_uri(
-                terraform_resource_type='azurerm_public_ip',
+                tf_resource_type='azurerm_public_ip',
                 azure_resource_name=instance['azurerm_public_ip'])
         }
 
@@ -189,7 +189,7 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'size': instance['instance_type'],
             'resource_group_name': self.resource_group,
             'network_interface_ids': [self.__get_azure_network_resource_uri(
-                terraform_resource_type='azurerm_network_interface',
+                tf_resource_type='azurerm_network_interface',
                 azure_resource_name=instance['azurerm_network_interface'])],
             'os_disk': os_disk,
             'admin_ssh_key': admin_ssh_key,
@@ -222,11 +222,11 @@ class AzureConfigBuilder(BaseConfigBuilder):
         return '{}/Microsoft.Compute/images/{}'.format(self.azure_resource_id_base, azure_image_name)
 
     def __get_azure_network_resource_uri(self,
-                                         terraform_resource_type,
+                                         tf_resource_type,
                                          azure_resource_name,
                                          azure_virtual_network_name=None):
         """
-        :param terraform_resource_type: The Terraform resource type
+        :param tf_resource_type: The OpenTofu resource type
         :param azure_resource_name: The resource name as created in Azure
         :param azure_virtual_network_name: (Optional) The Virtual Network name as created in Azure.
                                                       Needed for 'azurerm_subnet' resource type.
@@ -241,10 +241,10 @@ class AzureConfigBuilder(BaseConfigBuilder):
             'azurerm_network_interface': f'{self.azure_resource_id_base}/{resource}/networkInterfaces/{azure_resource_name}',
         }
 
-        if terraform_resource_type not in tf_azure_resource_types:
+        if tf_resource_type not in tf_azure_resource_types:
             raise f'Unexpected azure resource type. supported types are: {tf_azure_resource_types.keys()}'
 
-        if terraform_resource_type == 'azurerm_subnet' and azure_virtual_network_name is None:
+        if tf_resource_type == 'azurerm_subnet' and azure_virtual_network_name is None:
             raise 'Expected azurerm_virtual_network resource name to build azurerm_subnet resource id.'
 
-        return tf_azure_resource_types[terraform_resource_type]
+        return tf_azure_resource_types[tf_resource_type]
