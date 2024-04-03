@@ -14,14 +14,16 @@ RUN dnf install -y \
     unzip \
     keychain
 
-# Install terraform
-RUN tf_version="1.4.6"; \
-    if [[ $(uname -m) == "aarch64" ]]; \
-    then wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_arm64.zip; \
-    else wget --quiet https://releases.hashicorp.com/terraform/"${tf_version}"/terraform_"${tf_version}"_linux_amd64.zip; fi; \
-    unzip terraform_"${tf_version}"_linux_*.zip \
-    && mv terraform /usr/bin \
-    && rm terraform_"${tf_version}"_linux_*.zip
+# Install OpenTofu v1.6.2 which is fully compatible with Terraform v1.5.x
+RUN export OPENTOFU_VERSION='1.6.2'
+
+RUN wget --secure-protocol=TLSv1_2 \
+    --https-only https://get.opentofu.org/install-opentofu.sh \
+    -O install-opentofu.sh
+
+RUN chmod +x install-opentofu.sh; \
+    ./install-opentofu.sh --install-method rpm; \
+    rm install-opentofu.sh
 
 # Install python requirements
 RUN pip install -r requirements.txt

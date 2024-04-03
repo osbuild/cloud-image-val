@@ -5,17 +5,7 @@ The purpose of developing CIV is to have a single tool to test cloud images of U
 
 Although the tool focuses on Red Hat Enterprise Linux cloud images and similar, the tool can be expanded easily to other distributions/systems. 
 
-# Dependencies to use CIV in local environments
-Apart from the python dependencies that can be found in `requirements.txt`, the environment where you will run this tool locally must have the following packages installed:
-
-_The dependencies below don't apply if you will use the containerized version of the tool_ --> (highly recommended - see section below about the usage)
-
-- Terraform: https://learn.hashicorp.com/tutorials/terraform/install-cli
-- AWS cli: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-- Azure cli (AKA "az"): https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=dnf
-- GCloud cli ("gcloud"): https://cloud.google.com/sdk/docs/install
-
-# Prerequisites before running CIV
+# Cloud accounts setup (required)
 Below you will find the specific requirements to make CIV work depending on the cloud provider.
 Some steps below will be automated in later versions of the tool.
 
@@ -35,8 +25,8 @@ Some steps below will be automated in later versions of the tool.
   - https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli
 - You must set up a **service principal** as per the following guide:
   - https://learn.hashicorp.com/tutorials/terraform/azure-build?in=terraform/azure-get-started#create-a-service-principal
-- And **export** the corresponding environment variables as per the guide:
-  - https://learn.hashicorp.com/tutorials/terraform/azure-build?in=terraform/azure-get-started#set-your-environment-variables
+- And **export** the corresponding environment variables as per mentioned at the end of this article:
+  - https://opentofu.org/docs/language/settings/backends/azurerm/
 
 ### Google Cloud (GCP)
 Today, the code is not prepared to be run in automation, and it only works locally.
@@ -44,54 +34,51 @@ Today, the code is not prepared to be run in automation, and it only works local
 - You must previously login to your GCP account by using gcloud cli tool:
   - `gcloud auth application-default login`
 
+# Dependencies (local executions only)
+
+___(Skip this section if you just plan to run CIV from the container)___
+
+Apart from the python dependencies that can be found in `requirements.txt`, the environment where you will run this tool locally must have the following packages installed:
+
+_The dependencies below don't apply if you will use the containerized version of the tool_ --> (highly recommended - see section below about the usage)
+
+- OpenTofu: https://opentofu.org/docs/intro/install/
+- AWS cli: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+- Azure cli (AKA "az"): https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-linux?pivots=dnf
+- GCloud cli ("gcloud"): https://cloud.google.com/sdk/docs/install
+
 # Usage
-Run the main script `cloud-image-val.py` with the corresponding and desired parameters (if applicable):
+Run the main script `cloud-image-val.py` with the corresponding and desired parameters:
 
 ```
-usage: cloud-image-val.py [-h] -r RESOURCES_FILE -o OUTPUT_FILE [-t TEST_FILTER] [-m INCLUDE_MARKERS] [-p] [-d]
-                          [-s]
-
-options:
-  -h, --help            show this help message and exit
-  -r RESOURCES_FILE, --resources-file RESOURCES_FILE
-                        Path to the resources JSON file that contains the Cloud provider and the images to use.
-                        See cloud/sample/resources_<cloud>.json to know about the expected file structure.
-  -o OUTPUT_FILE, --output-file OUTPUT_FILE
-                        Output file path of the resultant Junit XML test report and others
-  -t TEST_FILTER, --test-filter TEST_FILTER
-                        Use this option to filter tests execution by test name
-  -m INCLUDE_MARKERS, --include-markers INCLUDE_MARKERS
-                        Use this option to specify which tests to run that match a pytest markers expression.
-                        The only marker currently supported is "pub" (see pytest.ini for more details)
-                        Example:
-                        	-m "pub" --> run tests marked as "pub", which is for images are already published
-                        	-m "not pub" --> exclude "pub" tests
-                        More information about pytest markers:
-                        --> https://doc.pytest.org/en/latest/example/markers.html
-  -p, --parallel        Use this option to enable parallel test execution mode. Default is DISABLED
-  -d, --debug           Use this option to enable debugging mode. Default is DISABLED
-  -s, --stop-cleanup    Use this option to enable stop cleanup process until a key is pressed. 
-                        Helpful when you need to connect through ssh to an instance. Default is DISABLED
-  -e ENVIRONMENT, --environment ENVIRONMENT
-                        Use this option to set what invironment CIV is going to run on.
-                        This can change CIV bahaviour like how "-s" works. this option can be
-                        set to "automated" or "local". Default is "local"
-  -c CONFIG_FILE, --config-file CONFIG_FILE
-                        Use this option to pass CLI options through a config file.
-                        This config should be in yaml format, examples can be found at the end of this README
-  --tags TAGS           Use this option to add tags to created cloud resources and modify CIV behaviour.
-                        This tags should be passed in json format as in this example:
-                        --tags '{"key1": "value1", "key2": "value2"}'
+cloud-image-val.py [-h] [-r RESOURCES_FILE] [-o OUTPUT_FILE] [-t TEST_FILTER] [--test-suites TEST_SUITES [TEST_SUITES ...]] [-m INCLUDE_MARKERS] [-p] [-d] [-s] [-e ENVIRONMENT] [-c CONFIG_FILE] [--tags TAGS]
 ```
+
+You can learn more about the usage by using the `-h` (`--help`) option.
 
 Example of running CIV locally:
 ```
-# then, run CIV 
-python cloud-image-val.py -r cloud/terraform/sample/resources_aws.json -o /tmp/report.xml -p -d
+python cloud-image-val.py -r cloud/sample/resources_aws.json -o /tmp/report.xml -p -d
 ```
 
-## Using CIV's container from quay.io (recommended)
-You can simply use the latest container version of the tool, which already has all the dependencies and tools preinstalled (such as Terraform).
+### Config file
+You can also provide th CLI parameters through a config file in yaml format. This file is always created, even if you provide the parameters through the CLI, the default file is /tmp/civ_config.yml. Here is an example of a config file:
+```
+debug: true
+environment: local
+include_markers: null
+output_file: <path to report.xml output file>
+parallel: true
+resources_file: <path to your resources.json file>
+stop_cleanup: false
+tags:
+  sample-tag: tag_value
+test_filter: null
+test_suites: null
+```
+
+## Using CIV container from quay.io (recommended)
+You can simply use the latest container version of the tool, which already has all the dependencies and tools preinstalled (such as OpenTofu).
 
 Example (using podman, but it should work the same way with docker):
 ```
@@ -206,16 +193,3 @@ This way, the test cases can be categorized, markers can be applied to certain g
 - Make sure to check if the test applies to all cloud providers (`generic`) or if only applies to certain clouds.
   - That's why we have different directories that are for specific clouds (`test_suite/cloud`)
   - If the test applies to some clouds and does not apply to others, then it's better to add it under the generic directory, and then inside the test, skip whenever appropriate.
-
-### Config file
-You can also provide th CLI parameters through a config file in yaml format. This file is always created, even if you provide the parameters through the CLI, the default file is /tmp/civ_config.yml. Here is an example of a config file:
-```
-config_file: /tmp/civ_config.yml
-debug: true
-environment: local
-output_file: /tmp/civ.xml
-resources_file: cloud/sample/resources_aws_marketplace.json
-tags:
-  key1: value1
-  key2: value2
-```

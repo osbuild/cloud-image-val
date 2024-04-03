@@ -1,10 +1,10 @@
 import pytest
 import os
 
-from cloud.terraform.terraform_controller import TerraformController
+from cloud.opentofu.opentofu_controller import OpenTofuController
 
 
-class TestTerraformController:
+class TestOpenTofuController:
     test_ssh_key = '/fake/ssh/dir'
     test_resources_path = '/fake/resources/path'
 
@@ -15,14 +15,14 @@ class TestTerraformController:
     @pytest.fixture
     def tf_controller(self, mocker):
         self.tf_configurator = self.tf_configurator(mocker)
-        return TerraformController(self.tf_configurator)
+        return OpenTofuController(self.tf_configurator)
 
     def test_create_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
         mocker.patch('time.sleep')
-        tf_init = f'terraform init {tf_controller.debug_sufix}'
-        tf_apply = f'terraform apply -auto-approve {tf_controller.debug_sufix}'
+        tf_init = f'tofu init {tf_controller.debug_sufix}'
+        tf_apply = f'tofu apply -auto-approve {tf_controller.debug_sufix}'
 
         mock_wait_for_all_instances_ssh_up = mocker.patch.object(tf_controller,
                                                                  'wait_for_all_instances_ssh_up')
@@ -61,7 +61,7 @@ class TestTerraformController:
         result = tf_controller.get_instances()
 
         # Assert
-        mock_popen.assert_called_once_with('terraform show --json')
+        mock_popen.assert_called_once_with('tofu show --json')
         mock_read.assert_called_once()
         mock_loads.called_once_with('test_json')
         mock_get_instances_cloud.assert_called_once_with(test_resource)
@@ -241,7 +241,7 @@ class TestTerraformController:
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
         test_resource_id = 'test_resource'
-        tf_destroy_resource = f'terraform destroy -target={test_resource_id}'
+        tf_destroy_resource = f'tofu destroy -target={test_resource_id}'
 
         # Act
         result = tf_controller.destroy_resource(test_resource_id)
@@ -253,7 +253,7 @@ class TestTerraformController:
     def test_destroy_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
-        tf_destroy_infra = f'terraform destroy -auto-approve {tf_controller.debug_sufix}'
+        tf_destroy_infra = f'tofu destroy -auto-approve {tf_controller.debug_sufix}'
 
         # Act
         result = tf_controller.destroy_infra()
