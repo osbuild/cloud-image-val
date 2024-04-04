@@ -33,21 +33,18 @@ class TestCloudImageValidator:
         wait_status_test = 32512
         exit_code_test = 127
 
-        mock_initialize_infrastructure = mocker.MagicMock(
-            return_value=test_controller)
+        mock_initialize_infrastructure = mocker.MagicMock(return_value=test_controller)
         validator.initialize_infrastructure = mock_initialize_infrastructure
 
         mock_print_divider = mocker.patch('lib.console_lib.print_divider')
 
-        mock_deploy_infrastructure = mocker.MagicMock(
-            return_value=self.test_instances)
+        mock_deploy_infrastructure = mocker.MagicMock(return_value=self.test_instances)
         validator.deploy_infrastructure = mock_deploy_infrastructure
 
-        mock_add_ssh_keys_to_instances = mocker.patch(
-            'lib.ssh_lib.add_ssh_keys_to_instances')
+        mock_prepare_environment = mocker.MagicMock()
+        validator.prepare_environment = mock_prepare_environment
 
-        mock_run_tests_in_all_instances = mocker.MagicMock(
-            return_value=wait_status_test)
+        mock_run_tests_in_all_instances = mocker.MagicMock(return_value=wait_status_test)
         validator.run_tests_in_all_instances = mock_run_tests_in_all_instances
 
         mock_cleanup = mocker.MagicMock()
@@ -68,10 +65,8 @@ class TestCloudImageValidator:
 
         mock_initialize_infrastructure.assert_called_once()
         mock_deploy_infrastructure.assert_called_once()
-        mock_run_tests_in_all_instances.assert_called_once_with(
-            self.test_instances)
-        mock_add_ssh_keys_to_instances.assert_called_once_with(
-            self.test_instances)
+        mock_run_tests_in_all_instances.assert_called_once_with(self.test_instances)
+        mock_prepare_environment.assert_called_once_with(self.test_instances)
         mock_cleanup.assert_called_once()
 
     def test_initialize_infrastructure(self, mocker, validator):
@@ -104,8 +99,7 @@ class TestCloudImageValidator:
         mock_get_instances = mocker.patch.object(OpenTofuController,
                                                  'get_instances',
                                                  return_value=self.test_instances)
-        mock_generate_instances_ssh_config = mocker.patch(
-            'lib.ssh_lib.generate_instances_ssh_config')
+        mock_generate_instances_ssh_config = mocker.patch('lib.ssh_lib.generate_instances_ssh_config')
 
         mock_write_instances_to_json = mocker.MagicMock()
         validator._write_instances_to_json = mock_write_instances_to_json
@@ -126,6 +120,13 @@ class TestCloudImageValidator:
                                                                    ssh_config_file=validator.ssh_config_file,
                                                                    ssh_key_path=validator.ssh_identity_file)
 
+    def test_prepare_environment(self, mocker, validator):
+        mock_add_ssh_keys_to_instances = mocker.patch('lib.ssh_lib.add_ssh_keys_to_instances')
+
+        validator.prepare_environment(self.test_instances)
+
+        mock_add_ssh_keys_to_instances.assert_called_once_with(self.test_instances)
+
     def test_run_tests_in_all_instances(self, mocker, validator):
         mocker.patch.object(OpenTofuConfigurator, 'cloud_name', create=True)
         validator.infra_configurator = OpenTofuConfigurator
@@ -140,8 +141,7 @@ class TestCloudImageValidator:
                                                self.test_config["include_markers"])
 
     def test_destroy_infrastructure(self, mocker, validator):
-        mock_destroy_infra = mocker.patch.object(
-            OpenTofuController, 'destroy_infra')
+        mock_destroy_infra = mocker.patch.object(OpenTofuController, 'destroy_infra')
         validator.infra_controller = OpenTofuController
         validator.config["debug"] = False
 

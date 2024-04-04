@@ -1,7 +1,8 @@
 import os
 import time
 import sshconf
-import paramiko
+
+from threading import Thread
 
 
 def generate_ssh_key_pair(ssh_key_path):
@@ -70,31 +71,38 @@ def copy_file_to_host(host, local_file_path, destination_path):
 
 
 def add_ssh_keys_to_instances(instances):
-    """
-    Adding ssh public keys of team members to all instances authorized_keys.
-    :param instances: Has all the instances needed information - 'public_dns', 'username' etc..
-    :return: None
-    """
-    authorized_keys = "~/.ssh/authorized_keys"
-    ssh_identity_file = '/tmp/ssh_key'
-    team_ssh_keys_file = 'schutzbot/team_ssh_keys.txt'
-    ssh_client = get_ssh_client()
+    key_paths = __get_team_ssh_key_paths()
 
-    for instance in instances.values():
-        ssh_client.connect(
-            hostname=instance['public_dns'],
-            username=instance['username'],
-            key_filename=ssh_identity_file
-        )
+    threads = []
+    for inst in instances.values():
+        t = Thread(target=__copy_team_ssh_keys_to_instance,
+                   args=[inst, key_paths])
+        t.start()
+        threads.append(t)
 
-        with open(team_ssh_keys_file, 'r') as f:
-            team_ssh_keys = f.read()
-            cmd = f"echo '{team_ssh_keys}' >> {authorized_keys}"
-            ssh_client.exec_command(cmd)
-        ssh_client.close()
+    [t.join() for t in threads]
 
 
-def get_ssh_client():
-    ssh_client = paramiko.client.SSHClient()
-    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    return ssh_client
+def __get_team_ssh_key_paths():
+    keys_dir = 'schutzbot/team_ssh_keys'
+
+    return [os.path.join(keys_dir, p) for p in os.listdir(keys_dir)]
+
+
+def __copy_team_ssh_keys_to_instance(instance, key_file_paths):
+    instance_address = instance['public_dns']
+    username = instance['username']
+
+    print(f'[{instance_address}] Copying public SSH key(s)...')
+
+    for path in key_file_paths:
+        ssh_copy_id_command = (f'ssh-copy-id -f -i "{path}" '
+                               f'-o "StrictHostKeyChecking=no IdentityFile=/tmp/ssh_key" '
+                               f'{username}@{instance_address} 2>&1')
+        command = os.popen(ssh_copy_id_command, 'r')
+        command_output = command.read()
+
+        if command.close() is None:
+            print(f'[{instance_address}] Public SSH key {path} copied successfully!')
+        else:
+            print(f'[{instance_address}] WARNING: Could not copy public SSH key {path}: {command_output}')
