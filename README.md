@@ -25,7 +25,7 @@ Some steps below will be automated in later versions of the tool.
   - https://docs.microsoft.com/en-us/cli/azure/authenticate-azure-cli
 - You must set up a **service principal** as per the following guide:
   - https://learn.hashicorp.com/tutorials/terraform/azure-build?in=terraform/azure-get-started#create-a-service-principal
-- And **export** the corresponding environment variables as per mentioned at the end of this article:
+- And **export** the corresponding environment variables as mentioned at the end of this article:
   - https://opentofu.org/docs/language/settings/backends/azurerm/
 
 ### Google Cloud (GCP)
