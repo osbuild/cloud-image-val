@@ -36,7 +36,7 @@ class CloudImageValidator:
             instances = self.deploy_infrastructure()
 
             console_lib.print_divider('Preparing environment')
-            ssh_lib.add_ssh_keys_to_instances(instances)
+            self.prepare_environment(instances)
 
             console_lib.print_divider('Running tests')
             wait_status = self.run_tests_in_all_instances(instances)
@@ -105,6 +105,10 @@ class CloudImageValidator:
     def _write_instances_to_json(self, instances):
         with open(self.instances_json, 'w') as file:
             json.dump(instances, file, indent=4)
+
+    def prepare_environment(self, instances):
+        print('Copying team SSH public keys in the running instance(s)...')
+        ssh_lib.add_ssh_keys_to_instances(instances)
 
     def run_tests_in_all_instances(self, instances):
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,

@@ -6,7 +6,7 @@ stages:
 
 .deps:
   before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - sh schutzbot/append_team_ssh_keys.sh
     - curl -fsSL https://get.docker.com -o get-docker.sh
     - sudo sh get-docker.sh
     - sudo systemctl start docker
@@ -47,7 +47,7 @@ container:
 Prepare-rhel-internal:
   stage: build
   before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - sh schutzbot/append_team_ssh_keys.sh
   script:
     - schutzbot/prepare-rhel-internal.sh
   artifacts:
@@ -145,7 +145,7 @@ Prepare-rhel-internal:
   variables:
     ARTIFACTS: "/tmp/"
   before_script:
-    - cat schutzbot/team_ssh_keys.txt | tee -a ~/.ssh/authorized_keys > /dev/null
+    - sh schutzbot/append_team_ssh_keys.sh
   after_script:
     - !reference [.tests, after_script]
     - cp /tmp/report.html ./report.html
