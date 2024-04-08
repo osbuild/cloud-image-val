@@ -168,8 +168,7 @@ def instance_data(host):
 
 
 def __get_instance_data_from_json(key_to_find, value_to_find):
-    # TODO: Pass this hardcoded path to a config file and read from there.
-    with open('/tmp/instances.json', 'r') as f:
+    with open(os.environ['CIV_INSTANCES_JSON'], 'r') as f:
         instances_json_data = json.load(f)
     for instance in instances_json_data.values():
         if key_to_find in instance.keys() and instance[key_to_find] == value_to_find:

@@ -32,12 +32,18 @@ class CIVConfig:
             yaml.dump(config_to_write, config_file)
 
     def update_config(self):
-        if os.path.exists(self.config_path):
-            config = self.get_config()
-        else:
-            config = self.get_default_config()
+        config = self.get_default_config()
 
-        if len(self.command_line_args) == 1 and self.config_file_arg_name in self.command_line_args:
+        if os.path.exists(self.config_path):
+            config.update(self.get_config())
+
+        self.__override_config_from_cmd_line_arg(config)
+
+        self.write_config(config)
+
+    def __override_config_from_cmd_line_arg(self, config):
+        if len(self.command_line_args) == 1 and \
+                self.config_file_arg_name in self.command_line_args:
             return
 
         self.command_line_args.pop(self.config_file_arg_name)
@@ -49,15 +55,13 @@ class CIVConfig:
             if arg_value == config[arg_name] or arg_value is None:
                 continue
 
-            print(f'DEBUG: Overriding "{arg_name}" config item...')
+            print(f'Overriding "{arg_name}" config item with command-line argument value...')
 
             if arg_name == 'tags':
                 config[arg_name] = self.get_tags_dict_from_command_line_arg_value(arg_value)
                 continue
 
             config[arg_name] = arg_value
-
-        self.write_config(config)
 
     def get_tags_dict_from_command_line_arg_value(self, tags_arg_value):
         tags_dict = {}
@@ -88,6 +92,29 @@ class CIVConfig:
             'stop_cleanup': None,
             'test_filter': None,
             'test_suites': None,
+            'instances_json': '/tmp/instances.json',
+            'ssh_identity_file': '/tmp/ssh_key',
+            'ssh_pub_key_file': '/tmp/ssh_key.pub',
+            'ssh_config_file': '/tmp/ssh_config'
         }
 
         return config_defaults
+
+    def export_config_as_env_vars(self):
+        config = self.get_config()
+
+        for key in config.keys():
+            composed_env_var_name = f'CIV_{key}'.upper()
+            os.environ[composed_env_var_name] = self.__get_config_value_as_string(config, key)
+
+    def __get_config_value_as_string(self, config, config_key):
+        if config_key not in config:
+            raise ValueError(f'Invalid config key. The key "{config_key}" does not exist in current CIV config.')
+
+        config_value = config[config_key]
+        if type(config_value) is dict:
+            config_value = ','.join([f'{k}={v}' for k, v in config_value.items()])
+        elif type(config_value) is list:
+            config_value = ','.join(config_value)
+
+        return str(config_value)

@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
     config_manager.update_config()
     config_manager.validate_config()
+    config_manager.export_config_as_env_vars()
 
     config = config_manager.get_config()
 
