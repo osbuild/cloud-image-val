@@ -11,12 +11,6 @@ from test_suite.suite_runner import SuiteRunner
 
 
 class CloudImageValidator:
-    ssh_identity_file = '/tmp/ssh_key'
-    ssh_pub_key_file = f'{ssh_identity_file}.pub'
-    ssh_config_file = '/tmp/ssh_config'
-
-    instances_json = '/tmp/instances.json'
-
     infra_controller = None
     infra_configurator = None
 
@@ -67,7 +61,7 @@ class CloudImageValidator:
     def print_ssh_commands_for_instances(self, instances):
         if instances:
             for inst in instances.values():
-                ssh_command = 'ssh -i {0} {1}@{2}'.format(self.ssh_identity_file,
+                ssh_command = 'ssh -i {0} {1}@{2}'.format(self.config['ssh_identity_file'],
                                                           inst['username'],
                                                           inst['public_dns'])
                 instance_name = inst['name']
@@ -75,9 +69,9 @@ class CloudImageValidator:
                 print(f'\t{ssh_command}')
 
     def initialize_infrastructure(self):
-        ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
+        ssh_lib.generate_ssh_key_pair(self.config['ssh_identity_file'])
 
-        self.infra_configurator = OpenTofuConfigurator(ssh_key_path=self.ssh_pub_key_file,
+        self.infra_configurator = OpenTofuConfigurator(ssh_key_path=self.config['ssh_pub_key_file'],
                                                        resources_path=self.config['resources_file'],
                                                        config=self.config)
         self.infra_configurator.configure_from_resources_json()
@@ -97,23 +91,23 @@ class CloudImageValidator:
         self._write_instances_to_json(instances)
 
         ssh_lib.generate_instances_ssh_config(instances=instances,
-                                              ssh_config_file=self.ssh_config_file,
-                                              ssh_key_path=self.ssh_identity_file)
+                                              ssh_config_file=self.config['ssh_config_file'],
+                                              ssh_key_path=self.config['ssh_identity_file'])
 
         return instances
 
     def _write_instances_to_json(self, instances):
-        with open(self.instances_json, 'w') as file:
+        with open(self.config['instances_json'], 'w') as file:
             json.dump(instances, file, indent=4)
 
     def prepare_environment(self, instances):
         print('Copying team SSH public keys in the running instance(s)...')
-        ssh_lib.add_ssh_keys_to_instances(instances)
+        ssh_lib.add_ssh_keys_to_instances(instances, self.config['ssh_config_file'])
 
     def run_tests_in_all_instances(self, instances):
         runner = SuiteRunner(cloud_provider=self.infra_configurator.cloud_name,
                              instances=instances,
-                             ssh_config=self.ssh_config_file,
+                             ssh_config=self.config['ssh_config_file'],
                              parallel=self.config['parallel'],
                              debug=self.config['debug'])
 
@@ -126,7 +120,7 @@ class CloudImageValidator:
         self.infra_controller.destroy_infra()
 
         if not self.config['debug']:
-            os.remove(self.ssh_identity_file)
-            os.remove(self.ssh_pub_key_file)
-            os.remove(self.ssh_config_file)
-            os.remove(self.instances_json)
+            os.remove(self.config['ssh_identity_file'])
+            os.remove(self.config['ssh_pub_key_file'])
+            os.remove(self.config['ssh_config_file'])
+            os.remove(self.config['instances_json'])

@@ -17,6 +17,10 @@ class TestCloudImageValidator:
                    'stop_cleanup': False,
                    'config_file': '/tmp/test_config_file.yml',
                    'test_suites': ['test_path_1', 'test_path_2'],
+                   'instances_json': '/tmp/instances.json',
+                   'ssh_identity_file': '/tmp/ssh_key',
+                   'ssh_pub_key_file': '/tmp/ssh_key.pub',
+                   'ssh_config_file': '/tmp/ssh_key.pub'
                    }
     test_instances = {
         'instance-1': {'public_dns': 'value_1', 'username': 'value_2'},
@@ -117,15 +121,16 @@ class TestCloudImageValidator:
         mock_write_instances_to_json.assert_called_once_with(
             self.test_instances)
         mock_generate_instances_ssh_config.assert_called_once_with(instances=self.test_instances,
-                                                                   ssh_config_file=validator.ssh_config_file,
-                                                                   ssh_key_path=validator.ssh_identity_file)
+                                                                   ssh_config_file=validator.config['ssh_config_file'],
+                                                                   ssh_key_path=validator.config['ssh_identity_file'])
 
     def test_prepare_environment(self, mocker, validator):
         mock_add_ssh_keys_to_instances = mocker.patch('lib.ssh_lib.add_ssh_keys_to_instances')
 
         validator.prepare_environment(self.test_instances)
 
-        mock_add_ssh_keys_to_instances.assert_called_once_with(self.test_instances)
+        mock_add_ssh_keys_to_instances.assert_called_once_with(self.test_instances,
+                                                               validator.config['ssh_config_file'])
 
     def test_run_tests_in_all_instances(self, mocker, validator):
         mocker.patch.object(OpenTofuConfigurator, 'cloud_name', create=True)
@@ -152,8 +157,8 @@ class TestCloudImageValidator:
         mock_destroy_infra.assert_called_once()
 
         assert mock_os_remove.call_args_list == [
-            mocker.call(validator.ssh_identity_file),
-            mocker.call(validator.ssh_pub_key_file),
-            mocker.call(validator.ssh_config_file),
-            mocker.call(validator.instances_json)
+            mocker.call(validator.config['ssh_identity_file']),
+            mocker.call(validator.config['ssh_pub_key_file']),
+            mocker.call(validator.config['ssh_config_file']),
+            mocker.call(validator.config['instances_json'])
         ]

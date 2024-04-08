@@ -70,39 +70,44 @@ def copy_file_to_host(host, local_file_path, destination_path):
     sftp.close()
 
 
-def add_ssh_keys_to_instances(instances):
-    key_paths = __get_team_ssh_key_paths()
+def add_ssh_keys_to_instances(instances, ssh_config_file):
+    team_ssh_keys = __get_team_ssh_keys_by_path()
+
+    print(f'Team public SSH key(s) to copy: {", ".join(list(team_ssh_keys.keys()))}')
 
     threads = []
     for inst in instances.values():
         t = Thread(target=__copy_team_ssh_keys_to_instance,
-                   args=[inst, key_paths])
+                   args=[inst, ssh_config_file, team_ssh_keys])
         t.start()
         threads.append(t)
 
     [t.join() for t in threads]
 
 
-def __get_team_ssh_key_paths():
+def __get_team_ssh_keys_by_path():
     keys_dir = 'schutzbot/team_ssh_keys'
 
-    return [os.path.join(keys_dir, p) for p in os.listdir(keys_dir)]
+    keys = {}
+    for p in os.listdir(keys_dir):
+        key_file_path = os.path.join(keys_dir, p)
+        with open(key_file_path, 'r') as f:
+            keys[key_file_path] = f.read()
+
+    return keys
 
 
-def __copy_team_ssh_keys_to_instance(instance, key_file_paths):
+def __copy_team_ssh_keys_to_instance(instance, ssh_config_file, team_ssh_keys):
+    auth_keys = '~/.ssh/authorized_keys'
     instance_address = instance['public_dns']
     username = instance['username']
 
-    print(f'[{instance_address}] Copying public SSH key(s)...')
+    composed_echo_command = ';'.join([f'echo "{k}" >> {auth_keys}' for k in team_ssh_keys.values()])
 
-    for path in key_file_paths:
-        ssh_copy_id_command = (f'ssh-copy-id -f -i "{path}" '
-                               f'-o "StrictHostKeyChecking=no IdentityFile=/tmp/ssh_key" '
-                               f'{username}@{instance_address} 2>&1')
-        command = os.popen(ssh_copy_id_command, 'r')
-        command_output = command.read()
+    ssh_command = (f'ssh -F "{ssh_config_file}" '
+                   f'{username}@{instance_address} "{composed_echo_command}" > /dev/null 2>&1')
 
-        if command.close() is None:
-            print(f'[{instance_address}] Public SSH key {path} copied successfully!')
-        else:
-            print(f'[{instance_address}] WARNING: Could not copy public SSH key {path}: {command_output}')
+    if (os.system(ssh_command) >> 8) == 0:
+        print(f'[{instance_address}] Public SSH key(s) copied successfully!')
+    else:
+        print(f'[{instance_address}] WARNING: Could not copy public SSH key(s)')
