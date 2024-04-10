@@ -178,6 +178,22 @@ if __name__ == '__main__':
                   'include_markers': 'not pub',
                   'test_filter': modified_methods_str}
 
+    # This env var comes from GitLab CI pipeline
+    if 'CUSTOM_PACKAGES' in os.environ:
+        civ_config['tags']['custom_packages'] = os.environ['CUSTOM_PACKAGES']
+        vars['CUSTOM_PACKAGES'] = os.environ['CUSTOM_PACKAGES']
+
+        civ_config['test_suites'] = ['test_suite/package/']
+
+    # This env var comes from GitLab CI pipeline
+    if 'AWS_EFS' in os.environ and os.environ['AWS_EFS'].lower() == 'true':
+        civ_config['tags']['aws-efs'] = True
+        vars['AWS_EFS'] = 'true'
+
+    # This env var comes from GitLab CI pipeline
+    if 'KEEP_GENERATED_AMI' in os.environ:
+        vars['KEEP_GENERATED_AMI'] = os.environ['KEEP_GENERATED_AMI']
+
     # If modified_methods_str is different than None, we might need to skip some clouds
     # If it's None, just run CIV in all clouds, no skipping
     if modified_methods_str:

@@ -12,7 +12,7 @@ stages:
     - sudo systemctl start docker
     - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
   variables:
-    RUNNER: aws/fedora-37-x86_64
+    RUNNER: aws/fedora-39-x86_64
     INTERNAL_NETWORK: "true"
     QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val
   tags:
@@ -34,7 +34,7 @@ init:
   script:
     - schutzbot/update_github_status.sh start
 
-container:
+build-branch-container:
   extends: .deps
   stage: build
   script:
@@ -44,10 +44,12 @@ container:
     - if python schutzbot/update-base.py | grep -q "true" ; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
     - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
 
-Prepare-rhel-internal:
+prepare-rhel-internal-runners:
   stage: build
   before_script:
     - sh schutzbot/append_team_ssh_keys.sh
+  rules:
+    - if: $NIGHTLY == "true"
   script:
     - schutzbot/prepare-rhel-internal.sh
   artifacts:
@@ -64,7 +66,7 @@ Prepare-rhel-internal:
           # artifacts from all previous jobs and the last one wins
           - aws/rhel-8.10-nightly-x86_64
           - aws/rhel-9.4-nightly-x86_64
-        INTERNAL_NETWORK: ["true"]
+        INTERNAL_NETWORK: [ "true" ]
 
 .aws:
   stage: test
@@ -102,111 +104,129 @@ Prepare-rhel-internal:
       python cloud-image-val.py -r cloud/sample/resources_azure_marketplace.json -d -p -o /tmp/report.xml
 
 .rhel_runners: &rhel_runners
-    RUNNER:
-      - aws/centos-stream-8-x86_64
-      - aws/rhel-8.4-ga-x86_64
-      - aws/rhel-8.9-ga-x86_64
-      - aws/rhel-9.3-ga-x86_64
-      - aws/rhel-8.10-nightly-x86_64
-      - aws/rhel-9.4-nightly-x86_64
-      - aws/centos-stream-9-x86_64
-    INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["false"]
+  RUNNER:
+    - aws/centos-stream-8-x86_64
+    - aws/rhel-8.4-ga-x86_64
+    - aws/rhel-8.9-ga-x86_64
+    - aws/rhel-9.3-ga-x86_64
+    - aws/rhel-8.10-nightly-x86_64
+    - aws/rhel-9.4-nightly-x86_64
+    - aws/centos-stream-9-x86_64
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "false" ]
 
 .rhel_runners_aarch64: &rhel_runners_aarch64
-    RUNNER:
-      - aws/rhel-8.10-nightly-aarch64
-      - aws/rhel-9.4-nightly-aarch64
-    INTERNAL_NETWORK: ["true"]
-    NIGHTLY: ["false"]
+  RUNNER:
+    - aws/rhel-8.10-nightly-aarch64
+    - aws/rhel-9.4-nightly-aarch64
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "false" ]
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
-    RUNNER:
-      - aws/rhel-8.10-nightly-x86_64
-      - aws/rhel-9.4-nightly-x86_64
-    INTERNAL_NIGHTLY: ["internal"]
-    INTERNAL_NETWORK: ["true"]
+  RUNNER:
+    - aws/rhel-8.10-nightly-x86_64
+    - aws/rhel-9.4-nightly-x86_64
+  INTERNAL_NIGHTLY: [ "internal" ]
+  INTERNAL_NETWORK: [ "true" ]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
-    RUNNER:
-      - aws/rhel-8.10-nightly-aarch64
-      - aws/rhel-9.4-nightly-aarch64
-    INTERNAL_NIGHTLY: ["internal"]
-    INTERNAL_NETWORK: ["true"]
+  RUNNER:
+    - aws/rhel-8.10-nightly-aarch64
+    - aws/rhel-9.4-nightly-aarch64
+  INTERNAL_NIGHTLY: [ "internal" ]
+  INTERNAL_NETWORK: [ "true" ]
 
 .fedora_runners: &fedora_runners
-    RUNNER:
-      - aws/fedora-38-x86_64
-      - aws/fedora-39-x86_64
-    NIGHTLY: ["false"]
+  RUNNER:
+    - aws/fedora-38-x86_64
+    - aws/fedora-39-x86_64
+  NIGHTLY: [ "false" ]
 
-.IB_tests:
+.image_builder_tests:
   extends: .tests
   variables:
     ARTIFACTS: "/tmp/"
   before_script:
     - sh schutzbot/append_team_ssh_keys.sh
   after_script:
-    - !reference [.tests, after_script]
+    - !reference [ .tests, after_script ]
     - cp /tmp/report.html ./report.html
 
-IB-aws:
+image-builder-aws:
   stage: test
-  extends: .IB_tests
+  extends: .image_builder_tests
   script:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
   rules:
-    - if: $NIGHTLY == "false"
+    - if: $NIGHTLY == "false" && $CLOUDX_PACKAGES_AWS != "true"
   parallel:
     matrix:
       - *fedora_runners
       - *rhel_runners
       - *rhel_runners_aarch64
 
-IB-aws-nightly-compose:
+image-builder-aws-nightly-compose:
   stage: test
-  extends: .IB_tests
+  extends: .image_builder_tests
   script:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
   rules:
-    - if: $NIGHTLY == "true"
+    - if: $NIGHTLY == "true" && $CLOUDX_PACKAGES_AWS != "true"
   parallel:
     matrix:
       - *rhel_runners_x86_64_internal_nightlies
       - *rhel_runners_aarch64_internal_nightlies
 
-IB-azure:
+image-builder-azure:
   stage: test
-  extends: .IB_tests
+  extends: .image_builder_tests
   script:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
   rules:
-    - if: $NIGHTLY == "false"
+    - if: $NIGHTLY == "false" && $CLOUDX_PACKAGES_AWS != "true"
   parallel:
     matrix:
       - *fedora_runners
       - *rhel_runners
 
-IB-azure-nightly-compose:
+image-builder-azure-nightly-compose:
   stage: test
-  extends: .IB_tests
+  extends: .image_builder_tests
   script:
     - schutzbot/deploy.sh
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
   rules:
-    - if: $NIGHTLY == "true"
+    - if: $NIGHTLY == "true" && $CLOUDX_PACKAGES_AWS != "true"
   parallel:
     matrix:
       - *rhel_runners_x86_64_internal_nightlies
 
-container_main:
+.cloudx_packages_base:
+  extends: .tests
+  before_script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - echo "Running packages testing for ${RUNNER}..."
+    - echo "Custom packages to be bundled with generated cloud image (${CUSTOM_PACKAGES})"
+
+cloudx-packages-testing-aws:
+  extends: .cloudx_packages_base
+  stage: test
+  variables:
+    RUNNER: $RUN_ON
+  rules:
+    - if: $CLOUDX_PACKAGES_AWS == "true"
+  script:
+    - bash ci/aws.sh
+
+promote-container-to-main:
   extends: .deps
   stage: finish
   rules:
@@ -215,7 +235,7 @@ container_main:
     - sudo dnf install skopeo -y
     - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
     - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
-    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod  
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod
 
 finish:
   stage: finish
