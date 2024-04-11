@@ -29,7 +29,7 @@ class OpenTofuController:
         self.wait_for_all_instances_ssh_up()
 
     def wait_for_all_instances_ssh_up(self):
-        seconds_to_wait = 180
+        seconds_to_wait = 300
         instances = self.get_instances()
 
         threads = []
