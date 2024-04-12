@@ -194,6 +194,11 @@ $AWS_CMD ec2 describe-images \
 AMI_IMAGE_ID=$(jq -r '.Images[].ImageId' "$AMI_DATA")
 SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA")
 
+# Share the created AMI with the CloudX account
+$AWS_CMD ec2 modify-image-attribute \
+    --image-id "${AMI_IMAGE_ID}" \
+    --launch-permission "Add=[{UserId=${CLOUDX_AWS_ACCOUNT_ID}]"
+
 # Tag image and snapshot with "gitlab-ci-test" tag
 $AWS_CMD ec2 create-tags \
     --resources "${SNAPSHOT_ID}" "${AMI_IMAGE_ID}" \
@@ -274,25 +279,19 @@ fi
 
 cp "${CIV_CONFIG_FILE}" "${TEMPDIR}/civ_config.yml"
 
-# temporary workaround for
-# https://issues.redhat.com/browse/CLOUDX-488
-if nvrGreaterOrEqual "osbuild-composer" "83"; then
-    sudo "${CONTAINER_RUNTIME}" run \
-        -a stdout -a stderr \
-        -e AWS_ACCESS_KEY_ID="${V2_AWS_ACCESS_KEY_ID}" \
-        -e AWS_SECRET_ACCESS_KEY="${V2_AWS_SECRET_ACCESS_KEY}" \
-        -e AWS_REGION="${AWS_REGION}" \
-        -e JIRA_PAT="${JIRA_PAT}" \
-        -v "${TEMPDIR}":/tmp:Z \
-        "${CONTAINER_CLOUD_IMAGE_VAL}" \
-        python cloud-image-val.py \
-        -c /tmp/civ_config.yml \
-        && RESULTS=1 || RESULTS=0
+sudo "${CONTAINER_RUNTIME}" run \
+    -a stdout -a stderr \
+    -e AWS_ACCESS_KEY_ID="${CLOUDX_AWS_ACCESS_KEY_ID}" \
+    -e AWS_SECRET_ACCESS_KEY="${CLOUDX_AWS_SECRET_ACCESS_KEY}" \
+    -e AWS_REGION="${AWS_REGION}" \
+    -e JIRA_PAT="${JIRA_PAT}" \
+    -v "${TEMPDIR}":/tmp:Z \
+    "${CONTAINER_CLOUD_IMAGE_VAL}" \
+    python cloud-image-val.py \
+    -c /tmp/civ_config.yml \
+    && RESULTS=1 || RESULTS=0
 
-    mv "${TEMPDIR}"/report.html "${ARTIFACTS}"
-else
-    RESULTS=1
-fi
+mv "${TEMPDIR}"/report.html "${ARTIFACTS}"
 
 # Clean up our mess.
 if [[ -z $KEEP_GENERATED_AMI ]]; then
