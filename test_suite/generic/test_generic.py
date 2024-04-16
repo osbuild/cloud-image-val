@@ -709,11 +709,17 @@ class TestsNetworking:
         files_and_configs_by_cloud = {
             'aws': {
                 'file_to_check': os.path.join(cloud_setup_base_path, '10-rh-enable-for-ec2.conf'),
-                'expect_config': 'Environment=NM_CLOUD_SETUP_EC2=yes'
+                'expect_configs': [
+                    'Environment=NM_CLOUD_SETUP_EC2=yes',
+                    'Environment="NM_CLOUD_SETUP_EC2=yes"'
+                ]
             },
             'azure': {  # COMPOSER-842
                 'file_to_check': os.path.join(cloud_setup_base_path, '10-rh-enable-for-azure.conf'),
-                'expect_config': 'Environment=NM_CLOUD_SETUP_AZURE=yes'
+                'expect_configs': [
+                    'Environment=NM_CLOUD_SETUP_AZURE=yes',
+                    'Environment="NM_CLOUD_SETUP_AZURE=yes"'
+                ]
             }
         }
 
@@ -730,10 +736,12 @@ class TestsNetworking:
                 'Expected cloud service is not enabled'
 
             file_to_check = files_and_configs_by_cloud[instance_data['cloud']]['file_to_check']
-            expect_config = files_and_configs_by_cloud[instance_data['cloud']]['expect_config']
+            expect_configs = files_and_configs_by_cloud[instance_data['cloud']]['expect_configs']
 
-            assert host.file(file_to_check).contains(expect_config), \
-                f'{expect_config} config is not set'
+            res = []
+            for cfg in expect_configs:
+                res.append(host.file(file_to_check).contains(cfg))
+            assert any(res), f'{expect_configs} config is not set'
 
     @pytest.mark.run_on(['rhel'])
     def test_network_manager_conf_plugins(self, host, instance_data):
