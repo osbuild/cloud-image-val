@@ -2,8 +2,8 @@ import pytest
 import os  # noqa: F401
 
 from main.cloud_image_validator import CloudImageValidator
-from cloud.opentofu.opentofu_configurator import OpenTofuConfigurator
-from cloud.opentofu.opentofu_controller import OpenTofuController
+from cloud.terraform.terraform_configurator import TerraformConfigurator
+from cloud.terraform.terraform_controller import TerraformController
 from test_suite.suite_runner import SuiteRunner
 
 
@@ -77,13 +77,13 @@ class TestCloudImageValidator:
     def test_initialize_infrastructure(self, mocker, validator):
         # Arrange
         mocker.patch('lib.ssh_lib.generate_ssh_key_pair')
-        mock_get_cloud_provider_from_resources = mocker.patch.object(OpenTofuConfigurator,
+        mock_get_cloud_provider_from_resources = mocker.patch.object(TerraformConfigurator,
                                                                      'get_cloud_provider_from_resources')
-        mock_configure_from_resources_json = mocker.patch.object(OpenTofuConfigurator,
+        mock_configure_from_resources_json = mocker.patch.object(TerraformConfigurator,
                                                                  'configure_from_resources_json')
-        mock_print_configuration = mocker.patch.object(OpenTofuConfigurator,
+        mock_print_configuration = mocker.patch.object(TerraformConfigurator,
                                                        'print_configuration')
-        mock_initialize_resources_dict = mocker.patch.object(OpenTofuConfigurator,
+        mock_initialize_resources_dict = mocker.patch.object(TerraformConfigurator,
                                                              '_initialize_resources_dict')
 
         # Act
@@ -97,11 +97,11 @@ class TestCloudImageValidator:
 
     def test_deploy_infrastructure(self, mocker, validator):
         # Arrange
-        mocker.patch.object(OpenTofuConfigurator, 'cloud_name', create=True)
+        mocker.patch.object(TerraformConfigurator, 'cloud_name', create=True)
 
-        mock_create_infra = mocker.patch.object(OpenTofuController,
+        mock_create_infra = mocker.patch.object(TerraformController,
                                                 'create_infra')
-        mock_get_instances = mocker.patch.object(OpenTofuController,
+        mock_get_instances = mocker.patch.object(TerraformController,
                                                  'get_instances',
                                                  return_value=self.test_instances)
         mock_generate_instances_ssh_config = mocker.patch(
@@ -110,7 +110,7 @@ class TestCloudImageValidator:
         mock_write_instances_to_json = mocker.MagicMock()
         validator._write_instances_to_json = mock_write_instances_to_json
 
-        validator.infra_controller = OpenTofuController(OpenTofuConfigurator)
+        validator.infra_controller = TerraformController(TerraformConfigurator)
 
         # Act
         result = validator.deploy_infrastructure()
@@ -127,8 +127,8 @@ class TestCloudImageValidator:
                                                                    ssh_key_path=validator.ssh_identity_file)
 
     def test_run_tests_in_all_instances(self, mocker, validator):
-        mocker.patch.object(OpenTofuConfigurator, 'cloud_name', create=True)
-        validator.infra_configurator = OpenTofuConfigurator
+        mocker.patch.object(TerraformConfigurator, 'cloud_name', create=True)
+        validator.infra_configurator = TerraformConfigurator
 
         mock_run_tests = mocker.patch.object(SuiteRunner, 'run_tests')
 
@@ -141,8 +141,8 @@ class TestCloudImageValidator:
 
     def test_destroy_infrastructure(self, mocker, validator):
         mock_destroy_infra = mocker.patch.object(
-            OpenTofuController, 'destroy_infra')
-        validator.infra_controller = OpenTofuController
+            TerraformController, 'destroy_infra')
+        validator.infra_controller = TerraformController
         validator.config["debug"] = False
 
         mock_os_remove = mocker.patch('os.remove')

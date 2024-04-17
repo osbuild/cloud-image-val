@@ -6,7 +6,7 @@ from threading import Thread
 from lib import ssh_lib
 
 
-class OpenTofuController:
+class TerraformController:
     def __init__(self, tf_configurator, debug=False):
         self.cloud_name = tf_configurator.cloud_name
         self.tf_configurator = tf_configurator
@@ -17,13 +17,13 @@ class OpenTofuController:
             self.debug_sufix = '1> /dev/null'
 
     def create_infra(self):
-        cmd_output = os.system(f'tofu init {self.debug_sufix}')
+        cmd_output = os.system(f'terraform init {self.debug_sufix}')
         if cmd_output:
-            raise Exception('tofu init command failed, check configuration')
+            raise Exception('terraform init command failed, check configuration')
 
-        cmd_output = os.system(f'tofu apply -auto-approve {self.debug_sufix}')
+        cmd_output = os.system(f'terraform apply -auto-approve {self.debug_sufix}')
         if cmd_output:
-            raise Exception('tofu apply command failed, check configuration')
+            raise Exception('terraform apply command failed, check configuration')
 
         print('Waiting for the ssh server in the instance(s) to be ready...')
         self.wait_for_all_instances_ssh_up()
@@ -42,7 +42,7 @@ class OpenTofuController:
         [t.join() for t in threads]
 
     def get_instances(self):
-        resources = self.get_opentofu_resources()
+        resources = self.get_terraform_resources()
 
         if self.cloud_name == 'aws':
             instances_info = self.get_instances_aws(resources)
@@ -55,8 +55,8 @@ class OpenTofuController:
 
         return instances_info
 
-    def get_opentofu_resources(self):
-        output = os.popen('tofu show --json')
+    def get_terraform_resources(self):
+        output = os.popen('terraform show --json')
         output = output.read()
 
         json_output = json.loads(output)
@@ -166,11 +166,11 @@ class OpenTofuController:
             return resource['values']['source_image_id']
 
     def destroy_resource(self, resource_id):
-        cmd_output = os.system(f'tofu destroy -target={resource_id}')
+        cmd_output = os.system(f'terraform destroy -target={resource_id}')
         if cmd_output:
-            raise Exception('tofu destroy specific resource command failed')
+            raise Exception('terraform destroy specific resource command failed')
 
     def destroy_infra(self):
-        cmd_output = os.system(f'tofu destroy -auto-approve {self.debug_sufix}')
+        cmd_output = os.system(f'terraform destroy -auto-approve {self.debug_sufix}')
         if cmd_output:
-            raise Exception('tofu destroy command failed')
+            raise Exception('terraform destroy command failed')

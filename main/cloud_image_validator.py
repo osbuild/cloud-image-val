@@ -3,8 +3,8 @@ import os
 import traceback
 
 from pprint import pprint
-from cloud.opentofu.opentofu_controller import OpenTofuController
-from cloud.opentofu.opentofu_configurator import OpenTofuConfigurator
+from cloud.terraform.terraform_controller import TerraformController
+from cloud.terraform.terraform_configurator import TerraformConfigurator
 from lib import ssh_lib
 from lib import console_lib
 from test_suite.suite_runner import SuiteRunner
@@ -77,15 +77,15 @@ class CloudImageValidator:
     def initialize_infrastructure(self):
         ssh_lib.generate_ssh_key_pair(self.ssh_identity_file)
 
-        self.infra_configurator = OpenTofuConfigurator(ssh_key_path=self.ssh_pub_key_file,
-                                                       resources_path=self.config['resources_file'],
-                                                       config=self.config)
+        self.infra_configurator = TerraformConfigurator(ssh_key_path=self.ssh_pub_key_file,
+                                                        resources_path=self.config['resources_file'],
+                                                        config=self.config)
         self.infra_configurator.configure_from_resources_json()
 
         if self.config['debug']:
             self.infra_configurator.print_configuration()
 
-        return OpenTofuController(self.infra_configurator, self.config['debug'])
+        return TerraformController(self.infra_configurator, self.config['debug'])
 
     def deploy_infrastructure(self):
         self.infra_controller.create_infra()

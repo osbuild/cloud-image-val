@@ -1,4 +1,4 @@
-from cloud.opentofu.base_config_builder import BaseConfigBuilder
+from cloud.terraform.base_config_builder import BaseConfigBuilder
 
 
 class AWSConfigBuilderEfs(BaseConfigBuilder):
