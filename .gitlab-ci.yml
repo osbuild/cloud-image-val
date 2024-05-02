@@ -106,7 +106,7 @@ prepare-rhel-internal-runners:
 .rhel_runners: &rhel_runners
   RUNNER:
     - aws/centos-stream-8-x86_64
-    - aws/rhel-8.4-ga-x86_64
+    # - aws/rhel-8.4-ga-x86_64
     - aws/rhel-8.9-ga-x86_64
     - aws/rhel-9.3-ga-x86_64
     - aws/rhel-8.10-nightly-x86_64
