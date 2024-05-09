@@ -63,6 +63,15 @@ def install_packages(request, host):
         assert host.run(install_cmd).succeeded, f'Failed to install the package {class_instance.package_name}'
         test_lib.print_host_command_output(host, "rpm -qa | grep opentelemetry*")
 
+    def finalizer():
+        console_lib.print_divider(f'Removing the package {class_instance.package_name}')
+        assert host.run(f'sudo yum remove -y {class_instance.package_name}')
+        assert not host.check_output(f'rpm -q {class_instance.package_name}')
+        assert host.run(f'ssh {class_instance.instance_dns}').failed
+        console_lib.print_divider("Verify logs don't appear")
+        # TODO: verify logs don't appear.
+    request.addfinalizer(finalizer)
+
 
 @pytest.fixture()
 def start_service(request, host):
@@ -81,20 +90,11 @@ def start_service(request, host):
             f'Failed to run the service {class_instance.package_name}'
         )
 
-    def finalizer():
-        console_lib.print_divider(f'Removing the package {class_instance.package_name}')
-        assert host.run(f'sudo yum remove -y {class_instance.package_name}')
-        assert not host.check_output(f'rpm -q {class_instance.package_name}')
-        assert host.run(f'ssh {class_instance.instance_dns}').failed
-        # Verify logs don't appear
-        # TODO: verify logs don't appear.
-    request.addfinalizer(finalizer)
-
 
 @pytest.fixture(scope="session", autouse=True)
 def run_subscription_manager_auto(request, host, instance_data):
     class_instance = request.node.cls
-    # Run the subscription manager auto test before any tests in this file
+    console_lib.print_divider("Run the subscription manager auto test before any tests in this file")
     TestsSubscriptionManager.test_subscription_manager_auto(class_instance, host, instance_data)
 
 
@@ -136,14 +136,14 @@ class TestOtel:
             - Remove the package from the instance and verify it's not present anymore.
             - Try a failure ssh again and check that the logs don't appear.
         """
-        # Connect to the instance without a key in order to fail
+        console_lib.print_divider("Connect to the instance without a key in order to fail")
         instance_dns = instance_data['public_dns']
         result = host.backend.run_local(f'ssh -o BatchMode=yes {instance_dns}')
         assert "Host key verification failed" in result.stderr
-        # Check for error logs in the instance logs
+        console_lib.print_divider("Check for error logs in the instance logs")
         with host.sudo():
             assert "Invalid" in host.file("/var/log/secure").content_string, \
                 ('no logs regarding ssh connection failure exist')
 
-        # Check for error logs in aws cli logs
+        console_lib.print_divider("Check for error logs in aws cli logs")
         self.check_aws_cli_logs(host)
