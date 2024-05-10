@@ -7,6 +7,16 @@
       "instance_type": "",
       "username": "ec2-user",
       "name": "RHEL-9.1.0_HVM-20221101-x86_64-2-Access2-GP2"
+    },
+    {
+      "ami": "ami-03724163927725aeb",
+      "region": "us-east-1",
+      "instance_type": "",
+      "username": "ec2-user",
+      "name": "RHEL-9.1.0-Custom-Networking-Optional",
+      "custom_vpc_name": "Your-Custom-VPC-Name",
+      "custom_subnet_name": "Your-Custom-Subnet-Name",
+      "custom_security_group_name": "Your-Custom-Security-Group-Name"
     }
   ]
 }

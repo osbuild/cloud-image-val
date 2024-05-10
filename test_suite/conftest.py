@@ -140,38 +140,38 @@ def check_markers(host, request):
     __check_jira_skip_marker(request)
 
 
-@pytest.mark.run_on(['rhel'])
 @pytest.fixture
 def rhel_sap_only(host):
     if not test_lib.is_rhel_sap(host):
         pytest.skip('Image is not SAP RHEL')
 
 
-@pytest.mark.run_on(['rhel'])
 @pytest.fixture
 def rhel_high_availability_only(host):
     if not test_lib.is_rhel_high_availability(host):
         pytest.skip('Image is not HA (High Availability)')
 
 
-@pytest.mark.run_on(['rhel'])
 @pytest.fixture
 def rhel_atomic_only(host):
     if not test_lib.is_rhel_atomic_host(host):
         pytest.skip('Image is not atomic RHEL')
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def instance_data(host):
-    return __get_instance_data_from_json(key_to_find='public_dns',
-                                         value_to_find=host.backend.hostname)
+    values_to_find = [host.backend.hostname]
+    values_to_find.extend(host.addr(host.backend.hostname).ipv4_addresses)
+
+    return __get_instance_data_from_json(key_to_find='address',
+                                         values_to_find=values_to_find)
 
 
-def __get_instance_data_from_json(key_to_find, value_to_find):
+def __get_instance_data_from_json(key_to_find, values_to_find):
     with open(os.environ['CIV_INSTANCES_JSON'], 'r') as f:
         instances_json_data = json.load(f)
     for instance in instances_json_data.values():
-        if key_to_find in instance.keys() and instance[key_to_find] == value_to_find:
+        if key_to_find in instance.keys() and instance[key_to_find] in values_to_find:
             return instance
 
 
@@ -202,9 +202,9 @@ def pytest_html_results_summary(prefix, summary, postfix):
 def pytest_html_results_table_header(cells):
     del cells[1]
 
-    cells.insert(1, html.th('Test Case', class_='sortable'))
-    cells.insert(2, html.th('Description'))
-    cells.insert(3, html.th('Image Reference', class_='sortable'))
+    cells.insert(1, html.th('Test_Case', class_='sortable', **{'data-column-type': 'test_case'}))
+    cells.insert(2, html.th('Description', **{'data-column-type': 'description'}))
+    cells.insert(3, html.th('Image', class_='sortable', **{'data-column-type': 'image'}))
 
 
 def pytest_html_results_table_row(report, cells):
@@ -213,7 +213,7 @@ def pytest_html_results_table_row(report, cells):
     cells.insert(1, html.td(getattr(report, 'test_case', '')))
     cells.insert(2, html.td(getattr(report, 'description', ''),
                             style='white-space:pre-line; word-wrap:break-word'))
-    cells.insert(3, html.td(getattr(report, 'image_reference', '')))
+    cells.insert(3, html.td(getattr(report, 'image', '')))
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -231,11 +231,12 @@ def pytest_runtest_makereport(item, call):
     description_text = __truncate_text(str(item.function.__doc__), 120)
     report.description = description_text
 
-    # Fill 'Image Reference' column
+    # Fill 'Image' column
     if 'instance_data' in item.funcargs:
         instance = item.funcargs['instance_data']
-        image_ref = instance['ami'] if 'ami' in instance else instance['image']
-        report.image_reference = str(image_ref)
+        if instance:
+            image_ref = instance['image']
+            report.image = str(image_ref)
 
 
 def __truncate_text(text, max_chars):

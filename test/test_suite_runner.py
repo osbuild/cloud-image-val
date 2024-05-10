@@ -121,10 +121,10 @@ class TestSuiteRunner:
 
     @pytest.mark.parametrize(
         'test_instances, expected_hosts',
-        [(dict(instance_1={'username': 'user1', 'public_dns': 'host1'}), 'user1@host1'),
-         (dict(instance_1={'username': 'user1', 'public_dns': 'host1'},
-               instance_2={'username': 'user2', 'public_dns': 'host2'},
-               instance_3={'username': 'user3', 'public_dns': 'host3'}), 'user1@host1,user2@host2,user3@host3')]
+        [(dict(instance_1={'username': 'user1', 'address': 'host1'}), 'user1@host1'),
+         (dict(instance_1={'username': 'user1', 'address': 'host1'},
+               instance_2={'username': 'user2', 'address': 'host2'},
+               instance_3={'username': 'user3', 'address': 'host3'}), 'user1@host1,user2@host2,user3@host3')]
     )
     def test_get_all_instances_hosts_with_users(self, suite_runner, test_instances, expected_hosts):
         suite_runner.instances = test_instances
@@ -133,7 +133,7 @@ class TestSuiteRunner:
 
     @pytest.mark.parametrize(
         'test_instances, exception',
-        [(dict(instance_1={'wrong_key_for_username': 'user1', 'public_dns': 'host1'}),
+        [(dict(instance_1={'wrong_key_for_username': 'user1', 'address': 'host1'}),
           pytest.raises(KeyError))]
     )
     def test_get_all_instances_hosts_with_users_exception(self, suite_runner, test_instances, exception):

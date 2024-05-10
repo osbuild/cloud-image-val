@@ -108,4 +108,4 @@ class SuiteRunner:
         """
         :return: A string with comma-separated items in the form of '<user1>@<host1>,<user2>@<host2>'
         """
-        return ','.join(['{0}@{1}'.format(inst['username'], inst['public_dns']) for inst in self.instances.values()])
+        return ','.join(['{0}@{1}'.format(inst['username'], inst['address']) for inst in self.instances.values()])

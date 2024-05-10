@@ -35,7 +35,7 @@ class OpenTofuController:
         threads = []
         for inst in instances.values():
             t = Thread(target=ssh_lib.wait_for_host_ssh_up,
-                       args=[inst['public_dns'], seconds_to_wait])
+                       args=[inst['address'], seconds_to_wait])
             t.start()
             threads.append(t)
 
@@ -92,10 +92,23 @@ class OpenTofuController:
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip'],
                 'public_dns': resource['values']['public_dns'],
+                'private_ip': resource['values']['private_ip'],
                 'availability_zone': resource['values']['availability_zone'],
                 'ami': ami_name,
+                'image': ami_name,
                 'username': username,
             }
+
+            if instance_data['public_dns']:
+                inst_address = instance_data['public_dns']
+            elif instance_data['public_ip']:
+                inst_address = instance_data['public_ip']
+            elif instance_data['private_ip']:
+                inst_address = instance_data['private_ip']
+            else:
+                raise Exception('Could not find any valid instance address.')
+
+            instance_data['address'] = inst_address
 
             instance_region = instance_data['availability_zone'][:-1]
             if instance_region in regional_efs_file_systems.keys():
@@ -123,6 +136,7 @@ class OpenTofuController:
                 'instance_id': resource['values']['id'],
                 'public_ip': resource['values']['public_ip_address'],
                 'public_dns': public_dns,
+                'address': public_dns,  # TODO: Support also private IP addresses as we do for AWS
                 'location': resource['values']['location'],
                 'image': image,
                 'username': resource['values']['admin_username'],
@@ -145,7 +159,8 @@ class OpenTofuController:
                 'name': resource['name'],
                 'instance_id': resource['values']['id'],
                 'public_ip': public_ip,
-                'public_dns': public_ip,
+                'public_dns': public_ip,  # TODO: Support also public dns as we do for the other Clouds
+                'address': public_ip,  # TODO: Support also private IP addresses as we do for AWS
                 'zone': resource['values']['zone'],
                 'image': resource['values']['metadata']['image'],
                 'username': resource['values']['metadata']['username'],
@@ -164,6 +179,8 @@ class OpenTofuController:
             return resource['values']['source_image_reference']
         elif 'source_image_id' in resource['values']:
             return resource['values']['source_image_id']
+        elif 'vhd_uri' in resource['values']:
+            return resource['values']['vhd_uri']
 
     def destroy_resource(self, resource_id):
         cmd_output = os.system(f'tofu destroy -target={resource_id}')

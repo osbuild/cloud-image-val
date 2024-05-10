@@ -419,7 +419,7 @@ class TestsAWS:
         """
         Try to fetch instance identity from EC2 and compare with expectation
         """
-        assert instance_data_aws_web['imageId'] == instance_data['ami'], \
+        assert instance_data_aws_web['imageId'] == instance_data['image'], \
             'Unexpected AMI ID for deployed instance'
 
         assert instance_data_aws_web['region'] in instance_data['availability_zone'], \
