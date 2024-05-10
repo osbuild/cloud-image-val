@@ -19,8 +19,8 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
     conf = sshconf.empty_ssh_config_file()
 
     for inst in instances.values():
-        conf.add(inst['public_dns'],
-                 Hostname=inst['public_dns'],
+        conf.add(inst['address'],
+                 Hostname=inst['address'],
                  User=inst['username'],
                  Port=22,
                  IdentityFile=ssh_key_path,
@@ -99,7 +99,7 @@ def __get_team_ssh_keys_by_path():
 
 def __copy_team_ssh_keys_to_instance(instance, ssh_config_file, team_ssh_keys):
     auth_keys = '~/.ssh/authorized_keys'
-    instance_address = instance['public_dns']
+    instance_address = instance['address']
     username = instance['username']
 
     composed_echo_command = ';'.join([f'echo "{k}" >> {auth_keys}' for k in team_ssh_keys.values()])

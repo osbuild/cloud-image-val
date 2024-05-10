@@ -63,7 +63,7 @@ class CloudImageValidator:
             for inst in instances.values():
                 ssh_command = 'ssh -i {0} {1}@{2}'.format(self.config['ssh_identity_file'],
                                                           inst['username'],
-                                                          inst['public_dns'])
+                                                          inst['address'])
                 instance_name = inst['name']
                 print(f'{instance_name}:')
                 print(f'\t{ssh_command}')
