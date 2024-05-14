@@ -1,5 +1,8 @@
 from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
+# This is a deprecated class, since Azure now encourages to use shared image galleries instead.
+# Please use azure_config_builder_v2.py instead.
+
 
 class AzureConfigBuilder(BaseConfigBuilder):
     cloud_name = 'azure'
