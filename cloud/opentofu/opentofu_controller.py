@@ -99,16 +99,7 @@ class OpenTofuController:
                 'username': username,
             }
 
-            if instance_data['public_dns']:
-                inst_address = instance_data['public_dns']
-            elif instance_data['public_ip']:
-                inst_address = instance_data['public_ip']
-            elif instance_data['private_ip']:
-                inst_address = instance_data['private_ip']
-            else:
-                raise Exception('Could not find any valid instance address.')
-
-            instance_data['address'] = inst_address
+            self._set_instance_default_address(instance_data)
 
             instance_region = instance_data['availability_zone'][:-1]
             if instance_region in regional_efs_file_systems.keys():
@@ -121,26 +112,29 @@ class OpenTofuController:
     def get_instances_azure(self, resources):
         instances_info = {}
 
-        for resource in resources:
-            if resource['type'] != 'azurerm_linux_virtual_machine':
+        for res in resources:
+            if res['type'] != 'azurerm_linux_virtual_machine':
                 continue
 
-            public_dns = self._get_azure_vm_fqdn_from_resources_json(resource['name'],
-                                                                     resources)
+            public_dns = self._get_azure_vm_fqdn_from_resources_json(res['name'], resources)
 
-            image = self._get_azure_image_data_from_resource(resource)
+            image = self._get_azure_image_data_from_resource(res, resources)
 
-            instances_info[resource['address']] = {
+            instance_data = {
                 'cloud': 'azure',
-                'name': resource['name'],
-                'instance_id': resource['values']['id'],
-                'public_ip': resource['values']['public_ip_address'],
+                'name': res['name'],
+                'instance_id': res['values']['id'],
+                'public_ip': res['values']['public_ip_address'],
+                'private_ip': res['values']['private_ip_address'],
                 'public_dns': public_dns,
-                'address': public_dns,  # TODO: Support also private IP addresses as we do for AWS
-                'location': resource['values']['location'],
+                'location': res['values']['location'],
                 'image': image,
-                'username': resource['values']['admin_username'],
+                'username': res['values']['admin_username'],
             }
+
+            self._set_instance_default_address(instance_data)
+
+            instances_info[res['address']] = instance_data
 
         return instances_info
 
@@ -168,19 +162,36 @@ class OpenTofuController:
 
         return instances_info
 
+    def _set_instance_default_address(self, instance_data):
+        if instance_data['public_dns']:
+            inst_address = instance_data['public_dns']
+        elif instance_data['public_ip']:
+            inst_address = instance_data['public_ip']
+        elif instance_data['private_ip']:
+            inst_address = instance_data['private_ip']
+        else:
+            raise Exception('Could not find any valid instance address.')
+
+        instance_data['address'] = inst_address
+
     def _get_azure_vm_fqdn_from_resources_json(self, vm_name, resources_json):
         for r in resources_json:
             if r['type'] == 'azurerm_public_ip' and \
                     r['values']['domain_name_label'] == vm_name:
                 return r['values']['fqdn']
 
-    def _get_azure_image_data_from_resource(self, resource):
-        if 'source_image_reference' in resource['values']:
-            return resource['values']['source_image_reference']
-        elif 'source_image_id' in resource['values']:
-            return resource['values']['source_image_id']
-        elif 'vhd_uri' in resource['values']:
-            return resource['values']['vhd_uri']
+    def _get_azure_image_data_from_resource(self, vm_resource, all_resources):
+        if 'source_image_reference' in vm_resource['values'] and \
+                len(vm_resource['values']['source_image_reference']) > 0:
+            return vm_resource['values']['source_image_reference']
+        elif 'source_image_id' in vm_resource['values'] and \
+                len(vm_resource['values']['source_image_id']) > 0:
+            for r in all_resources:
+                if r['type'] == 'azurerm_shared_image_version' and \
+                        vm_resource['values']['source_image_id'] in r['values']['id']:
+                    return r['values']['blob_uri']
+
+            return vm_resource['values']['source_image_id']
 
     def destroy_resource(self, resource_id):
         cmd_output = os.system(f'tofu destroy -target={resource_id}')

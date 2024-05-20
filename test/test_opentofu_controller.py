@@ -121,6 +121,7 @@ class TestOpenTofuController:
         test_location = 'eastus'
         test_public_dns = f'{test_computer_name}.{test_location}.cloudapp.azure.com'
         test_public_ip = '10.11.12.13'
+        test_private_ip = '1.2.3.4'
         test_resource_address = 'a.test_azure_address'
         test_id = '/subscription/xxx/test_azure_resource_id'
         test_username = 'azure'
@@ -137,6 +138,7 @@ class TestOpenTofuController:
                     'computer_name': test_computer_name,
                     'admin_username': test_username,
                     'public_ip_address': test_public_ip,
+                    'private_ip_address': test_private_ip,
                     'location': test_location,
                     test_image_type: test_image,
                 },
@@ -152,6 +154,7 @@ class TestOpenTofuController:
                 'name': test_name,
                 'instance_id': test_id,
                 'public_ip': test_public_ip,
+                'private_ip': test_private_ip,
                 'public_dns': test_public_dns,
                 'address': test_public_dns,
                 'location': test_location,
@@ -175,7 +178,7 @@ class TestOpenTofuController:
         assert result == instances_info_expected
 
         mock_get_azure_vm_fqdn_from_resources_json.assert_called_once_with(resources[0]['name'], resources)
-        mock_get_azure_image_data_from_resource.assert_called_once_with(resources[0])
+        mock_get_azure_image_data_from_resource.assert_called_once_with(resources[0], resources)
 
     def test_get_instances_gcloud(self, tf_controller):
         # Arrange
@@ -233,15 +236,28 @@ class TestOpenTofuController:
 
     @pytest.mark.parametrize(
         'test_image_type, test_image',
-        [('source_image_reference', {'publisher': 'Canonical'}),
+        [('source_image_reference', {'publisher': 'RedHat'}),
          ('source_image_id', '/test/image/uri')]
     )
     def test_get_azure_image_data_from_resource(self, tf_controller, test_image_type, test_image):
-        test_resources = {'values': {test_image_type: test_image}}
+        test_vm = {
+            'type': 'azurerm_linux_virtual_machine',
+            'values': {test_image_type: test_image}
+        }
 
-        result = tf_controller._get_azure_image_data_from_resource(test_resources)
+        test_vhd_uri = 'test.raw.vhd'
 
-        assert result == test_image
+        test_resources = [{
+            'type': 'azurerm_shared_image_version',
+            'values': {'id': '/test/image/uri', 'blob_uri': test_vhd_uri}
+        }]
+
+        result = tf_controller._get_azure_image_data_from_resource(test_vm, test_resources)
+
+        if 'source_image_reference' in test_vm['values']:
+            assert result == test_image
+        elif 'source_image_id' in test_vm['values']:
+            assert result == test_vhd_uri
 
     def test_destroy_resource(self, mocker, tf_controller):
         # Arrange
