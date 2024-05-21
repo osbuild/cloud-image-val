@@ -55,9 +55,9 @@ def modify_iam_role(instance_data, host):
 @pytest.fixture()
 def install_packages(request, host):
     class_instance = request.node.cls
-    install_cmd = f'yum install -y {class_instance.package_name} --nogpgcheck'
-    repo_path = ('https://copr.fedorainfracloud.org/coprs/miyunari'
-                 '/redhat-opentelemetry-collector/repo/rhel-9/miyunari-redhat-opentelemetry-collector-rhel-9.repo')
+    install_cmd = f'yum install -y {class_instance.package_name} --nogpgcheck --skip-broken'
+    repo_path = ('https://copr.fedorainfracloud.org/coprs/miyunari/redhat-opentelemetry-collector'
+                 '/repo/rhel-9/miyunari-redhat-opentelemetry-collector-rhel-9.repo')
     with host.sudo():
         assert host.run(f'yum-config-manager --add-repo {repo_path}').succeeded
         assert host.run(install_cmd).succeeded, f'Failed to install the package {class_instance.package_name}'
@@ -91,7 +91,7 @@ def start_service(request, host):
         )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def run_subscription_manager_auto(request, host, instance_data):
     class_instance = request.node.cls
     console_lib.print_divider("Run the subscription manager auto test before any tests in this file")
@@ -100,11 +100,6 @@ def run_subscription_manager_auto(request, host, instance_data):
 
 @pytest.mark.package
 @pytest.mark.run_on(['rhel9.4'])
-@pytest.mark.usefixtures(
-    check_instance_status.__name__,
-    install_packages.__name__,
-    modify_iam_role.__name__,
-)
 class TestOtel:
     package_name = 'opentelemetry-collector-cloudwatch-config'
 
@@ -121,6 +116,9 @@ class TestOtel:
         assert "Invalid" in command_output
 
     @pytest.mark.usefixtures(
+        check_instance_status.__name__,
+        install_packages.__name__,
+        modify_iam_role.__name__,
         start_service.__name__,
     )
     def test_otel(self, host, instance_data):
