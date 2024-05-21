@@ -14,6 +14,18 @@ RUN dnf install -y \
     unzip \
     keychain
 
+# Install AWS cli tool V2 (supports only x86_64 and aarch64 for now)
+RUN ARCH="$(uname -m | grep -qE '^(amd64|arm64|aarch64)$' && echo "aarch64" || echo "x86_64")"; \
+    wget https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip \
+    -O awscliv2.zip; \
+    unzip awscliv2.zip; \
+    ./aws/install
+
+# Install Azure cli tool
+RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc; \
+    dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm; \
+    dnf install -y azure-cli
+
 # Install OpenTofu v1.6.2 which is fully compatible with Terraform v1.5.x
 RUN export OPENTOFU_VERSION='1.6.2'
 
