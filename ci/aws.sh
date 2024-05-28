@@ -262,7 +262,8 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
             "region": "us-east-1",
             "instance_type": "t3.medium",
             "username": "$SSH_USER",
-            "name": "civ-pkg-testing-image"
+            "name": "civ-pkg-testing-image",
+            "spot_instance": true
         }
     ]
 }
