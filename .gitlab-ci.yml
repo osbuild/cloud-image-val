@@ -33,6 +33,10 @@ init:
   stage: init
   script:
     - schutzbot/update_github_status.sh start
+  variables:
+    RUNNER: aws/fedora-39-x86_64
+  tags:
+    - terraform
 
 build-branch-container:
   extends: .deps
@@ -243,3 +247,7 @@ finish:
   stage: finish
   script:
     - schutzbot/update_github_status.sh finish
+  variables:
+    RUNNER: aws/fedora-39-x86_64
+  tags:
+    - terraform
