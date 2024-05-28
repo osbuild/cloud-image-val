@@ -119,7 +119,7 @@ version = "0.0.1"
 EOF
 
 # Append any packages that we want to install
-if [[ -n "$CUSTOM_PACKAGES" ]]; then
+if ! [ -z "$CUSTOM_PACKAGES" ]; then
     # shellcheck disable=SC2068
     for pkg in ${CUSTOM_PACKAGES[@]}; do
         pkg_name="${pkg%:*}"
@@ -197,7 +197,7 @@ SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA"
 # Share the created AMI with the CloudX account
 $AWS_CMD ec2 modify-image-attribute \
     --image-id "${AMI_IMAGE_ID}" \
-    --launch-permission "Add=[{UserId=${CLOUDX_AWS_ACCOUNT_ID}]"
+    --launch-permission "Add=[{UserId=${CLOUDX_AWS_ACCOUNT_ID}}]"
 
 # Tag image and snapshot with "gitlab-ci-test" tag
 $AWS_CMD ec2 create-tags \
