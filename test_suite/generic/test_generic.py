@@ -891,3 +891,43 @@ class TestsKdump:
                 print(f' - journalctl kdump service: {host.run("journalctl --no-pager -u kdump.service").stdout}')
                 print(f' - journalctl kernel: {host.run("journalctl --no-pager -k").stdout}')
                 pytest.fail('Kdump is not operational')
+
+
+@pytest.mark.pub
+@pytest.mark.run_on(['rhel8.10'])  # Let's update this list when there are more minor ELS GA releases (e.g. rhel-9.10 ?)
+class TestsRhelEls:
+    """
+    A set of test cases that should only run if RHEL minor release is the last one and will enter into ELS mode.
+    For example, for RHEL-8, the last minor release is RHEL-8.10, and there won't be any further minor releases for major version 8.
+    """
+    def test_rhui_pkg_is_not_e4s(self, host):
+        """
+        Make sure the RHUI package is not "e4s".
+        """
+        result = test_lib.print_host_command_output(host, 'rpm -qa | grep rhui', capture_result=True)
+
+        assert 'e4s' not in result.stdout, f'RHUI package is E4S ({result.stdout})'
+
+    def test_no_release_version_lock(self, host):
+        """
+        There that there is no release version lock in /etc/yum/vars/releasever or that file doesn't exist
+        """
+        file_to_check = '/etc/yum/vars/releasever'
+
+        # Would it be easier if we check that the file is empty?
+        version_lock = f'releasever={host.system_info.release}'
+
+        if host.file(file_to_check).exists:
+            assert not host.file(file_to_check).contains(version_lock), \
+                f'{file_to_check} has a version lock.'
+
+    def test_no_e4s_repo_definition(self, host):
+        """
+        Make sure the E4S repos are not included.
+        """
+        repos_dir = '/etc/yum.repos.d/'
+
+        result = host.run_test(f'grep -r "e4s" {repos_dir}')
+
+        # TODO: Add check
+        assert result.failed, f'E4S references found in repository definitions:\n{repos_dir.stdout}'
