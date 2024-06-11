@@ -24,9 +24,14 @@ def instance_data_aws_cli(host, instance_data_aws_web):
         f'--query "{query_to_run}"'
     ]
 
-    command_output = host.backend.run_local(' '.join(command_to_run)).stdout
+    result = host.backend.run_local(' '.join(command_to_run))
 
-    return json.loads(command_output)[0]
+    if result.failed:
+        raise Exception(f'The aws cli command "{command_to_run}" exited with {result.exit_status}. '
+                        f'Output: {result.stdout} '
+                        f'Error: {result.stderr}')
+
+    return json.loads(result.stdout)[0]
 
 
 @pytest.mark.order(2)
