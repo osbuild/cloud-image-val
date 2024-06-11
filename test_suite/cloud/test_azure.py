@@ -185,8 +185,14 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel'])
     def test_osdisk_size(self, host):
         """
-        Verify os disk size is 64 GiB
+        Verify os disk size is 63G/62.9G
         """
+        expected_disk_size = '63G'
+
+        # CLOUDX-764
+        if version.parse(host.system_info.release) >= version.parse('9.3'):
+            expected_disk_size = '62.9G'
+
         with host.sudo():
             base_command = 'fdisk -l | grep "Linux LVM"'
 
@@ -195,7 +201,7 @@ class TestsAzure:
             else:
                 cmd = f'{base_command} | awk "{{print $5}}"'
 
-            assert '63G' in host.check_output(cmd), 'Unexpected Linux LVM disk size'
+            assert expected_disk_size in host.check_output(cmd), 'Unexpected Linux LVM disk size'
 
     @pytest.mark.run_on(['all'])
     def test_pwquality_conf(self, host):
