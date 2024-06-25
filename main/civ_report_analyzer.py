@@ -98,6 +98,8 @@ def get_analysis_as_cli(summary, analysis):
 
 
 def __parse_error_message(error_message):
+    max_lenght = 1000
+
     regex_error_generic = re.compile(r'(?:(?:AssertionError|Failed): (.*))')
     regex_error_command = re.compile(
         r"Unexpected exit code \d+ for CommandResult\(command=b?(?P<command>['|\"]?.*['|\"]?), "
@@ -126,6 +128,11 @@ def __parse_error_message(error_message):
                 composed_error_message.append(f'{key}: {formatted_value.strip()}')
 
             extracted_message = '\n\n'.join(composed_error_message)
+
+    diff = len(extracted_message) - max_lenght
+    if diff > 0:
+        chunk_size = max_lenght // 2
+        extracted_message = (extracted_message[0:chunk_size] + ' [<truncated>] ' + extracted_message[-chunk_size:-1])
 
     return extracted_message
 
