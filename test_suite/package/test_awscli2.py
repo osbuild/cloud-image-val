@@ -11,7 +11,7 @@ class TestsAwsCli2:
     @pytest.fixture(scope='module', autouse=True)
     def import_aws_credentials(self, host):
         # Generate temporary credentials for this test.
-        civ_local_command_to_run = 'aws sts get-session-token --duration-seconds 3600 --output json'
+        civ_local_command_to_run = 'aws sts get-session-token --duration-seconds 120 --output json'
 
         result = host.backend.run_local(civ_local_command_to_run)
         assert result.succeeded, \
