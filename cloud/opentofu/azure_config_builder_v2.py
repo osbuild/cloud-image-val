@@ -1,18 +1,19 @@
-import re
+import random
 
 from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
 
 class AzureConfigBuilderV2(BaseConfigBuilder):
     cloud_name = 'azure'
-    cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.103.1'}}
+    cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.110.0'}}
 
     default_x86_vm_size = 'Standard_DS1_v2'
     default_arm64_vm_size = 'Standard_D2pls_v5'
     default_hyper_v_generation = 'V2'
     default_admin_username = 'azure'
     default_location = 'eastus'
-    default_publisher = 'RedHat'
+    default_publisher = 'CIV'
+    default_offer = 'civ'
 
     def __init__(self, resources_dict, ssh_key_path, config):
         super().__init__(resources_dict, ssh_key_path, config)
@@ -70,6 +71,11 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             self.__new_azure_subnet(instance)
 
             if 'vhd_uri' in instance:
+                required_data = ['arch', 'storage_account']
+                for key in required_data:
+                    if key not in instance:
+                        raise Exception(f'"{key}" is mandatory for Azure instance definitions that use vhd blob URI.')
+
                 self.__new_azure_shared_image_gallery(instance)
                 self.__new_azure_shared_image(instance)
                 self.__new_azure_shared_image_version(instance)
@@ -89,42 +95,6 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         return self.resources_tf
 
-    def __parse_vhd_name(self, vhd_uri):
-        """Parse a vhd name and return extracted image details
-
-        Regex101: https://regex101.com/r/almD3W/2
-
-        Args:
-            vhd_uri: Image uri.
-        Returns:
-            Dictionary with additional information about the vhd.
-        """
-        #     product_name = one of the EXD-SP defined Azure product names e.g. rhel-sap-azure
-        #     See https://docs.google.com/document/d/19EiQ-XyvsUo4r-u-SFetVJ_P8M96mwtEyuuDKpqMb0c/edit#
-        #     for Stratosphere naming conventions.
-        #     version = RHEL version in MAJOR.MINOR(.PATCH)
-        #     date = date image was produced
-        #     build_nr = integer of builditeration performed on the build date
-        #     arch = architecture
-
-        azure_vhd_regex = (
-            r"https:\/\/(?P<storage_account>.*)\.blob.*\/(?P<product_name>\D*)\-(?P<version>[\d]+\.[\d]+(?:\.[\d]+)?)\-"
-            r"(?P<date>\d{4}\d{2}\d{2})\.\b(?:sp\.)?(?P<build_nr>\d+)\.(?P<arch>\S*)\.\bvhd"
-        )
-
-        # thozza NB: the 'version' number may contain dot to separate the major and minor version
-        azure_vhd_regex_image_builder = (
-            r"https:\/\/(?P<storage_account>.*)\.blob.*\/image-(?P<product_name>.*)-"
-            r"(?P<version>(?:[\d]+\.)?\d+)-(?P<arch>x86_64|aarch64).*.vhd"
-        )
-
-        matches = re.match(azure_vhd_regex, vhd_uri, re.IGNORECASE)
-        matches_image_builder = re.match(azure_vhd_regex_image_builder, vhd_uri, re.IGNORECASE)
-
-        vhd_data = matches.groupdict() if matches else matches_image_builder.groupdict()
-
-        return vhd_data
-
     def __new_azure_shared_image_gallery(self, instance):
         name = self.create_resource_name(['gallery'], separator='_')
         instance['azurerm_shared_image_gallery'] = name
@@ -132,33 +102,28 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         new_image_gallery = {
             'name': name,
             'resource_group_name': self.resource_group,
-            'location': instance['location']
+            'location': instance['location'],
+            'tags': {
+                'vhd_uri': instance['vhd_uri']
+            }
         }
         self.add_tags(self.config, new_image_gallery)
 
         self.resources_tf['resource']['azurerm_shared_image_gallery'][name] = new_image_gallery
 
     def __new_azure_shared_image(self, instance):
-        vhd_properties = self.__parse_vhd_name(instance['vhd_uri'])
-        instance['vhd_properties'] = vhd_properties
-
-        product = vhd_properties['product_name']
-        version = vhd_properties['version'].replace(".", "-")
-
-        if vhd_properties['arch'] == 'aarch64':
+        if instance['arch'] == 'aarch64':
             arch = 'Arm64'
         else:
             arch = 'x64'
 
-        instance['arch'] = arch
-
-        name = self.create_resource_name([product, version, arch])
+        name = self.create_resource_name(['shared', 'image', arch])
         instance['azurerm_shared_image'] = name
 
         identifier = {
             'publisher': self.default_publisher,
-            'offer': product.upper(),
-            'sku': version
+            'offer': self.default_offer,
+            'sku': f"{random.randint(1000, 9999)}.{random.randint(10, 99)}.{random.randint(10, 99)}"
         }
 
         if 'hyper_v_generation' in instance and instance['hyper_v_generation']:
@@ -175,6 +140,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'identifier': identifier,
             'hyper_v_generation': hyper_v_gen,
             'architecture': arch,
+            'tags': {
+                'vhd_uri': instance['vhd_uri']
+            },
             'depends_on': [
                 'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
             ]
@@ -196,12 +164,15 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         new_image = {
             'name': '0.0.1',
             'blob_uri': instance['vhd_uri'],
-            'storage_account_id': self.__get_azure_storage_account_uri(instance['vhd_properties']['storage_account']),
+            'storage_account_id': self.__get_azure_storage_account_uri(instance['storage_account']),
             'image_name': instance['azurerm_shared_image'],
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'gallery_name': instance['azurerm_shared_image_gallery'],
             'target_region': target_region,
+            'tags': {
+                'vhd_uri': instance['vhd_uri']
+            },
             'depends_on': [
                 'azurerm_shared_image_gallery.{}'.format(instance['azurerm_shared_image_gallery']),
                 'azurerm_shared_image.{}'.format(instance['azurerm_shared_image']),
