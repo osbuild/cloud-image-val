@@ -24,9 +24,14 @@ def instance_data_aws_cli(host, instance_data_aws_web):
         f'--query "{query_to_run}"'
     ]
 
-    command_output = host.backend.run_local(' '.join(command_to_run)).stdout
+    result = host.backend.run_local(' '.join(command_to_run))
 
-    return json.loads(command_output)[0]
+    if result.failed:
+        raise Exception(f'The aws cli command "{command_to_run}" exited with {result.exit_status}. '
+                        f'Output: {result.stdout} '
+                        f'Error: {result.stderr}')
+
+    return json.loads(result.stdout)[0]
 
 
 @pytest.mark.order(2)
@@ -266,34 +271,6 @@ class TestsAWS:
 
         if version.parse('8.3') > system_release >= version.parse('8.0'):
             required_pkgs.append('rng-tools')
-
-        if test_lib.is_rhel_sap(host):
-            required_pkgs.extend(['rhel-system-roles-sap', 'ansible'])
-
-            # BugZilla 1959813
-            required_pkgs.extend(['bind-utils', 'compat-sap-c++-9', 'nfs-utils', 'tcsh'])
-
-            # BugZilla 1959813
-            required_pkgs.append('uuidd')
-
-            # BugZilla 1959923, 1961168
-            required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
-                                  'iptraf-ng', 'krb5-workstation', 'libaio'])
-
-            # BugZilla 1959923, 1961168
-            required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
-                                  'libpng12', 'libtool-ltdl', 'lm_sensors', 'net-tools'])
-
-            required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
-
-            # BugZilla 1959962
-            required_pkgs.append('tuned-profiles-sap-hana')
-
-            # CLOUDX-367
-            if system_release >= version.parse('8.6'):
-                required_pkgs.append('ansible-core')
-            else:
-                required_pkgs.append('ansible')
 
         # CLOUDX-451
         if system_release.major == 9 and system_release.minor >= 3 or \
@@ -821,6 +798,51 @@ class TestsAWSSAP:
         result = test_lib.run_local_script_in_host(host, local_file_path)
 
         assert result.rc == 0
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_required_packages_are_installed(self, host):
+        system_release = version.parse(host.system_info.release)
+
+        required_pkgs = []
+
+        required_pkgs.extend(['rhel-system-roles-sap'])
+
+        # BugZilla 1959813
+        required_pkgs.extend(['bind-utils', 'nfs-utils', 'tcsh'])
+
+        # BugZilla 1959813
+        required_pkgs.append('uuidd')
+
+        # BugZilla 1959923, 1961168
+        required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
+                              'iptraf-ng', 'krb5-workstation', 'libaio'])
+
+        # BugZilla 1959923, 1961168
+        required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
+                              'libtool-ltdl', 'lm_sensors', 'net-tools'])
+
+        required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
+
+        # BugZilla 1959962
+        required_pkgs.append('tuned-profiles-sap-hana')
+
+        # CLOUDX-557
+        if system_release < version.parse('8.0'):
+            required_pkgs.append('libpng12')
+
+        # CLOUDX-367, CLOUDX-557
+        if system_release >= version.parse('8.6'):
+            required_pkgs.append('ansible-core')
+        else:
+            required_pkgs.append('ansible')
+
+        # CLOUDX-557
+        if system_release < version.parse('9.0'):
+            required_pkgs.append('compat-sap-c++-9')
+
+        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
+
+        assert len(missing_pkgs) == 0, f'Missing packages required by RHEL-SAP: {", ".join(missing_pkgs)}'
 
 
 @pytest.mark.order(2)

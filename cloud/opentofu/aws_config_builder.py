@@ -27,12 +27,17 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
     def build_resources(self):
         self.resources_tf['resource']['aws_key_pair'] = {}
-
-        # Data needed to import custom networking/security resources if needed
         self.resources_tf['data'] = {}
+
+        # Data needed to import custom networking/security resources, if applicable
         self.resources_tf['data']['aws_vpc'] = {}
         self.resources_tf['data']['aws_subnet'] = {}
         self.resources_tf['data']['aws_security_group'] = {}
+
+        # Data and resources needed for creation of spot instances, ir applicable
+        self.resources_tf['data']['aws_iam_role'] = {}
+        self.resources_tf['resource']['aws_spot_fleet_request'] = {}
+        self.resources_tf['data']['aws_instance'] = {}
 
         self.resources_tf['resource']['aws_instance'] = {}
 
@@ -43,17 +48,26 @@ class AWSConfigBuilder(BaseConfigBuilder):
             self.__get_data_aws_subnet(instance)
             self.__get_data_aws_security_group(instance)
 
-            self.__new_aws_instance(instance)
+            if 'spot_instance' in instance.keys() and \
+                    bool(instance['spot_instance']) is True:
+                self.__new_data_aws_iam_role(instance)
+                self.__new_aws_spot_instance(instance)
+            else:
+                self.__new_aws_instance(instance)
 
-        # Cleanup data sources if they are empty
-        data_sources_list = list(self.resources_tf['data'].keys())
-        for source in data_sources_list:
-            if not self.resources_tf['data'][source]:
-                del self.resources_tf['data'][source]
-        if not self.resources_tf['data']:
-            del self.resources_tf['data']
+        self.__remove_empty_resources_tf_items('data')
+        self.__remove_empty_resources_tf_items('resource')
 
         return self.resources_tf
+
+    def __remove_empty_resources_tf_items(self, tf_resource_type):
+        # Cleanup data sources if they are empty
+        data_sources_list = list(self.resources_tf[tf_resource_type].keys())
+        for source in data_sources_list:
+            if not self.resources_tf[tf_resource_type][source]:
+                del self.resources_tf[tf_resource_type][source]
+        if not self.resources_tf[tf_resource_type]:
+            del self.resources_tf[tf_resource_type]
 
     def __get_data_aws_vpc(self, instance):
         if 'custom_vpc_name' not in instance:
@@ -143,6 +157,91 @@ class AWSConfigBuilder(BaseConfigBuilder):
         self.add_tags(self.config, new_key_pair)
 
         self.resources_tf['resource']['aws_key_pair'][key_name] = new_key_pair
+
+    def __new_data_aws_iam_role(self, instance):
+        # We import the role that comes by default in AWS to manage spot instance requests
+        if 'spot_instance' not in instance:
+            return
+
+        tf_data_type = 'aws_iam_role'
+
+        if tf_data_type in self.resources_tf.keys() and len(self.resources_tf[tf_data_type]) > 0:
+            instance[tf_data_type] = list(self.resources_tf['data'][tf_data_type].values())[0]
+            return
+
+        iam_fleet_role_name = self.create_resource_name(['iam_fleet_role'])
+
+        instance[tf_data_type] = iam_fleet_role_name
+
+        aws_iam_role = {
+            'provider': f'aws.{instance["region"]}',
+            'name': 'aws-ec2-spot-fleet-tagging-role'
+        }
+
+        self.resources_tf['data'][tf_data_type][iam_fleet_role_name] = aws_iam_role
+
+    def __new_aws_spot_instance(self, instance):
+        if not instance['instance_type']:
+            # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
+            instance['instance_type'] = 't3.medium'
+
+        name_tag_value = instance['name'].replace('.', '-')
+        fleet_request_name = self.create_resource_name(['spot', 'fleet', 'request'])
+        spot_instance_name = self.create_resource_name(['spot', 'instance', name_tag_value])
+
+        aliases = [provider['alias'] for provider in self.providers_tf['provider'][self.cloud_name]]
+        if instance['region'] not in aliases:
+            raise Exception('Cannot add an instance if region provider is not set up')
+
+        declared_iam_fleet_role_arn = 'data.aws_iam_role.{}.arn'.format(instance['aws_iam_role'])
+
+        new_spot_instance = {
+            'provider': f'aws.{instance["region"]}',
+            'allocation_strategy': 'priceCapacityOptimized',
+            'fleet_type': 'request',
+            'target_capacity': 1,
+            'wait_for_fulfillment': True,
+            'terminate_instances_with_expiration': True,
+            'iam_fleet_role': f'${{{declared_iam_fleet_role_arn}}}',
+            'launch_specification': {
+                'instance_type': instance['instance_type'],
+                'ami': instance['ami'],
+                'key_name': instance['aws_key_pair'],
+                'root_block_device': {'volume_size': 20},
+                'tags': {'name': name_tag_value},
+            },
+            'depends_on': [
+                'aws_key_pair.{}'.format(instance['aws_key_pair'])
+            ]
+        }
+
+        instance['aws_spot_fleet_request'] = fleet_request_name
+
+        declared_spot_fleet_request_id = 'aws_spot_fleet_request.{}.id'.format(instance['aws_spot_fleet_request'])
+
+        new_instance = {
+            'provider': f'aws.{instance["region"]}',
+            'filter': {
+                'name': 'tag:aws:ec2spot:fleet-request-id',
+                'values': [f'${{{declared_spot_fleet_request_id}}}']
+            },
+            'depends_on': [
+                'aws_spot_fleet_request.{}'.format(fleet_request_name)
+            ]
+        }
+
+        if 'aws_subnet' in instance:
+            declared_subnet_id = 'data.aws_subnet.{}.id'.format(instance['aws_subnet'])
+            new_spot_instance['subnet_id'] = f'${{{declared_subnet_id}}}'
+
+        if 'aws_security_group' in instance:
+            declared_security_group_id = 'data.aws_security_group.{}.id'.format(instance['aws_security_group'])
+            new_spot_instance['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
+
+        self.add_tags(self.config, new_spot_instance)
+
+        self.resources_tf['resource']['aws_spot_fleet_request'][fleet_request_name] = new_spot_instance
+        self.resources_tf['data']['aws_instance'][spot_instance_name] = new_instance
 
     def __new_aws_instance(self, instance):
         if not instance['instance_type']:
