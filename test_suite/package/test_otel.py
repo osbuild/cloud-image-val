@@ -1,6 +1,5 @@
 import json
 import time
-
 import pytest
 
 from lib import console_lib
@@ -11,9 +10,10 @@ from test_suite.generic.test_generic import TestsSubscriptionManager
 @pytest.fixture()
 def check_instance_status(request, instance_data, host, timeout_seconds=300):
     instance_id = instance_data['instance_id']
+    instance_region = instance_data['availability_zone'][:-1]
     command_to_run = [
         'aws', 'ec2', 'describe-instance-status',
-        '--instance-ids', instance_id
+        '--instance-ids', instance_id, '--region', instance_region
     ]
 
     start_time = time.time()
@@ -53,13 +53,32 @@ def modify_iam_role(instance_data, host):
 
 
 @pytest.fixture()
+def setup_conf(host):
+    file_path = '/etc/opentelemetry-collector/configs/10-cloudwatch-export.yaml'
+    file_content = """
+    ---
+    exporters:
+      awscloudwatchlogs:
+        log_group_name: "testing-logs-emf"
+        log_stream_name: "testing-integrations-stream-emf"
+
+    service:
+      pipelines:
+        logs:
+          receivers: [journald]
+          exporters: [awscloudwatchlogs]
+    """
+    with host.sudo():
+        host.run(f"echo '{file_content}' > {file_path}")
+
+
+@pytest.fixture()
 def install_packages(request, host):
     class_instance = request.node.cls
-    install_cmd = f'yum install -y {class_instance.package_name} --nogpgcheck --skip-broken'
-    repo_path = ('https://copr.fedorainfracloud.org/coprs/miyunari/redhat-opentelemetry-collector'
-                 '/repo/rhel-9/miyunari-redhat-opentelemetry-collector-rhel-9.repo')
+    install_cmd = (f'dnf copr enable frzifus/{class_instance.package_name} -y'
+                   f' && dnf install -y opentelemetry-collector')
+
     with host.sudo():
-        assert host.run(f'yum-config-manager --add-repo {repo_path}').succeeded
         assert host.run(install_cmd).succeeded, f'Failed to install the package {class_instance.package_name}'
         test_lib.print_host_command_output(host, "rpm -qa | grep opentelemetry*")
 
@@ -76,18 +95,17 @@ def install_packages(request, host):
 @pytest.fixture()
 def start_service(request, host):
     class_instance = request.node.cls
-    start_enable_service = (
-        f'systemctl start {class_instance.package_name} && '
-        f'systemctl enable {class_instance.package_name}'
-    )
+    start_service = (f'systemctl start {class_instance.service_name}')
+    enable_service = (f'systemctl enable {class_instance.service_name}')
 
     with host.sudo():
-        assert host.run(start_enable_service).succeeded, (f'Failed to start the service {class_instance.package_name}')
-        assert host.service(class_instance.package_name).is_enabled, (
-            f'Failed to enable the service {class_instance.package_name}'
+        assert host.run(start_service).succeeded, (f'Failed to start the service {class_instance.service_name}')
+        assert host.run(enable_service).succeeded, (f'Failed to enable the service {class_instance.service_name}')
+        assert host.service(class_instance.service_name).is_enabled, (
+            f'Failed to enable the service {class_instance.service_name}'
         )
-        assert host.service(class_instance.package_name).is_running, (
-            f'Failed to run the service {class_instance.package_name}'
+        assert host.service(class_instance.service_name).is_running, (
+            f'Failed to run the service {class_instance.service_name}'
         )
 
 
@@ -101,7 +119,8 @@ def run_subscription_manager_auto(request, host, instance_data):
 @pytest.mark.package
 @pytest.mark.run_on(['rhel9.4'])
 class TestOtel:
-    package_name = 'opentelemetry-collector-cloudwatch-config'
+    package_name = 'redhat-opentelemetry-collector-main'
+    service_name = 'opentelemetry-collector.service'
 
     def check_aws_cli_logs(self, host):
         command_to_run = [
@@ -118,8 +137,9 @@ class TestOtel:
     @pytest.mark.usefixtures(
         check_instance_status.__name__,
         install_packages.__name__,
+        setup_conf.__name__,
         modify_iam_role.__name__,
-        start_service.__name__,
+        start_service.__name__
     )
     def test_otel(self, host, instance_data):
         """
