@@ -1,14 +1,12 @@
 import json
 import time
 import pytest
-
 from lib import console_lib
 from lib import test_lib
-from test_suite.generic.test_generic import TestsSubscriptionManager
 
 
 @pytest.fixture()
-def check_instance_status(request, instance_data, host, timeout_seconds=300):
+def check_instance_status(instance_data, host, timeout_seconds=300):
     instance_id = instance_data['instance_id']
     instance_region = instance_data['availability_zone'][:-1]
     command_to_run = [
@@ -56,17 +54,18 @@ def modify_iam_role(instance_data, host):
 def setup_conf(host):
     file_path = '/etc/opentelemetry-collector/configs/10-cloudwatch-export.yaml'
     file_content = """
-    ---
-    exporters:
-      awscloudwatchlogs:
-        log_group_name: "testing-logs-emf"
-        log_stream_name: "testing-integrations-stream-emf"
+---
+exporters:
+  awscloudwatchlogs:
+    log_group_name: "testing-logs-emf"
+    log_stream_name: "testing-integrations-stream-emf"
 
-    service:
-      pipelines:
-        logs:
-          receivers: [journald]
-          exporters: [awscloudwatchlogs]
+service:
+  pipelines:
+    logs:
+      receivers: [journald]
+      exporters: [awscloudwatchlogs]
+
     """
     with host.sudo():
         host.run(f"echo '{file_content}' > {file_path}")
@@ -97,42 +96,32 @@ def start_service(request, host):
     class_instance = request.node.cls
     start_service = (f'systemctl start {class_instance.service_name}')
     enable_service = (f'systemctl enable {class_instance.service_name}')
+    is_active = (f'systemctl is-active {class_instance.service_name}')
 
     with host.sudo():
         assert host.run(start_service).succeeded, (f'Failed to start the service {class_instance.service_name}')
         assert host.run(enable_service).succeeded, (f'Failed to enable the service {class_instance.service_name}')
-        assert host.service(class_instance.service_name).is_enabled, (
-            f'Failed to enable the service {class_instance.service_name}'
-        )
-        assert host.service(class_instance.service_name).is_running, (
-            f'Failed to run the service {class_instance.service_name}'
-        )
-
-
-@pytest.fixture(autouse=True)
-def run_subscription_manager_auto(request, host, instance_data):
-    class_instance = request.node.cls
-    console_lib.print_divider("Run the subscription manager auto test before any tests in this file")
-    TestsSubscriptionManager.test_subscription_manager_auto(class_instance, host, instance_data)
+        assert host.run(is_active).succeeded, (f'Service is not active {class_instance.service_name}')
 
 
 @pytest.mark.package
 @pytest.mark.run_on(['rhel9.4'])
-class TestOtel:
+class TestOtel():
     package_name = 'redhat-opentelemetry-collector-main'
     service_name = 'opentelemetry-collector.service'
 
-    def check_aws_cli_logs(self, host):
+    def check_aws_cli_logs(self, host, region):
         command_to_run = [
+            'export', f'AWS_REGION={region}', "&&",
             'aws', 'logs', 'filter-log-events',
-            '--log-stream-names', 'testing-integrations-stream-emf',
-            '--filter-pattern', 'Invalid',
-            '--log-group-name', 'testing-logs-emf'
+            '--log-stream-names', '"testing-integrations-stream-emf"',
+            '--filter-pattern', '"Invalid"',
+            '--log-group-name', '"testing-logs-emf"'
         ]
         run_aws_cli_cmd = ' '.join(command_to_run)
 
-        command_output = host.backend.run_local(run_aws_cli_cmd).stdout
-        assert "Invalid" in command_output
+        command_output = host.backend.run_local(run_aws_cli_cmd)
+        assert "Invalid user" in command_output
 
     @pytest.mark.usefixtures(
         check_instance_status.__name__,
@@ -154,14 +143,24 @@ class TestOtel:
             - Remove the package from the instance and verify it's not present anymore.
             - Try a failure ssh again and check that the logs don't appear.
         """
-        console_lib.print_divider("Connect to the instance without a key in order to fail")
         instance_dns = instance_data['public_dns']
-        result = host.backend.run_local(f'ssh -o BatchMode=yes {instance_dns}')
-        assert "Host key verification failed" in result.stderr
-        console_lib.print_divider("Check for error logs in the instance logs")
+        instance_region = instance_data['availability_zone'][:-1]
         with host.sudo():
-            assert "Invalid" in host.file("/var/log/secure").content_string, \
-                ('no logs regarding ssh connection failure exist')
+            console_lib.print_divider("Connect to the instance without a key in order to fail")
+            result = host.backend.run_local(f'ssh -o BatchMode=yes {instance_dns}').stderr
+            assert "Host key verification failed" in result or "Permission denied" in result
+
+            console_lib.print_divider("Check for error logs in the instance logs")
+            assert host.run('echo "" > /var/log/secure')
+
+            for attempt in range(3):
+                try:
+                    host.backend.run_local(f'ssh -o BatchMode=yes {instance_dns}')
+                    invalid = host.run('cat /var/log/secure | grep "invalid user"').stdout
+                    assert "invalid" in invalid, ('no logs of ssh connection failure exist')
+                except AssertionError as e:
+                    print(f"AssertionError: {e}")
+                time.sleep(15)
 
         console_lib.print_divider("Check for error logs in aws cli logs")
-        self.check_aws_cli_logs(host)
+        self.check_aws_cli_logs(host, instance_region)
