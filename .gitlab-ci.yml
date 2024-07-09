@@ -139,6 +139,7 @@ prepare-rhel-internal-runners:
 .fedora_runners: &fedora_runners
   RUNNER:
     - aws/fedora-39-x86_64
+    - aws/fedora-40-x86_64
   NIGHTLY: [ "false" ]
 
 .image_builder_tests:
