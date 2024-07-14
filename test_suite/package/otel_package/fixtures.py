@@ -7,7 +7,7 @@ from test_suite.generic import helpers
 
 
 @pytest.fixture(scope='class')
-def initialize_veribales(request, host):
+def initialize_variables(request, host):
     self = request.node.cls
     instance_data = helpers.instance_data(host)
     self.instance_id = instance_data['instance_id']
