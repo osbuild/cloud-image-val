@@ -9,6 +9,24 @@ from lib import console_lib
 from lib import test_lib
 
 
+@pytest.fixture(scope='class')
+def check_kdump_fix_condition(host):
+    arch = host.system_info.arch
+
+    if arch == 'aarch64':
+        get_ram_size = host.check_output("free -h | awk '/^Mem:/ {print $2}'")
+        ram_size = (float(get_ram_size[:-2]))
+        kernel_version = host.check_output('uname -r').split("-")[0]
+
+        # BugZilla 2214235
+        if version.parse(kernel_version) < version.parse('4.18.0'):
+            pytest.skip(f'Skip on arm64 with kernel version {kernel_version}')
+
+        if version.parse(kernel_version) > version.parse('4.18.0') and ram_size <= 4.0:
+            pytest.skip('Skip on arm64 if kernel version higher than 4.18.0 '
+                        'while ram size is smaller than 4Gib')
+
+
 @pytest.mark.order(1)
 class TestsGeneric:
     @pytest.mark.run_on(['all'])
@@ -422,6 +440,7 @@ class TestsServices:
                 f'DEFAULTKERNEL should be set to `kernel` in {kernel_config}'
 
     @pytest.mark.run_on(['all'])
+    @pytest.mark.usefixtures('check_kdump_fix_condition')
     def test_no_fail_service(self, host):
         """
         Verify no failed service
@@ -867,6 +886,7 @@ class TestsAuthConfig:
 class TestsKdump:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('check_kdump_fix_condition')
     def test_kdump_status(self, host):
         """
         Verify that kdump is enabled
@@ -877,11 +897,6 @@ class TestsKdump:
         """
         with host.sudo():
             kernel_version = host.check_output('uname -r').split("-")[0]
-            arch = host.system_info.arch
-
-            # BugZilla 2214235
-            if version.parse(kernel_version) < version.parse('4.18.0') and arch == 'aarch64':
-                pytest.skip(f'Skip on arm64 with kernel version {kernel_version}')
 
             print(f' - kexec-tools version: {host.run("rpm -qa | grep kexec-tools").stdout}')
             if 'Kdump is operational' not in host.run('kdumpctl status 2>&1').stdout:
