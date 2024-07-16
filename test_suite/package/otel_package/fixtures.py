@@ -9,7 +9,8 @@ from test_suite.generic import helpers
 @pytest.fixture(scope='class')
 def initialize_variables(request, host):
     self = request.node.cls
-    instance_data = helpers.instance_data(host)
+    values_to_find = [host.backend.hostname] + host.addr(host.backend.hostname).ipv4_addresses
+    instance_data = helpers.__get_instance_data_from_json(key_to_find='address', values_to_find=values_to_find)
     self.instance_id = instance_data['instance_id']
     self.instance_dns = instance_data['public_dns']
     self.instance_region = instance_data['availability_zone'][:-1]

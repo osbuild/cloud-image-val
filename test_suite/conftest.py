@@ -10,6 +10,7 @@ from py.xml import html
 from pytest_html import extras
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from test_suite.generic import helpers
 
 from lib import test_lib
 
@@ -163,16 +164,8 @@ def instance_data(host):
     values_to_find = [host.backend.hostname]
     values_to_find.extend(host.addr(host.backend.hostname).ipv4_addresses)
 
-    return __get_instance_data_from_json(key_to_find='address',
+    return helpers.__get_instance_data_from_json(key_to_find='address',
                                          values_to_find=values_to_find)
-
-
-def __get_instance_data_from_json(key_to_find, values_to_find):
-    with open(os.environ['CIV_INSTANCES_JSON'], 'r') as f:
-        instances_json_data = json.load(f)
-    for instance in instances_json_data.values():
-        if key_to_find in instance.keys() and instance[key_to_find] in values_to_find:
-            return instance
 
 
 @pytest.fixture(autouse=True)
