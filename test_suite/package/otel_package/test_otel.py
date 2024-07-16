@@ -2,7 +2,7 @@ import time
 import pytest
 from lib import console_lib
 from .fixtures import (
-    initialize_veribales, check_instance_status,
+    initialize_variables, check_instance_status,
     install_packages, setup_conf, modify_iam_role, start_service
 )
 
@@ -10,7 +10,7 @@ from .fixtures import (
 @pytest.mark.package
 @pytest.mark.run_on(['rhel9.4'])
 @pytest.mark.usefixtures(
-    initialize_veribales.__name__
+    initialize_variables.__name__
 )
 class TestOtel:
     package_name = 'redhat-opentelemetry-collector-main'
