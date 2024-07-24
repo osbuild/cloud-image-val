@@ -164,7 +164,7 @@ def instance_data(host):
     values_to_find.extend(host.addr(host.backend.hostname).ipv4_addresses)
 
     return helpers.__get_instance_data_from_json(
-        key_to_find='address', values_to_find=values_to_find
+        key_to_find='address', values_to_find=values_to_find, path=helpers.INSTANCES_JSON_PATH
     )
 
 
