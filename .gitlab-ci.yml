@@ -108,23 +108,23 @@ prepare-rhel-internal-runners:
 
 .rhel_runners: &rhel_runners
   RUNNER:
-    - aws/rhel-8.9-ga-x86_64
-    - aws/rhel-9.3-ga-x86_64
+    - aws/rhel-8.10-ga-x86_64
+    - aws/rhel-9.4-ga-x86_64
     - aws/centos-stream-9-x86_64
-    # - aws/rhel-8.4-ga-x86_64 / This was unstable and disabled by Image Builder. So we did the same
   NIGHTLY: [ "false" ]
 
-# Commenting this section until we have GA runners for RHEL-8.10 and RHEL-9.5
-# .rhel_runners_aarch64: &rhel_runners_aarch64
-#  RUNNER:
-#    - aws/rhel-8.10-ga-aarch64
-#    - aws/rhel-9.5-ga-aarch64
-#  INTERNAL_NETWORK: [ "true" ]
-#  NIGHTLY: [ "false" ]
+.rhel_runners_aarch64: &rhel_runners_aarch64
+  RUNNER:
+    - aws/rhel-8.10-ga-aarch64
+    - aws/rhel-9.4-ga-aarch64
+    - aws/centos-stream-9-aarch64
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "false" ]
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
   RUNNER:
     - aws/rhel-9.5-nightly-x86_64
+    - aws/rhel-10.0-nightly-x86_64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
@@ -132,6 +132,7 @@ prepare-rhel-internal-runners:
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
   RUNNER:
     - aws/rhel-9.5-nightly-aarch64
+    - aws/rhel-10.0-nightly-aarch64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
@@ -165,7 +166,7 @@ image-builder-aws:
     matrix:
       - *fedora_runners
       - *rhel_runners
-      # - *rhel_runners_aarch64
+      - *rhel_runners_aarch64
 
 image-builder-aws-nightly-compose:
   stage: test

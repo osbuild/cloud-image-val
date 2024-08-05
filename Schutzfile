@@ -2,7 +2,7 @@
   "fedora-38": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     },
     "repos": [
@@ -79,7 +79,7 @@
   "fedora-39": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     },
     "repos": [
@@ -122,7 +122,7 @@
   "fedora-40": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     },
     "repos": [
@@ -148,56 +148,56 @@
   "rhel-8.4": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-8.8": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-8.9": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-8.10": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-9.2": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-9.3": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-9.4": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
   "rhel-9.5": {
     "dependencies": {
       "osbuild": {
-        "commit": "4f4bddcc758303022ba4a0aa46d9c77d5593a625"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     },
     "repos": [
@@ -240,17 +240,63 @@
       }
     ]
   },
+  "rhel-10.0": {
+    "dependencies": {
+      "osbuild": {
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
+      }
+    },
+    "repos": [
+      {
+        "file": "/etc/yum.repos.d/rhel10internal.repo",
+        "x86_64": [
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-BaseOS",
+            "name": "baseos",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-x86_64-baseos-n10.0-20240715"
+          },
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-AppStream",
+            "name": "appstream",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-x86_64-appstream-n10.0-20240715"
+          },
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-CRB",
+            "name": "crb",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-x86_64-crb-n10.0-20240715"
+          }
+        ],
+        "aarch64": [
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-BaseOS",
+            "name": "baseos",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-aarch64-baseos-n10.0-20240715"
+          },
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-AppStream",
+            "name": "appstream",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-aarch64-appstream-n10.0-20240715"
+          },
+          {
+            "title": "RHEL-10-RPMREPO-NIGHTLY-CRB",
+            "name": "crb",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/rhvpn/el10/el10-aarch64-crb-n10.0-20240715"
+          }
+        ]
+      }
+    ]
+  },
   "centos-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     }
   },
- "centos-stream-9": {
+  "centos-stream-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "2e5a9335c94228726b36f804468651e605d70a88"
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
       }
     },
     "repos": [
@@ -288,6 +334,52 @@
             "title": "crb",
             "name": "crb",
             "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el9/cs9-aarch64-crb-20240514"
+          }
+        ]
+      }
+    ]
+  },
+  "centos-stream-10": {
+    "dependencies": {
+      "osbuild": {
+        "commit": "df83c629201f3955dfb07016c31409d85f376a29"
+      }
+    },
+    "repos": [
+      {
+        "file": "/etc/yum.repos.d/centos.repo",
+        "x86_64": [
+          {
+            "title": "baseos",
+            "name": "baseos",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-x86_64-baseos-20240715"
+          },
+          {
+            "title": "appstream",
+            "name": "appstream",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-x86_64-appstream-20240715"
+          },
+          {
+            "title": "crb",
+            "name": "crb",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-x86_64-crb-20240715"
+          }
+        ],
+        "aarch64": [
+          {
+            "title": "baseos",
+            "name": "baseos",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-aarch64-baseos-20240715"
+          },
+          {
+            "title": "appstream",
+            "name": "appstream",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-aarch64-appstream-20240715"
+          },
+          {
+            "title": "crb",
+            "name": "crb",
+            "baseurl": "https://rpmrepo.osbuild.org/v2/mirror/public/el10/cs10-aarch64-crb-20240715"
           }
         ]
       }
