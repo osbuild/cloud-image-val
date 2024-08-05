@@ -124,7 +124,7 @@ prepare-rhel-internal-runners:
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
   RUNNER:
     - aws/rhel-9.5-nightly-x86_64
-    - aws/rhel-10.0-nightly-x86_64
+    # - aws/rhel-10.0-nightly-x86_64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
@@ -132,7 +132,7 @@ prepare-rhel-internal-runners:
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
   RUNNER:
     - aws/rhel-9.5-nightly-aarch64
-    - aws/rhel-10.0-nightly-aarch64
+    # - aws/rhel-10.0-nightly-aarch64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
