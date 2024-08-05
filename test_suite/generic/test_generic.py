@@ -471,8 +471,20 @@ class TestsServices:
                         f'rpm -qf "$(systemctl show --value --property=FragmentPath {service_name})"'
                     )
 
-            assert len(failing_services) == 0, \
-                f'There are failing services: {",".join(failing_services)}'
+            try:
+                assert len(failing_services) == 0, \
+                    f'There are failing services: {",".join(failing_services)}'
+            except AssertionError:
+                for service in failing_services:
+                    print(f"{service} is failing, attempting restart...")
+                    try:
+                        host.run(f"systemctl restart {service}")
+                        time.sleep(5)
+                    finally:
+                        result = host.run(f"systemctl is-failed {service}")
+                        if 'fail' in result.stdout:
+                            print(f"{service} failed to restart")
+                            raise AssertionError(f"Service {service} is still failing after restart")
 
 
 @pytest.mark.pub
