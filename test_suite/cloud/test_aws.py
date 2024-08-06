@@ -558,25 +558,31 @@ class TestsAWS:
             pytest.skip('Not applicable to Atomic host AMIs')
 
         with host.sudo():
-            attempts = 2
-            for attempt in range(attempts):
-                try:
-                    assert host.run_test('yum -y groupinstall "Development tools"'), \
-                        'Error while installing Development tools group'
-                    break
-                except AssertionError as e:
-                    err_message = "This system is not registered to Red Hat Subscription Management"
-                    if err_message in str(e) and attempt == 0:
-                        host.run(
-                            'echo -e "enabled=0" > /etc/yum/pluginconf.d/subscription-manager.conf'
-                            ' && yum clean all'
-                        )
-                    elif attempt == 1:
-                        raise AssertionError('Error while installing Development tools group after retrying')
+            dev_tools_install_command = 'yum -y groupinstall "Development tools"'
+            result = test_lib.print_host_command_output(host, dev_tools_install_command, capture_result=True)
 
-                package_to_check = 'glibc-devel'
-                assert host.package(package_to_check).is_installed, \
-                    f'{package_to_check} is not installed'
+            if result.failed:
+                err_message = "This system is not registered to Red Hat Subscription Management"
+                if err_message in result.stderr:
+                    print('"Development tools" installation attempt failed. Trying to apply a workaround...')
+                    host.run(
+                        'echo -e "enabled=0" > /etc/yum/pluginconf.d/subscription-manager.conf'
+                        ' && yum clean all'
+                    )
+
+            result_second_attempt = test_lib.print_host_command_output(
+                host, dev_tools_install_command, capture_result=True
+            )
+
+            assert result_second_attempt.succeeded, (
+                'Error while installing Development tools group after two attempts. '
+                'Check test case output for more details.'
+            )
+            print('"Development tools" installed successfully.')
+
+            package_to_check = 'glibc-devel'
+            assert host.package(package_to_check).is_installed, \
+                f'{package_to_check} is not installed'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
