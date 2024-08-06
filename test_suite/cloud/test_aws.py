@@ -558,12 +558,25 @@ class TestsAWS:
             pytest.skip('Not applicable to Atomic host AMIs')
 
         with host.sudo():
-            assert host.run_test('yum -y groupinstall "Development tools"'), \
-                'Error while installing Development tools group'
+            attempts = 2
+            for attempt in range(attempts):
+                try:
+                    assert host.run_test('yum -y groupinstall "Development tools"'), \
+                        'Error while installing Development tools group'
+                    break
+                except AssertionError as e:
+                    err_message = "This system is not registered to Red Hat Subscription Management"
+                    if err_message in str(e) and attempt == 0:
+                        host.run(
+                            'echo -e "enabled=0" > /etc/yum/pluginconf.d/subscription-manager.conf'
+                            ' && yum clean all'
+                        )
+                    elif attempt == 1:
+                        raise AssertionError('Error while installing Development tools group after retrying')
 
-            package_to_check = 'glibc-devel'
-            assert host.package(package_to_check).is_installed, \
-                f'{package_to_check} is not installed'
+                package_to_check = 'glibc-devel'
+                assert host.package(package_to_check).is_installed, \
+                    f'{package_to_check} is not installed'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
