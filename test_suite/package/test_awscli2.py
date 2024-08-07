@@ -10,8 +10,9 @@ from lib import test_lib
 class TestsAwsCli2:
     @pytest.fixture(scope='module', autouse=True)
     def import_aws_credentials(self, host):
+        token_duration = 900  # This is the minimum accepted value in seconds
         # Generate temporary credentials for this test.
-        civ_local_command_to_run = 'aws sts get-session-token --duration-seconds 120 --output json'
+        civ_local_command_to_run = f'aws sts get-session-token --duration-seconds {token_duration} --output json'
 
         result = host.backend.run_local(civ_local_command_to_run)
         assert result.succeeded, \
