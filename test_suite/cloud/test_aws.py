@@ -570,15 +570,15 @@ class TestsAWS:
                         ' && yum clean all'
                     )
 
-            result_second_attempt = test_lib.print_host_command_output(
-                host, dev_tools_install_command, capture_result=True
-            )
+                    result_second_attempt = test_lib.print_host_command_output(
+                        host, dev_tools_install_command, capture_result=True
+                    )
 
-            assert result_second_attempt.succeeded, (
-                'Error while installing Development tools group after two attempts. '
-                'Check test case output for more details.'
-            )
-            print('"Development tools" installed successfully.')
+                    assert result_second_attempt.succeeded, (
+                        'Error while installing Development tools group after two attempts. '
+                        'Check test case output for more details.'
+                    )
+                    print('"Development tools" installed successfully.')
 
             package_to_check = 'glibc-devel'
             assert host.package(package_to_check).is_installed, \
