@@ -559,9 +559,10 @@ class TestsAWS:
 
         with host.sudo():
             dev_tools_install_command = 'yum -y groupinstall "Development tools"'
-            result = test_lib.print_host_command_output(host, dev_tools_install_command, capture_result=True)
+            result = host.run(dev_tools_install_command)
 
-            if result.failed:
+            if result.exit_status != 0:
+                print(f'Command faild with error on first attempt: {result.stderr}')
                 err_message = "This system is not registered to Red Hat Subscription Management"
                 if err_message in result.stderr:
                     print('"Development tools" installation attempt failed. Trying to apply a workaround...')
@@ -570,13 +571,9 @@ class TestsAWS:
                         ' && yum clean all'
                     )
 
-                    result_second_attempt = test_lib.print_host_command_output(
-                        host, dev_tools_install_command, capture_result=True
-                    )
-
-                    assert result_second_attempt.succeeded, (
-                        'Error while installing Development tools group after two attempts. '
-                        'Check test case output for more details.'
+                    assert host.run(dev_tools_install_command).succeeded, (
+                        f'Error while installing Development tools'
+                        f' group after two attempts with error: {result.stderr}'
                     )
                     print('"Development tools" installed successfully.')
 
