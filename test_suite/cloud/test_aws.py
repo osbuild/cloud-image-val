@@ -561,7 +561,7 @@ class TestsAWS:
             dev_tools_install_command = 'yum -y groupinstall "Development tools"'
             result = host.run(dev_tools_install_command)
 
-            if result.exit_status != 0:
+            if result.failed:
                 print(f'Command faild with error on first attempt: {result.stderr}')
                 err_message = "This system is not registered to Red Hat Subscription Management"
                 if err_message in result.stderr:
