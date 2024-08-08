@@ -575,7 +575,7 @@ class TestsAWS:
                         f'Error while installing Development tools '
                         f'group after two attempts with error: {result.stderr}'
                     )
-                    print('"Development tools" installed successfully.')
+            print('"Development tools" installed successfully.')
 
             package_to_check = 'glibc-devel'
             assert host.package(package_to_check).is_installed, \
