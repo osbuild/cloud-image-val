@@ -572,8 +572,8 @@ class TestsAWS:
                     )
 
                     assert host.run(dev_tools_install_command).succeeded, (
-                        f'Error while installing Development tools'
-                        f' group after two attempts with error: {result.stderr}'
+                        f'Error while installing Development tools '
+                        f'group after two attempts with error: {result.stderr}'
                     )
                     print('"Development tools" installed successfully.')
 
