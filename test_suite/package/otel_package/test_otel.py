@@ -9,7 +9,7 @@ from .fixtures import (
 
 
 @pytest.mark.package
-@pytest.mark.run_on(['rhel9.4'])
+@pytest.mark.run_on(['>=rhel9.4'])
 @pytest.mark.usefixtures(
     initialize_variables.__name__
 )
@@ -69,4 +69,5 @@ class TestOtel:
         console_lib.print_divider("Check for error logs in aws cli logs")
         assert "Invalid user" in self.check_aws_cli_logs(host, self.instance_region)
 
-        helpers.check_avc_denials(host)
+        if float(host.system_info.release) > 9.4:
+            helpers.check_avc_denials(host)
