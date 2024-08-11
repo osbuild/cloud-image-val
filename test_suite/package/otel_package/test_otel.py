@@ -1,6 +1,7 @@
 import time
 import pytest
 from lib import console_lib
+from test_suite.generic import helpers
 from .fixtures import (
     initialize_variables, check_instance_status,
     install_packages, setup_conf, modify_iam_role, start_service
@@ -43,6 +44,7 @@ class TestOtel:
             - Make a failure ssh connection to the instance.
             - Check for error messages in the ssh logs cotaining within the instance.
             - Check the error logs with AWS CLI and compare it to the logs in "/var/log/secure".
+            - Check there are no AVC denials.
         Finalize:
             - Remove the package from the instance and verify it's not present anymore.
             - Try a failure ssh again and check that the logs don't appear.
@@ -66,3 +68,5 @@ class TestOtel:
 
         console_lib.print_divider("Check for error logs in aws cli logs")
         assert "Invalid user" in self.check_aws_cli_logs(host, self.instance_region)
+
+        helpers.check_avc_denials(host)
