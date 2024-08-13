@@ -10,7 +10,7 @@ from .fixtures import (
 
 
 @pytest.mark.package
-@pytest.mark.run_on(['>=rhel9.4'])
+@pytest.mark.run_on(['>=rhel9.5'])
 @pytest.mark.usefixtures(
     initialize_variables.__name__
 )
