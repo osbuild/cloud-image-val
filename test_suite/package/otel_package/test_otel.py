@@ -69,5 +69,5 @@ class TestOtel:
         console_lib.print_divider("Check for error logs in aws cli logs")
         assert "Invalid user" in self.check_aws_cli_logs(host, self.instance_region)
 
-        if float(host.system_info.release) > 9.4:
+        if version.parse(host.system_info.release) > version.parse('9.4'):
             helpers.check_avc_denials(host)
