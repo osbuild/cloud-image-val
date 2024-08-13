@@ -1,5 +1,6 @@
 import time
 import pytest
+from packaging import version
 from lib import console_lib
 from test_suite.generic import helpers
 from .fixtures import (
