@@ -2,7 +2,7 @@ import time
 import pytest
 from lib import console_lib
 from test_suite.generic import helpers
-from .fixtures import (
+from test_suite.package.otel_package.fixtures import (
     initialize_variables, check_instance_status,
     install_packages, setup_conf, modify_iam_role, start_service
 )
