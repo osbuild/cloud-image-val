@@ -1,4 +1,5 @@
 import time
+import re
 import pytest
 from lib import console_lib
 from test_suite.generic import helpers
@@ -22,7 +23,7 @@ class TestOtel:
             'export', f'AWS_REGION={self.instance_region}', "&&",
             'aws', 'logs', 'filter-log-events',
             '--log-stream-names', '"testing-integrations-stream-emf"',
-            '--filter-pattern', '"Invalid"',
+            '--filter-pattern', '"invalid"',
             '--log-group-name', '"testing-logs-emf"'
         ]
         run_aws_cli_cmd = ' '.join(command_to_run)
@@ -66,7 +67,8 @@ class TestOtel:
                     print(f"AssertionError: {e}")
                 time.sleep(15)
 
-        console_lib.print_divider("Check for error logs in aws cli logs")
-        assert "Invalid user" in self.check_aws_cli_logs(host, self.instance_region)
+            console_lib.print_divider("Check for error logs in aws cli logs")
+            log_output = self.check_aws_cli_logs(host, self.instance_region).stdout
+            assert re.search(r"invalid\s+user", log_output), "Expected 'invalid user' not found in logs"
 
-        helpers.check_avc_denials(host)
+            helpers.check_avc_denials(host)
