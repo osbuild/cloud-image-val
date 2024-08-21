@@ -80,8 +80,6 @@ service:
 
 @pytest.fixture(scope='function')
 def install_packages(request, host):
-    print("start debug")
-    time.sleep(3600)
     self = request.node.cls
     with host.sudo():
         test_lib.print_host_command_output(host, "rpm -qa | grep opentelemetry*")
