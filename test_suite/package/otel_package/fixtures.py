@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import pytest
 from lib import console_lib
@@ -91,7 +92,8 @@ def install_packages(request, host):
         assert "package redhat-opentelemetry-collector-main is not installed" in cmd_output
         assert host.run(f'ssh {self.instance_dns}').failed
         console_lib.print_divider("Verify logs don't appear")
-        assert "Invalid user" not in self.check_aws_cli_logs(self, host, self.instance_region)
+        log_output = self.check_aws_cli_logs(self, host, self.instance_region).stdout
+        assert re.search(r"invalid\s+user", log_output), "Expected 'invalid user' not found in logs"
     request.addfinalizer(finalizer)
 
 
