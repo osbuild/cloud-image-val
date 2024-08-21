@@ -82,8 +82,7 @@ service:
 @pytest.fixture(scope='function')
 def install_packages(request, host):
     self = request.node.cls
-    install_cmd = (f'dnf copr enable frzifus/{self.package_name} -y'
-                   f' && dnf install -y opentelemetry-collector')
+    install_cmd = ('dnf install -y opentelemetry-collector')
 
     with host.sudo():
         assert host.run(install_cmd).succeeded, f'Failed to install the package {self.package_name}'
