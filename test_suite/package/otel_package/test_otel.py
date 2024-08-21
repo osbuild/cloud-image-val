@@ -4,7 +4,7 @@ from lib import console_lib
 from test_suite.generic import helpers
 from test_suite.package.otel_package.fixtures import (
     initialize_variables, check_instance_status,
-    install_packages, setup_conf, modify_iam_role, start_service, run_subscription_manager_auto
+    install_packages, setup_conf, modify_iam_role, start_service
 )
 
 
@@ -29,7 +29,6 @@ class TestOtel:
         return host.backend.run_local(run_aws_cli_cmd)
 
     @pytest.mark.usefixtures(
-        run_subscription_manager_auto.__name__,
         check_instance_status.__name__,
         install_packages.__name__,
         setup_conf.__name__,
