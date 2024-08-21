@@ -30,8 +30,8 @@ class TestOtel:
 
     @pytest.mark.usefixtures(
         check_instance_status.__name__,
-        install_packages.__name__,
         setup_conf.__name__,
+        install_packages.__name__,
         modify_iam_role.__name__,
         start_service.__name__
     )
