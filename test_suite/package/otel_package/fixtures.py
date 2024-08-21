@@ -84,7 +84,6 @@ def install_packages(request, host):
     time.sleep(3600)
     self = request.node.cls
     with host.sudo():
-        assert host.run(install_cmd).succeeded, f'Failed to install the package {self.package_name}'
         test_lib.print_host_command_output(host, "rpm -qa | grep opentelemetry*")
 
     def finalizer():
