@@ -80,6 +80,8 @@ service:
 
 @pytest.fixture(scope='function')
 def install_packages(request, host):
+    print("start debug")
+    time.sleep(3600)
     self = request.node.cls
     install_cmd = ('dnf install -y opentelemetry-collector')
 
