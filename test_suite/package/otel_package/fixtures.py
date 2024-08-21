@@ -4,6 +4,7 @@ import pytest
 from lib import console_lib
 from lib import test_lib
 from test_suite.generic import helpers
+from test_suite.generic.test_generic import TestsSubscriptionManager
 
 
 @pytest.fixture(scope='class')
@@ -110,3 +111,10 @@ def start_service(request, host):
         assert host.run(start_service).succeeded, (f'Failed to start the service {self.service_name}')
         assert host.run(enable_service).succeeded, (f'Failed to enable the service {self.service_name}')
         assert host.run(is_active).succeeded, (f'Service is not active {self.service_name}')
+
+
+@pytest.fixture(autouse=True)
+def run_subscription_manager_auto(request, host, instance_data):
+    class_instance = request.node.cls
+    console_lib.print_divider("Run the subscription manager auto test before any tests in this file")
+    TestsSubscriptionManager.test_subscription_manager_auto(class_instance, host, instance_data)
