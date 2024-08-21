@@ -83,8 +83,6 @@ def install_packages(request, host):
     print("start debug")
     time.sleep(3600)
     self = request.node.cls
-    install_cmd = ('dnf install -y opentelemetry-collector')
-
     with host.sudo():
         assert host.run(install_cmd).succeeded, f'Failed to install the package {self.package_name}'
         test_lib.print_host_command_output(host, "rpm -qa | grep opentelemetry*")
