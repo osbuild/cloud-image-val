@@ -260,7 +260,7 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
         {
             "ami": "$AMI_IMAGE_ID",
             "region": "us-east-1",
-            "instance_type": "m6g.large",
+            "instance_type": "t3.medium",
             "username": "$SSH_USER",
             "name": "civ-pkg-testing-image",
             "spot_instance": true
@@ -270,7 +270,7 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
 EOF
 
 if [ "$ARCH" == "aarch64" ]; then
-    sed -i s/m6g.large/t3.medium/ "${TEMPDIR}/resource-file.json"
+    sed -i s/t3.medium/m6g.large/ "${TEMPDIR}/resource-file.json"
 fi
 
 if [ -z "$CIV_CONFIG_FILE" ]; then
