@@ -260,7 +260,7 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
         {
             "ami": "$AMI_IMAGE_ID",
             "region": "us-east-1",
-            "instance_type": "t3.medium",
+            "instance_type": "m6g.large",
             "username": "$SSH_USER",
             "name": "civ-pkg-testing-image",
             "spot_instance": true
