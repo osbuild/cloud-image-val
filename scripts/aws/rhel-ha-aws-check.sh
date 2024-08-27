@@ -25,9 +25,16 @@ RHELMAJOR=$(rpm -q --queryformat="%{VERSION}" \
 # fence-agents-aws - Fence agent for Amazon AWS
 #              pcs - Pacemaker Configuration System
 #  python-requests - HTTP library, written in Python (RHEL7 only)
-HAPKGS="awscli bind-utils fence-agents-aws pcs"
+HAPKGS="bind-utils fence-agents-aws pcs"
 if [ ${RHELMAJOR} -lt 8 ]; then
     HAPKGS+=" python-requests"
+fi
+# awscli was dropped from RHEL-9
+# https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/considerations_in_adopting_rhel_9/index#assembly_changes-to-packages_considerations-in-adopting-RHEL-9
+if [ ${RHELMAJOR} -lt 9 ]; then
+    HAPKGS+=" awscli"
+else
+    HAPKGS+=" python3-pip resource-agents-cloud"
 fi
 
 # For each required package:
@@ -64,6 +71,12 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Install awscli from pip
+if [ ${RHELMAJOR} -ge 9 ]; then
+    python -m venv /tmp/test_env
+    source /tmp/test_env/bin/activate
+    pip install -U awscli
+fi
 # Verify that the "pacemaker-libs" package created the "hacluster" user
 id hacluster
 if [ $? -ne 0 ]; then
@@ -135,7 +148,11 @@ pcs resource cleanup
 pcs stonith cleanup
 pcs cluster stop --request-timeout=20 --force
 pcs cluster disable
-pcs cluster destroy
+if [ ${RHELMAJOR} -lt 9 ]; then
+    pcs cluster destroy
+else
+    pcs cluster destroy --force
+fi
 
 # Authenticate local pcs/pcsd against pcsd on the local node
 if [ ${RHELMAJOR} -lt 8 ]; then
@@ -383,7 +400,11 @@ if [ $? -ne 0 ]; then
 fi
 
 # Permanently destroy the cluster on the local node
-pcs cluster destroy
+if [ ${RHELMAJOR} -lt 9 ]; then
+    pcs cluster destroy
+else
+    pcs cluster destroy --force
+fi
 if [ $? -ne 0 ]; then
     echo "Cluster destroy failed."
     exit 1
@@ -426,5 +447,11 @@ for HAPKG in ${HAPKGS}; do
     fi
 done
 
+# Install awscli from pip
+if [ ${RHELMAJOR} -ge 9 ]; then
+    pip uninstall -y awscli
+    deactivate
+    rm -rf /tmp/test_env
+fi
 # Success
 exit 0
