@@ -27,7 +27,9 @@ RHELMAJOR=$(rpm -q --queryformat="%{VERSION}" \
 #  python-requests - HTTP library, written in Python (RHEL7 only)
 HAPKGS="bind-utils fence-agents-aws pcs"
 if [ ${RHELMAJOR} -lt 8 ]; then
-    HAPKGS+=" python-requests"
+    #subscription-manager config will be changed without python-requests installed, eg. auto-reg disabled
+    echo "python-requests is required by subscription-manager, cloudinit,redhat-cloud-client-configuration, do not remove/install it in RHEL-7"
+    #HAPKGS+=" python-requests"
 fi
 # awscli was dropped from RHEL-9
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/considerations_in_adopting_rhel_9/index#assembly_changes-to-packages_considerations-in-adopting-RHEL-9
@@ -447,7 +449,7 @@ for HAPKG in ${HAPKGS}; do
     fi
 done
 
-# Install awscli from pip
+# Remove awscli
 if [ ${RHELMAJOR} -ge 9 ]; then
     pip uninstall -y awscli
     deactivate
