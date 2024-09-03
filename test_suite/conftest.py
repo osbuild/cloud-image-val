@@ -11,7 +11,7 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from test_suite.generic import helpers
 
-from lib import test_lib
+from lib import test_lib, aws_lib
 
 
 def __get_host_info(host):
@@ -156,6 +156,13 @@ def rhel_high_availability_only(host):
 def rhel_atomic_only(host):
     if not test_lib.is_rhel_atomic_host(host):
         pytest.skip('Image is not atomic RHEL')
+
+
+@pytest.fixture
+def rhel_aws_marketplace_only(host, instance_data):
+    # Check if the image is AWS Stratosphere. If so, skip the test.
+    if instance_data['cloud'] == 'aws' and aws_lib.is_rhel_aws_stratosphere(host):
+        pytest.skip('Not applicable to RHEL AWS Stratosphere images.')
 
 
 @pytest.fixture(scope='function', autouse=True)

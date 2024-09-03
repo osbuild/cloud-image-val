@@ -4,13 +4,12 @@ import re
 import pytest
 from packaging import version
 
-from lib import test_lib
+from lib import test_lib, aws_lib
 
 
 @pytest.fixture
 def instance_data_aws_web(host):
-    instance_document_url = 'http://169.254.169.254/latest/dynamic/instance-identity/document'
-    return json.loads(host.check_output(f'curl -s {instance_document_url}'))
+    return aws_lib.get_aws_instance_identity_from_web(host)
 
 
 @pytest.fixture
@@ -553,6 +552,7 @@ class TestsAWS:
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_aws_marketplace_only')
     def test_yum_group_install(self, host):
         if test_lib.is_rhel_atomic_host(host):
             pytest.skip('Not applicable to Atomic host AMIs')
