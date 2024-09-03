@@ -35,7 +35,7 @@ class TestsGeneric:
         Check there is no avc denials (selinux).
         """
         if (host.system_info.distribution == 'rhel' and float(host.system_info.release) == 9.4) \
-           or (host.system_info.distribution == 'centos' and host.system_info.release == "9"):
+                or (host.system_info.distribution == 'centos' and host.system_info.release == "9"):
             pytest.skip('RHEL-24346: Skipping on RHEL-9.4 due to a known issue with NetworkManager.')
 
         # CLOUDX-320: This "if" is pending to be removed
@@ -483,6 +483,7 @@ class TestsServices:
 @pytest.mark.pub
 @pytest.mark.run_on(['rhel'])
 @pytest.mark.exclude_on(['<rhel8.3'])
+@pytest.mark.usefixtures('rhel_aws_marketplace_only')
 class TestsSubscriptionManager:
     def test_subscription_manager_auto(self, host, instance_data):
         """
@@ -640,6 +641,7 @@ class TestsCloudInit:
 
 @pytest.mark.pub
 @pytest.mark.order(3)
+@pytest.mark.usefixtures('rhel_aws_marketplace_only')
 class TestsYum:
     # TODO: confirm if this test needs to be deprecated
     @pytest.mark.run_on(['rhel', 'fedora'])
@@ -920,6 +922,7 @@ class TestsRhelEls:
     A set of test cases that should only run if RHEL minor release is the last one and will enter into ELS mode.
     For example, for RHEL-8, the last minor release is RHEL-8.10, and there won't be any further minor releases for major version 8.
     """
+
     def test_rhui_pkg_is_not_e4s(self, host):
         """
         Make sure the RHUI package is not "e4s".
