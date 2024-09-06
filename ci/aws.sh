@@ -289,8 +289,9 @@ sudo "${CONTAINER_RUNTIME}" run \
     -v "${TEMPDIR}":/tmp:Z \
     "${CONTAINER_CLOUD_IMAGE_VAL}" \
     python cloud-image-val.py \
-    -c /tmp/civ_config.yml \
-    && RESULTS=1 || RESULTS=0
+    -c /tmp/civ_config.yml
+
+CIV_EXIT_CODE=$?
 
 mv "${TEMPDIR}"/report.html "${ARTIFACTS}"
 
@@ -306,12 +307,23 @@ sudo composer-cli compose delete "${COMPOSE_ID}" > /dev/null
 
 # Use the return code of the smoke test to determine if we passed or failed.
 # On rhel continue with the cloudapi test
-if [[ $RESULTS == 1 ]]; then
-    greenprint "💚 Success"
-    exit 0
-elif [[ $RESULTS != 1 ]]; then
-    redprint "❌ Failed"
-    exit 1
-fi
+case $CIV_EXIT_CODE in
+    0)
+        greenprint "💚 Success"
+        exit 0
+        ;;
+    5)
+        echo "❗ No tests were run"
+        exit 0
+        ;;
+    100)
+        redprint "❌ Failed (cloud deployment/destroy issues)"
+        exit 1
+        ;;
+    *)
+        redprint "❌ Failed (exit code: ${CIV_EXIT_CODE})"
+        exit 1
+        ;;
+esac
 
 exit 0
