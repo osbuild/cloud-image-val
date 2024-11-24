@@ -298,7 +298,7 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel'])
     def test_rhui_certificate_date(self, host):
         """
-        Verify /etc/pki/rhui/product/content{*}.crt exists.
+        Verify "key-base-sap-ha.pem", "content-base-sap-ha.crt" files exists in /etc/pki/rhui/product/
         Starting from RHEL 8.8 & 9.2, the certificate file was renamed to content-base.crt.
         Check end time of the certificate to see if it has expired
         """
@@ -313,7 +313,7 @@ class TestsAzure:
             cert_found = False
 
             if test_lib.is_rhel_sap(host):
-                cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
+                cert_file = ['/etc/pki/rhui/product/content-sap-ha.crt', '/etc/pki/rhui/product/content-base-sap-ha.crt']
                 cert_found = host.file(cert_file).exists
             else:
                 possible_cert_files = [
