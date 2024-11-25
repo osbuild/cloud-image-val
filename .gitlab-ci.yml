@@ -66,7 +66,8 @@ prepare-rhel-internal-runners:
       - RUNNER:
           # NOTE: 1 runner prepares for all arches b/c subsequent jobs download
           # artifacts from all previous jobs and the last one wins
-          - aws/rhel-9.5-nightly-x86_64
+          - aws/rhel-9.6-nightly-x86_64
+          - aws/rhel-10.0-nightly-x86_64
         INTERNAL_NIGHTLY: [ "internal" ]
         INTERNAL_NETWORK: [ "true" ]
         NIGHTLY: [ "true" ]
@@ -110,6 +111,7 @@ prepare-rhel-internal-runners:
   RUNNER:
     - aws/rhel-8.10-ga-x86_64
     - aws/rhel-9.4-ga-x86_64
+    # - aws/rhel-9.5-ga-x86_64
     - aws/centos-stream-9-x86_64
     - aws/centos-stream-10-x86_64
   NIGHTLY: [ "false" ]
@@ -118,6 +120,7 @@ prepare-rhel-internal-runners:
   RUNNER:
     - aws/rhel-8.10-ga-aarch64
     - aws/rhel-9.4-ga-aarch64
+    # - aws/rhel-9.5-ga-aarch64
     - aws/centos-stream-9-aarch64
     - aws/centos-stream-10-aarch64
   INTERNAL_NETWORK: [ "true" ]
