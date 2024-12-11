@@ -63,12 +63,15 @@ function get_last_passed_commit {
         base_curl="curl --header PRIVATE-TOKEN:${GITLAB_API_TOKEN}"
 
         # To get the schedule id use the ../pipeline_schedule endpoint
-        if [[ ${VERSION_ID%.*} == "8" ]]; then
-            # RHEL 8 scheduled pipeline id
-            schedule_id="233735"
-        else
+        if [[ ${VERSION_ID%.*} == "9" ]]; then
             # RHEL 9 scheduled pipeline id
             schedule_id="233736"
+        elif [[ ${VERSION_ID%.*} == "10" ]]; then
+            # RHEL 10 scheduled pipeline id (FYI - it was used for RHEL 8 before)
+            schedule_id="233735"
+        else
+            echo "No scheduled pipeline defined for RHEL $VERSION_ID"
+            exit 1
         fi
 
         # Last executed pipeline ID
