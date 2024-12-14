@@ -183,7 +183,10 @@ class AWSConfigBuilder(BaseConfigBuilder):
     def __new_aws_spot_instance(self, instance):
         if not instance['instance_type']:
             # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
-            instance['instance_type'] = 't3.medium'
+            # instance['instance_type'] = 't3.medium'
+            # test the new regions capacity limits
+            instance['instance_type'] = 't3.large'
+            
 
         name_tag_value = instance['name'].replace('.', '-')
         fleet_request_name = self.create_resource_name(['spot', 'fleet', 'request'])
