@@ -401,31 +401,39 @@ class TestsAWS:
         assert instance_data_aws_web['region'] in instance_data['availability_zone'], \
             'Unexpected region for deployed instance'
 
+        # Check instance architecture
         arch = instance_data_aws_web['architecture']
         if arch == 'arm64':
             arch = 'aarch64'
-
         assert arch == host.system_info.arch, \
             'Unexpected architecture for deployed instance'
 
+        # Check Billing Codes
         ami_name = instance_data['name']
+        obtained_billing_codes = instance_data_aws_web['billingProducts']
+        if obtained_billing_codes:
+            expected_billing_codes = []
+            if test_lib.is_rhel_high_availability(host) and 'Access2' not in ami_name:
+                # RHELDST-4222, on-demand (hourly) has the billing code for RHEL and for HA
+                expected_billing_codes = ['bp-79a54010', 'bp-6fa54006']
+            elif 'Hourly2' in ami_name:
+                expected_billing_codes = ['bp-6fa54006']
+            elif 'Access2' in ami_name:
+                # Cloud Access billing code, means don't charge for the OS (so it can apply to anything cloud Access)
+                expected_billing_codes = ['bp-63a5400a']
+            else:
+                pytest.skip(
+                    'Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
 
-        billing_codes = []
-        if test_lib.is_rhel_high_availability(host) and 'Access2' not in ami_name:
-            # RHELDST-4222, on-demand (hourly) has the billing code for RHEL and for HA
-            billing_codes = ['bp-79a54010', 'bp-6fa54006']
-        elif 'Hourly2' in ami_name:
-            billing_codes = ['bp-6fa54006']
-        elif 'Access2' in ami_name:
-            # Cloud Access billing code, means don't charge for the OS (so it can apply to anything cloud Access)
-            billing_codes = ['bp-63a5400a']
-        else:
-            pytest.skip(
-                'Unable to decide billing codes as no "Hourly2" or "Access2" found in AMI name')
+            for code in expected_billing_codes:
+                assert code in obtained_billing_codes, \
+                    f'Expected billing code "{code}" not found in instance document data'
 
-        for code in billing_codes:
-            assert code in instance_data_aws_web['billingProducts'], \
-                'Expected billing code not found in instance document data'
+        obtained_marketplace_product_codes = list(instance_data_aws_web['marketplaceProductCodes'])
+
+        print(f'marketplaceProductCodes = {obtained_billing_codes}')
+
+        assert len(obtained_marketplace_product_codes) > 1, 'List of marketplaceProductCodes is empty'
 
     @pytest.mark.run_on(['rhel'])
     def test_cmdline_nvme_io_timeout(self, host):
