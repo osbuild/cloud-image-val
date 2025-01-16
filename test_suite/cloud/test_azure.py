@@ -313,28 +313,21 @@ class TestsAzure:
             cert_found = False
 
             if test_lib.is_rhel_sap(host):
-                possible_sap_cert_files = [
+                possible_cert_files = [
                         '/etc/pki/rhui/product/content-sap-ha.crt',
                         '/etc/pki/rhui/product/content-base-sap-ha.crt'
-                        ]
-                for cert in possible_sap_cert_files:
-                    if host.file(cert).exists:
-                        cert_file = cert
-                        cert_found = True
-                        break
-#                cert_found = host.file(cert_file).exists
-
+                ]
             else:
                 possible_cert_files = [
                     '/etc/pki/rhui/product/content.crt',
                     '/etc/pki/rhui/product/content-base.crt'
                 ]
 
-                for cert in possible_cert_files:
-                    if host.file(cert).exists:
-                        cert_file = cert
-                        cert_found = True
-                        break
+            for cert in possible_cert_files:
+                if host.file(cert).exists:
+                    cert_file = cert
+                    cert_found = True
+                    break
 
             assert cert_found, 'The RHUI certificate was not found.'
 
