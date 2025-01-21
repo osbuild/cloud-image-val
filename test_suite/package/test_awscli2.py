@@ -32,7 +32,7 @@ class TestsAwsCli2:
                 f'Could not configure temporary AWS credentials. Error: {result.stderr}'
 
     def test_awscli2_version(self, host):
-        expected_version = '2.15.31'
+        expected_version = '2.22.9'
 
         result = test_lib.print_host_command_output(host,
                                                     'aws --version',
