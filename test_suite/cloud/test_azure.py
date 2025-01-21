@@ -314,8 +314,8 @@ class TestsAzure:
 
             if test_lib.is_rhel_sap(host):
                 possible_cert_files = [
-                        '/etc/pki/rhui/product/content-sap-ha.crt',
-                        '/etc/pki/rhui/product/content-base-sap-ha.crt'
+                    '/etc/pki/rhui/product/content-sap-ha.crt',
+                    '/etc/pki/rhui/product/content-base-sap-ha.crt'
                 ]
             else:
                 possible_cert_files = [
