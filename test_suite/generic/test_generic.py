@@ -704,8 +704,8 @@ class TestsNetworking:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
-    @pytest.mark.run_on(['rhel', 'fedora35', 'centos'])
-    def test_eth0_network_adapter_setup(self, host):
+    @pytest.mark.run_on(['rhel', 'centos'])
+    def test_eth0_network_adapter_setup(self, host, instance_data):
         """
         Make sure that eht0 default adapter is correctly setup:
             1. NETWORKING=yes in /etc/sysconfig/network
@@ -713,6 +713,9 @@ class TestsNetworking:
 
         Does not apply to >fedora35: https://fedoramagazine.org/converting-networkmanager-from-ifcfg-to-keyfiles/
         """
+        if instance_data['cloud'] == 'azure' and \
+                version.parse(host.system_info.release).major == 9:
+            pytest.skip('Skipping due to cloud-init known issue in RHEL-9.x. See COMPOSER-2437 for details.')
         device_name = 'eth0'
 
         with host.sudo():
