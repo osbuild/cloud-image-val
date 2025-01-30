@@ -63,7 +63,7 @@ class TestOpenTofuController:
         # Assert
         mock_popen.assert_called_once_with('tofu show --json')
         mock_read.assert_called_once()
-        mock_loads.called_once_with('test_json')
+        mock_loads.assert_called_once_with('test_json')
         mock_get_instances_cloud.assert_called_once_with(test_resource)
 
         assert result == test_instance

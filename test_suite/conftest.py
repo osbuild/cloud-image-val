@@ -216,13 +216,22 @@ def pytest_html_results_table_row(report, cells):
     cells.insert(3, html.td(getattr(report, 'image', '')))
 
 
+def pytest_html_duration_format(duration):
+    """
+    Format the duration of tests in the HTML report.
+    The duration is given in seconds as a float.
+    You can customize the output format here.
+    """
+    if duration < 1:
+        return f"{duration * 1000:.2f} ms"  # Display in milliseconds
+    else:
+        return f"{duration:.2f} s"  # Display in seconds
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
-
-    # Set the test cases 'Duration' format
-    setattr(report, 'duration_formatter', '%S.%f sec')
 
     # Fill 'Test Case' column
     report.test_case = f'{str(item.parent.name)}::{str(item.function.__name__)}'
