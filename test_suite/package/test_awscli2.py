@@ -1,8 +1,8 @@
 import json
-
 import pytest
 
 from lib import test_lib
+from packaging import version
 
 
 @pytest.mark.package
@@ -32,7 +32,13 @@ class TestsAwsCli2:
                 f'Could not configure temporary AWS credentials. Error: {result.stderr}'
 
     def test_awscli2_version(self, host):
-        expected_version = '2.22.9'
+        expected_version_rhel_9 = '2.15.31'
+        expected_version_rhel_10 = '2.22.9'
+
+        if version.parse(host.system_info.release).major == 10:
+            expected_version = expected_version_rhel_10
+        else:
+            expected_version = expected_version_rhel_9
 
         result = test_lib.print_host_command_output(host,
                                                     'aws --version',
