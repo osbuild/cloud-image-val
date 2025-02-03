@@ -69,7 +69,7 @@ if __name__ == '__main__':
     os.environ['PYTHONPATH'] = ':'.join(
         [f'{os.path.dirname(__file__)}', os.environ['PYTHONPATH']])
 
-    config_manager = CIVConfig(args)
+    config_manager = CIVConfig(args.__dict__)
 
     config_manager.update_config()
     config_manager.validate_config()

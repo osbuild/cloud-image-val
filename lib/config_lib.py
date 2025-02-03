@@ -9,11 +9,17 @@ class CIVConfig:
 
     config_file_arg_name = 'config_file'
 
-    def __init__(self, args=None):
-        if args and args.config_file:
-            self.config_path = args.config_file
+    def __init__(self, args_dict: dict = None):
+        if args_dict is None:
+            return
 
-        self.command_line_args = args.__dict__
+        if self.config_file_arg_name in args_dict and \
+           args_dict[self.config_file_arg_name] is not None:
+            self.config_path = args_dict[self.config_file_arg_name]
+        elif os.path.exists(self.config_path):
+            os.system(f'rm -f {self.config_path}')
+
+        self.command_line_args = args_dict
 
     def validate_config(self):
         with open(self.config_path) as config_file:

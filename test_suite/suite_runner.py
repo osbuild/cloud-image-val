@@ -21,8 +21,8 @@ class SuiteRunner:
 
     def __init__(self,
                  cloud_provider,
-                 instances,
-                 ssh_config,
+                 instances: dict,
+                 ssh_config: str,
                  parallel=True,
                  debug=False):
         self.cloud_provider = cloud_provider
@@ -53,8 +53,8 @@ class SuiteRunner:
     def compose_pytest_command(self,
                                test_suite_paths,
                                output_filepath,
-                               test_filter,
-                               include_markers):
+                               test_filter=None,
+                               include_markers=None):
         all_hosts = self.get_all_instances_hosts_with_users()
 
         if not test_suite_paths:

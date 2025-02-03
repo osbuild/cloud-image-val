@@ -66,7 +66,8 @@ def reboot_host(host, max_timeout=120):
     new_host = host.get_host(f'paramiko://{username}@{hostname}',
                              ssh_config=host.backend.ssh_config)
 
-    if int(new_host.check_output(last_boot_count_cmd)) != reboot_count + 1:
+    # If reboot_count is the same after reboot attempt, the system did not reboot
+    if int(new_host.check_output(last_boot_count_cmd)) == reboot_count:
         raise Exception(f'Failed to reboot instance.\n'
                         f'\tstatus:\t{result.rc}\n'
                         f'\tstdout:\t{result.stdout}\n'

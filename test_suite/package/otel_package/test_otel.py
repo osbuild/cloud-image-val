@@ -52,7 +52,7 @@ class TestOtel:
         """
         with host.sudo():
             console_lib.print_divider("Connect to the instance without a key in order to fail")
-            result = host.backend.run_local(f'ssh -o BatchMode=yes {self.instance_dns}').stderr
+            result = host.backend.run_local(f'ssh -o BatchMode=yes {self.instance_address}').stderr
             assert "Host key verification failed" in result or "Permission denied" in result
 
             console_lib.print_divider("Check for error logs in the instance logs")
@@ -60,7 +60,7 @@ class TestOtel:
 
             for attempt in range(3):
                 try:
-                    host.backend.run_local(f'ssh -o BatchMode=yes {self.instance_dns}')
+                    host.backend.run_local(f'ssh -o BatchMode=yes {self.instance_address}')
                     invalid = host.run('cat /var/log/secure | grep "invalid user"').stdout
                     assert "invalid" in invalid, ('no logs of ssh connection failure exist')
                 except AssertionError as e:

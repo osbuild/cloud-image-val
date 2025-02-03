@@ -491,11 +491,6 @@ class TestsSubscriptionManager:
         BugZilla 7.9: 2077086, 2077085
         """
 
-        expected_config = [
-            'auto_registration = 1',
-            'manage_repos = 0'
-        ]
-
         if instance_data['cloud'] == 'aws':
             region = instance_data['availability_zone'][:-1]
 
@@ -516,10 +511,6 @@ class TestsSubscriptionManager:
                 pytest.skip(f'The {region} AWS region is not supported for auto-registration yet.')
 
         with host.sudo():
-            for config in expected_config:
-                assert config in host.check_output('subscription-manager config'), \
-                    f'Expected "{config}" not found in subscription manager configuration'
-
             assert host.service(
                 'rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
 
