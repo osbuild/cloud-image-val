@@ -254,6 +254,23 @@ class TestsGeneric:
 
             assert host.file(grub2_file).linked_to == linked_to
 
+    @pytest.mark.run_on(['rhel10'])
+    def test_net_ifnames_usage(self, host):
+        """
+        Check that net.ifnames=0 is not used as a kernel boot parameter
+        Jira: CLOUDX-979
+        """
+
+        kernel_boot_param = 'net.ifnames=0'
+        cmdline_file = '/proc/cmdline'
+        grub_default_file = '/etc/default/grub'
+
+        assert not host.file(cmdline_file).contains(kernel_boot_param), \
+            f'There is unexpected {kernel_boot_param} in kernel real-time boot parameters.'
+
+        assert not host.file(grub_default_file).contains(kernel_boot_param), \
+            f'{kernel_boot_param} is found in {grub_default_file}!'
+
     @pytest.mark.run_on(['rhel'])
     def test_tty0_config(self, host):
         """
