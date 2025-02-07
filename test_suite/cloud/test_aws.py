@@ -367,6 +367,7 @@ class TestsAWS:
                         f'{line} must not be specified in AMIs that are not SAP'
 
     @pytest.mark.run_on(['all'])
+    @pytest.mark.jira_skip(["CLOUDX-994"])
     def test_hostkey_permissions(self, host):
         """
         Check that ssh files permission set are correct.
