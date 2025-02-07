@@ -12,7 +12,7 @@ stages:
     - sudo systemctl start docker
     - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
   variables:
-    RUNNER: aws/fedora-39-x86_64
+    RUNNER: aws/fedora-40-x86_64
     INTERNAL_NETWORK: "true"
     QUAY_IO_CONTAINER_URL: quay.io/cloudexperience/cloud-image-val
   tags:
@@ -111,6 +111,8 @@ prepare-rhel-internal-runners:
     - aws/rhel-8.10-ga-x86_64
     - aws/rhel-9.4-ga-x86_64
     # - aws/rhel-9.5-ga-x86_64
+    - aws/rhel-9.6-nightly-x86_64
+    - aws/rhel-10.0-nightly-x86_64
     - aws/centos-stream-9-x86_64
     - aws/centos-stream-10-x86_64
   NIGHTLY: [ "false" ]
@@ -120,6 +122,8 @@ prepare-rhel-internal-runners:
     - aws/rhel-8.10-ga-aarch64
     - aws/rhel-9.4-ga-aarch64
     # - aws/rhel-9.5-ga-aarch64
+    - aws/rhel-9.6-nightly-x86_64
+    - aws/rhel-10.0-nightly-x86_64
     - aws/centos-stream-9-aarch64
     - aws/centos-stream-10-aarch64
   INTERNAL_NETWORK: [ "true" ]
@@ -143,8 +147,7 @@ prepare-rhel-internal-runners:
 
 .fedora_runners: &fedora_runners
   RUNNER:
-    - aws/fedora-39-x86_64
-    - aws/fedora-40-x86_64
+    - aws/fedora-41-x86_64
   NIGHTLY: [ "false" ]
 
 .image_builder_tests:
