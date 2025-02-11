@@ -205,6 +205,7 @@ class OpenTofuController:
             result = subprocess.run(
                 f'tofu destroy -target={resource_id} -auto-approve',
                 shell=True,
+                executable='/bin/bash',
                 capture_output=True
             )
             if result.returncode == 0:
@@ -227,11 +228,13 @@ class OpenTofuController:
             subprocess.run(
                f'tofu refresh {self.debug_suffix}',
                shell=True,
+               executable='/bin/bash',
                capture_output=True
             )
             result = subprocess.run(
                 f'tofu destroy -auto-approve {self.debug_suffix}',
                 shell=True,
+                executable='/bin/bash',
                 capture_output=True
             )
             if result.returncode == 0:
