@@ -261,25 +261,53 @@ class TestOpenTofuController:
 
     def test_destroy_resource(self, mocker, tf_controller):
         # Arrange
-        mock_os_system = mocker.patch('os.system', return_value='')
+        #mock_os_system = mocker.patch('os.system', return_value='')
         test_resource_id = 'test_resource'
-        tf_destroy_resource = f'tofu destroy -target={test_resource_id}'
+        tf_destroy_resource = f'tofu destroy -target={test_resource_id} -auto-approve'
+
+        mock_os_system = mocker.patch(
+            'os.system',
+            side_effect=[1, 1, 0]
+        )
+
+        mocker.patch('time.sleep')
 
         # Act
         result = tf_controller.destroy_resource(test_resource_id)
 
         # Assert
         assert result is None
-        mock_os_system.assert_called_once_with(tf_destroy_resource)
+        expected_calls = [mocker.call(tf_destroy_resource)] * 3
+        mock_os_system.assert_has_calls(expected_calls)
+        assert mock_os_system.call_count == 3
+        #mock_os_system.assert_called_once_with(tf_destroy_resource)
 
     def test_destroy_infra(self, mocker, tf_controller):
         # Arrange
-        mock_os_system = mocker.patch('os.system', return_value='')
+        #mock_os_system = mocker.patch('os.system', return_value='')
         tf_destroy_infra = f'tofu destroy -auto-approve {tf_controller.debug_suffix}'
+        tf_refresh = f'tofu refresh {tf_controller.debug_suffix}'
+
+        mock_os_system = mocker.patch(
+            'os.system',
+            side_effect=[1, 1, 0]
+        )
+
+        mocker.patch('time.sleep')
 
         # Act
         result = tf_controller.destroy_infra()
 
         # Assert
         assert result is None
-        mock_os_system.assert_called_once_with(tf_destroy_infra)
+        expected_calls = [
+              mocker.call(tf_refresh),
+              mocker.call(tf_destroy_infra),
+              mocker.call(tf_refresh),
+              mocker.call(tf_destroy_infra),
+              mocker.call(tf_refresh),
+              mocker.call(tf_destroy_infra),
+        ]
+        mock_os_system.assert_has_calls(expected_calls)
+        assert mock_os_system.call_count == 6
+        #mock_os_system.assert_called_once_with(tf_destroy_infra)

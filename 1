@@ -1,7 +1,9 @@
 import os
 import json
 import re
+import subprocess
 import time
+import shutil
 
 from threading import Thread
 from lib import ssh_lib
@@ -200,17 +202,31 @@ class OpenTofuController:
         the function will retry up to the specified number of times
         with exponential backoff.
         """
+        tofu_path = shutil.which('tofu')
+
+        if tofu_path is None:
+            print("tofu is not found in the PATH.")
+        else:
+            print(f"tofu is located at: {tofu_path}")
+        return
+
         for attempt in range(retries):
-            cmd_output = os.system(f'tofu destroy -target={resource_id} -auto-approve')
-            
-            if not cmd_output:
+            result = subprocess.run(
+                f'tofu destroy -target={resource_id} -auto-approve',
+                shell=True,
+                executable='/bin/bash',
+                capture_output=True
+            )
+            if result.returncode == 0:
                break
 
             if attempt < retries - 1:
                 time.sleep(delay)
                 delay *= 2
         else:
-           raise Exception(f'Failed to destroy resource {resource_id}')
+           raise Exception(
+               f'Failed to destroy resource {resource_id}: {result.stderr.decode()}'
+               )
 
     def destroy_infra(self, retries=3, delay=30):
         """
@@ -218,11 +234,19 @@ class OpenTofuController:
         It will retry the operation in case of failure, with exponential backoff.
         """
         for attempt in range(retries):
-            os.system(f'tofu refresh {self.debug_suffix}')
-
-            cmd_output = os.system(f'tofu destroy -auto-approve {self.debug_suffix}'
-)
-            if not cmd_output:
+            subprocess.run(
+               f'tofu refresh {self.debug_suffix}',
+               shell=True,
+               executable='/bin/bash',
+               capture_output=True
+            )
+            result = subprocess.run(
+                f'tofu destroy -auto-approve {self.debug_suffix}',
+                shell=True,
+                executable='/bin/bash',
+                capture_output=True
+            )
+            if result.returncode == 0:
                 print('Infrastructure destroyed successfully.')
                 break
 
@@ -230,5 +254,7 @@ class OpenTofuController:
                 time.sleep(delay)
                 delay *= 2
         else:
-            raise Exception('Failed to destroy infrastructure.')
+            raise Exception(
+                f'Failed to destroy infrastructure: {result.stderr.decode()}'
+                )
 
