@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import subprocess
+import time
 
 from threading import Thread
 from lib import ssh_lib
@@ -12,16 +14,16 @@ class OpenTofuController:
         self.tf_configurator = tf_configurator
         self.debug = debug
 
-        self.debug_sufix = ''
+        self.debug_suffix = ''
         if not debug:
-            self.debug_sufix = '1> /dev/null'
+            self.debug_suffix = '1> /dev/null'
 
     def create_infra(self):
-        cmd_output = os.system(f'tofu init {self.debug_sufix}')
+        cmd_output = os.system(f'tofu init {self.debug_suffix}')
         if cmd_output:
             raise Exception('tofu init command failed, check configuration')
 
-        cmd_output = os.system(f'tofu apply -auto-approve {self.debug_sufix}')
+        cmd_output = os.system(f'tofu apply -auto-approve {self.debug_suffix}')
         if cmd_output:
             raise Exception('tofu apply command failed, check configuration')
 
@@ -193,12 +195,54 @@ class OpenTofuController:
 
             return vm_resource['values']['source_image_id']
 
-    def destroy_resource(self, resource_id):
-        cmd_output = os.system(f'tofu destroy -target={resource_id}')
-        if cmd_output:
-            raise Exception('tofu destroy specific resource command failed')
+    def destroy_resource(self, resource_id, retries=3, delay=30):
+        """
+        Attempt to destroy the resource. If the tofu destroy command fails,
+        the function will retry up to the specified number of times
+        with exponential backoff.
+        """
+        for attempt in range(retries):
+            result = subprocess.run(
+                f'tofu destroy -target={resource_id} -auto-approve',
+                shell=True,
+                capture_output=True
+            )
+            if result.returncode == 0:
+               break
 
-    def destroy_infra(self):
-        cmd_output = os.system(f'tofu destroy -auto-approve {self.debug_sufix}')
-        if cmd_output:
-            raise Exception('tofu destroy command failed')
+            if attempt < retries - 1:
+                time.sleep(delay)
+                delay *= 2
+        else:
+           raise Exception(
+               f'Failed to destroy resource {resource_id}: {result.stderr.decode()}'
+               )
+
+    def destroy_infra(self, retries=3, delay=30):
+        """
+        Attempt to destroy all resources related to the infrastructure.
+        It will retry the operation in case of failure, with exponential backoff.
+        """
+        for attempt in range(retries):
+            subprocess.run(
+               f'tofu refresh {self.debug_suffix}',
+               shell=True,
+               capture_output=True
+            )
+            result = subprocess.run(
+                f'tofu destroy -auto-approve {self.debug_suffix}',
+                shell=True,
+                capture_output=True
+            )
+            if result.returncode == 0:
+                print('Infrastructure destroyed successfully.')
+                break
+
+            if attempt < retries - 1:
+                time.sleep(delay)
+                delay *= 2
+        else:
+            raise Exception(
+                f'Failed to destroy infrastructure: {result.stderr.decode()}'
+                )
+
