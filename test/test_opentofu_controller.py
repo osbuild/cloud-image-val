@@ -21,8 +21,8 @@ class TestOpenTofuController:
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
         mocker.patch('time.sleep')
-        tf_init = f'tofu init {tf_controller.debug_sufix}'
-        tf_apply = f'tofu apply -auto-approve {tf_controller.debug_sufix}'
+        tf_init = f'tofu init {tf_controller.debug_suffix}'
+        tf_apply = f'tofu apply -auto-approve {tf_controller.debug_suffix}'
 
         mock_wait_for_all_instances_ssh_up = mocker.patch.object(tf_controller,
                                                                  'wait_for_all_instances_ssh_up')
@@ -275,7 +275,7 @@ class TestOpenTofuController:
     def test_destroy_infra(self, mocker, tf_controller):
         # Arrange
         mock_os_system = mocker.patch('os.system', return_value='')
-        tf_destroy_infra = f'tofu destroy -auto-approve {tf_controller.debug_sufix}'
+        tf_destroy_infra = f'tofu destroy -auto-approve {tf_controller.debug_suffix}'
 
         # Act
         result = tf_controller.destroy_infra()
