@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import re
 
@@ -12,16 +13,30 @@ class OpenTofuController:
         self.tf_configurator = tf_configurator
         self.debug = debug
 
-        self.debug_sufix = ''
+        self.debug_suffix = ''
         if not debug:
-            self.debug_sufix = '1> /dev/null'
+            self.debug_suffix = '1> /dev/null'
+
+        self.max_retries = 10
+        self.initial_wait = 30
+
+        # Resource types in destruction order
+        self.destroy_types = [
+            "azurerm_virtual_machine",
+            "azurerm_network_interface",
+            "azurerm_public_ip",
+            "azurerm_shared_image_version",
+            "azurerm_shared_image",
+            "azurerm_subnet",
+            "azurerm_virtual_network"
+         ]
 
     def create_infra(self):
-        cmd_output = os.system(f'tofu init {self.debug_sufix}')
+        cmd_output = os.system(f'tofu init {self.debug_suffix}')
         if cmd_output:
             raise Exception('tofu init command failed, check configuration')
 
-        cmd_output = os.system(f'tofu apply -auto-approve {self.debug_sufix}')
+        cmd_output = os.system(f'tofu apply -auto-approve {self.debug_suffix}')
         if cmd_output:
             raise Exception('tofu apply command failed, check configuration')
 
@@ -193,12 +208,77 @@ class OpenTofuController:
 
             return vm_resource['values']['source_image_id']
 
+    def get_resources_by_type(self, resource_type, resources_json):
+        """
+        Retrive all resource names of a given type
+        """
+        try:
+            resources = [r['values']['id'] for r in resources_json if r['type'] == resource_type]
+            return resources
+        except (KeyError, TypeError) as e:
+            raise Exception(f"Failed to list state for {resource_type}: {e}")
+
     def destroy_resource(self, resource_id):
-        cmd_output = os.system(f'tofu destroy -target={resource_id}')
-        if cmd_output:
-            raise Exception('tofu destroy specific resource command failed')
+        """
+        Destroy a specific resource with retries.
+        """
+        retry_count = 0
+        wait_time = self.initial_wait
+
+        while retry_count < self.max_retries:
+            print(f"Attempt {retry_count +1}: Destroying {resource_id}...")
+            cmd_output = os.system(f'tofu destroy -target={resource_id} --auto_approve')
+
+            if cmd_output == 0:
+                print(f"Successfully destroyed {resource_id}")
+                return
+
+            print(f"Warning: Failed to destroy {resource_id}. Retrying in {wait_time} seconds...")
+            time.sleep(wait_time)
+            wait_time *= 2
+            retry_count += 1
+
+        raise Exception(f"Failed to destroy {resource_id} after {self.max_retries} attempts.")
+
+    def destroy_infra_ordered(self, resources_json):
+        """
+        Destroy resources dynamically by type, then clean up everything.
+        """
+        print("Destroying resources by type in ordered sequence...")
+
+        for resource_type in self.destroy_types:
+            resources = self.get_resources_by_type(resource_type, resources_json)
+            if not resources:
+                print(f"No resources found for type {resource_type}, skipping...")
+                continue
+
+            for resource in resources:
+                try:
+                    self.destroy_resource(resource)
+                except Exception as e:
+                    print(f"Skipping {resource} due to failure: {e}")
+
+        print(" Final cleanup: Running full destroy...")
+        self.destroy_infra()
 
     def destroy_infra(self):
-        cmd_output = os.system(f'tofu destroy -auto-approve {self.debug_sufix}')
-        if cmd_output:
-            raise Exception('tofu destroy command failed')
+        """
+        Destroy the entire infrastructure (final cleanup).
+        """
+        retry_count = 0
+        wait_time = self.initial_wait
+
+        while retry_count < self.max_retries:
+            print(f"Attempt {retry_count + 1}: Destroying full infrastructure...")
+            cmd_output = os.system(f'tofu destroy -auto-approve {self.debug_suffix}')
+
+            if cmd_output == 0:
+                print("Successfully destroyed infrastructure.")
+                return
+
+            print(f"Warning: Failed to destroy infrastructure. Retrying in {wait_time} seconds.")
+            time.sleep(wait_time)
+            wait_time *= 2
+            retry_count += 1
+
+        raise Exception("Failed to destroy infrastructure after multiple attempts.")
