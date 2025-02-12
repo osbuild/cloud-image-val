@@ -5,7 +5,13 @@ from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
 class AzureConfigBuilderV2(BaseConfigBuilder):
     cloud_name = 'azure'
-    cloud_provider_definition = {'azurerm': {'source': 'hashicorp/azurerm', 'version': '~> 3.110.0'}}
+
+    # Latest v3.x release. If we plan to update, we need to migrate to v4.x.
+    # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/4.0-upgrade-guide
+    provider_version = '3.117.0'
+    cloud_provider_definition = {
+        "azurerm": {"source": "hashicorp/azurerm", "version": f"~> {provider_version}"}
+    }
 
     default_x86_vm_size = 'Standard_DS1_v2'
     default_arm64_vm_size = 'Standard_D2pls_v5'
