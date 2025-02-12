@@ -27,7 +27,7 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc; \
     dnf install -y azure-cli
 
 # Install OpenTofu v1.6.2 which is fully compatible with Terraform v1.5.x
-RUN export OPENTOFU_VERSION='1.6.2'
+RUN export OPENTOFU_VERSION='1.9.0'
 
 RUN wget --secure-protocol=TLSv1_2 \
     --https-only https://get.opentofu.org/install-opentofu.sh \
