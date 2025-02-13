@@ -1,0 +1,9 @@
+/TestsGeneric:
+  /test_no_avc_denials:
+    summary: This is generic test testing if no AVC appears
+    test+: test_generic.py::TestsGeneric::test_no_avc_denials
+    enabled: true
+    adjust:
+      enabled: false
+      when: distro == fedora
+      because: the feature not for Fedora
