@@ -367,20 +367,24 @@ class TestsAWS:
                         f'{line} must not be specified in AMIs that are not SAP'
 
     @pytest.mark.run_on(['all'])
-    @pytest.mark.jira_skip(["CLOUDX-994"])
     def test_hostkey_permissions(self, host):
         """
         Check that ssh files permission set are correct.
         BugZilla 2013644
+        Ensure permissions are aligned with a distro and release version
+        CLOUDX-994
         """
         files_to_check = ['ssh_host_ecdsa_key',
                           'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+
+        # Default permission for private keys
         expected_mode = 0o640
-        if host.system_info.distribution == 'fedora' and \
-                version.parse(host.system_info.release) >= version.parse('38'):
-            # On Fedora 38, ssh_keys group no longer exists and ssh-keygen no longer chmods to 640, see
-            # - https://src.fedoraproject.org/rpms/openssh/c/b615362fd0b4da657d624571441cb74983de6e3f?branch=rawhide
-            # - https://src.fedoraproject.org/rpms/openssh/c/7a21555354a2c5e724aa4c287b640c24bf108780?branch=rawhide
+        distro = host.system_info.distribution
+        release_major = version.parse(host.system_info.release).major
+
+        if distro == 'fedora' or \
+           ((distro == 'rhel' or distro == 'centos') and release_major == 10):
+            # Strict permissions
             expected_mode = 0o600
 
         print(host.run('rpm -q cloud-init').stdout)
