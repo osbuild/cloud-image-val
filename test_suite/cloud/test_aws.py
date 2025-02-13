@@ -372,7 +372,7 @@ class TestsAWS:
         Check that ssh files permission set are correct.
         BugZilla 2013644
         Ensure permissions are aligned with a distro and release version
-        ClOUDX-994
+        CLOUDX-994
         """
         files_to_check = ['ssh_host_ecdsa_key',
                           'ssh_host_ed25519_key', 'ssh_host_rsa_key']
