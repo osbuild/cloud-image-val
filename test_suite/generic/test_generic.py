@@ -254,6 +254,35 @@ class TestsGeneric:
 
             assert host.file(grub2_file).linked_to == linked_to
 
+    @pytest.mark.run_on(['all'])
+    def test_boot_mount_presence(self, host, instance_data):
+        """
+        The /boot mount exists if
+            * 8.y and aarch64
+            * 9.y
+            * 10.y and Azure and LVM
+            * Fedora
+        In all other cases the /boot mount doesn't exist on a system.
+
+        JIRA: CLOUDX-930, CLOUDX-980
+        """
+
+        release_major = version.parse(host.system_info.release).major
+        is_aarch64 = host.system_info.arch == 'aarch64'
+        is_azure = instance_data['cloud'] == 'azure'
+        lvm_check = host.run("lsblk -f | grep LVM").rc == 0
+        is_fedora = host.system_info.distribution == 'fedora'
+
+        if (
+           (release_major == 8 and is_aarch64)
+           or (release_major == 9)
+           or (release_major >= 10 and is_azure and lvm_check)
+           or is_fedora
+           ):
+            assert host.mount_point("/boot").exists, "/boot mount is missing"
+        else:
+            assert not host.mount_point("/boot").exists, "/boot mount is detected"
+
     @pytest.mark.run_on(['rhel10'])
     def test_net_ifnames_usage(self, host):
         """
