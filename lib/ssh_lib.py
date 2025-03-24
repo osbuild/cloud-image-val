@@ -4,28 +4,43 @@ import sshconf
 
 from threading import Thread
 
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
-def generate_ssh_key_pair(ssh_key_path, key_type="rsa"):
+
+def generate_ssh_key_pair(identity_file):
     """
-    Generates a new SSH key pair at the specified path.
-    If a key already exists in the specified path, it will be removed first.
+    Generates an SSH key pair and writes them to the specified identity file.
 
-    :param ssh_key_path: The path where the private and public keys will be saved.
-    :type ssh_key_path: str
-    :param key_type: The type of key to generate. Defaults to 'rsa'.
-    :type key_type: str, optional
-        Supported types:
-            - rsa: 2048-bit RSA key (default).
-            - rsa1: 512-bit RSA key.
-            - dsa:  1024-bit DSA key.
-            - ecdsa: Elliptic curve DSA key (secp256r1, by default).
-            - ed25519: Ed25519 key.
-    :return: None
+    :param identity_file: The path where the private key will be written.
+    :return: A tuple containing the paths of the private and public keys.
     """
-    if os.path.exists(ssh_key_path):
-        os.remove(ssh_key_path)
+    # Generate private key
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
 
-    os.system(f'ssh-keygen -t {key_type} -f "{ssh_key_path}" -N "" -q')
+    # Write private key to file in PEM format
+    with open(identity_file, 'wb') as f:
+        f.write(private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ))
+
+    # Generate public key
+    public_key = private_key.public_key()
+
+    # Write public key to file in OpenSSH format
+    with open(identity_file + '.pub', 'wb') as f:
+        f.write(public_key.public_bytes(
+            encoding=serialization.Encoding.OpenSSH,
+            format=serialization.PublicFormat.OpenSSH
+        ))
+
+    print(f"Generated SSH keys: {identity_file} and {identity_file}.pub")
+    return identity_file, identity_file + '.pub'
 
 
 def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
@@ -33,7 +48,6 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
         os.remove(ssh_config_file)
 
     conf = sshconf.empty_ssh_config_file()
-
     for inst in instances.values():
         conf.add(
             inst["address"],

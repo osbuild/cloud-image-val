@@ -24,6 +24,7 @@ class CloudImageValidator:
         instances = None
 
         try:
+            console_lib.print_divider('Initializing infrastructure')
             self.infra_controller = self.initialize_infrastructure()
 
             console_lib.print_divider('Deploying infrastructure')
