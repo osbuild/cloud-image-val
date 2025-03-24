@@ -61,6 +61,7 @@ class TestCloudImageValidator:
         assert result == exit_code_test
 
         assert mock_print_divider.call_args_list == [
+            mocker.call('Initializing infrastructure'),
             mocker.call('Deploying infrastructure'),
             mocker.call('Preparing environment'),
             mocker.call('Running tests'),
