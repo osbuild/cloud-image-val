@@ -41,7 +41,7 @@ function setup_repo {
   local priority=${3:-10}
 
   local REPO_PATH=${project}/${DISTRO_VERSION}/${ARCH}/${commit}
-  if [[ "${INTERNAL_NIGHTLY:=false}" == "internal" && "${project}" == "osbuild-composer" ]]; then
+  if [[ "${NIGHTLY:=false}" == "true" && "${project}" == "osbuild-composer" ]]; then
     REPO_PATH=nightly/${REPO_PATH}
   fi
 
@@ -147,8 +147,8 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 # TODO: include this in the jenkins runner (and split test/target machines out)
 sudo dnf -y install jq
 
-# Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(get_last_passed_commit)
+# fallback for gitlab
+GIT_COMMIT="${GIT_COMMIT:-${CI_COMMIT_SHA}}"
 
 setup_repo osbuild-composer "${GIT_COMMIT}" 5
 
@@ -187,7 +187,7 @@ retry sudo dnf -y install "${PROJECT}-tests"
 # Save osbuild-composer NVR to a file to be used as CI artifact
 rpm -q osbuild-composer > COMPOSER_NVR
 
-if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
+if [ "${NIGHTLY:=false}" == "true" ]; then
     # check if we've installed the osbuild-composer RPM from the nightly tree
     # under test or happen to install a newer version from one of the S3 repositories
     rpm -qi osbuild-composer
