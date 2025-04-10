@@ -179,8 +179,9 @@ if __name__ == '__main__':
                   'test_filter': modified_methods_str}
 
     # This env var comes from GitLab CI pipeline
-    if 'CUSTOM_PACKAGES' in os.environ:
-        civ_config['tags']['custom_packages'] = os.environ['CUSTOM_PACKAGES']
+    if os.getenv("CLOUDX_PKG_TESTING", "false") == "true":
+        if 'CUSTOM_PACKAGES' in os.environ:
+            civ_config['tags']['custom_packages'] = os.environ['CUSTOM_PACKAGES']
 
     # This env var comes from GitLab CI pipeline
     if 'TEST_SUITES' in os.environ:
