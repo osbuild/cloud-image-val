@@ -402,6 +402,21 @@ class TestsGeneric:
                 assert not host.file(file_to_check).exists, \
                     f'{file_to_check} should not exist in RHEL-8 and above'
 
+    @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
+    def test_bootc_installed(self, host):
+        """
+        Verify the system-reinstall-bootc package is installed
+        JIRA: CLOUDX-1267
+        """
+
+        with host.sudo():
+            print('rpm -q output: ')
+            print(host.run('rpm -q system-reinstall-bootc').stdout)
+            print('yum search output: ')
+            print(host.run('yum search system-reinstall-bootc').stdout)
+            assert host.package("system-reinstall-bootc").is_installed, \
+                'System-reinstall-bootc package expected to be installed in RHEL >= 9.6, 10.0'
+
 
 @pytest.mark.order(3)
 class TestsServices:
