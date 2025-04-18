@@ -273,6 +273,12 @@ class TestsAWS:
                 # UEFI boot mode related packages, not applicable to arm64 AMIs
                 required_pkgs.extend(['efibootmgr', 'grub2-efi-x64', 'shim-x64'])
 
+        # RHELMISC-4466 dhcp-client retired in RHEL10
+        # RHELMISC-6651 gdisk retired in RHEL10
+        if system_release.major >= 10:
+            required_pkgs.remove('dhcp-client')
+            required_pkgs.remove('gdisk')
+
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
 
