@@ -748,23 +748,32 @@ class TestsNetworking:
         """
         Make sure that eht0 default adapter is correctly setup:
             1. NETWORKING=yes in /etc/sysconfig/network
-            2. DEVICE=eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+            2. For major_release<10: eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+            3. For major_release>=10: exists /etc/NetworkManager/system-connections/*.nmconnection
 
         Does not apply to >fedora35: https://fedoramagazine.org/converting-networkmanager-from-ifcfg-to-keyfiles/
         """
         if instance_data['cloud'] == 'azure' and \
                 version.parse(host.system_info.release).major == 9:
             pytest.skip('Skipping due to cloud-init known issue in RHEL-9.x. See COMPOSER-2437 for details.')
+
         device_name = 'eth0'
+        device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+        keyfile_plugin = '/etc/NetworkManager/system-connections/*.nmconnection'
 
         with host.sudo():
             assert host.file('/etc/sysconfig/network').contains('^NETWORKING=yes'), \
                 'Invalid networking setup'
 
-            device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+            release_major = version.parse(host.system_info.release).major
 
-            assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
-                f'Unexpected device name. Expected: "{device_name}"'
+            if release_major < 10:
+                assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
+                    f'Unexpected device name. Expected: "{device_name}"'
+            else:
+                keyfile = host.check_output(f"ls {keyfile_plugin} 2>/dev/null || true")
+                assert keyfile != "", \
+                    f'There is no keyfile plugin as "{keyfile_plugin}"'
 
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.exclude_on(['<rhel8.5'])
