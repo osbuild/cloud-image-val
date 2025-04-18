@@ -507,7 +507,7 @@ class TestsAWS:
             assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
                 'Unexpected yum "subscription-manager" plugin status'
 
-    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):
         """
         Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"
