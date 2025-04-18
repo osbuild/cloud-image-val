@@ -259,17 +259,9 @@ class TestsAWS:
             'dracut-config-generic', 'grub2-tools',
         ]
 
-        required_pkgs_v7 = [
-            'kernel', 'yum-utils', 'cloud-init', 'dracut-config-generic',
-            'grub2', 'tar', 'rsync', 'chrony'
-        ]
-
         system_release = version.parse(host.system_info.release)
         if system_release >= version.parse('8.5'):
             required_pkgs.append('NetworkManager-cloud-setup')
-
-        if version.parse('8.3') > system_release >= version.parse('8.0'):
-            required_pkgs.append('rng-tools')
 
         # CLOUDX-451
         if system_release.major == 9 and system_release.minor >= 3 or \
@@ -283,9 +275,6 @@ class TestsAWS:
 
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
-
-        if system_release < version.parse('8.0'):
-            required_pkgs = required_pkgs_v7
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
