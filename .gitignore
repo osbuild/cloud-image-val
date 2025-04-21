@@ -1,5 +1,6 @@
-**/.pytest_cache/
-**/__pycache__/
+*/.pytest_cache/
+*/__pycache__/
+*/*/__pycache__/
 .idea
 .terraform*
 *.tfstate*
@@ -7,4 +8,3 @@
 .coverage
 *.tf.json
 .venv
-civ_config.yaml
