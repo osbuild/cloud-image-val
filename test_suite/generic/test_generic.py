@@ -864,19 +864,31 @@ class TestsAuthConfig:
         if instance_data['cloud'] == 'aws':
             pytest.skip("Auth test cases don't apply to AWS.")
 
-    @pytest.mark.exclude_on(['rhel7.9'])
     def test_authselect_has_no_config(self, host):
         """
         Check authselect current
-        """
-        expected_output = 'No existing configuration detected.'
-        assert expected_output in host.run('authselect current').stdout, \
-            'authselect is expected to have no configuration'
 
-    @pytest.mark.exclude_on(['rhel7.9'])
+        RHELBU-2336 local profile is default for RHEL10 and later
+        """
+        authselect_profile = host.run('authselect current').stdout
+        if version.parse(host.system_info.release).major >= 10:
+            expected_profile = 'Profile ID: local\nEnabled features: None\n'
+        else:
+            expected_profile = "No existing configuration detected."
+
+        assert expected_profile in authselect_profile, \
+            f'authselect is expected to have {expected_profile} configuration'
+
     def test_authselect_conf_files(self, host):
         authselect_dir = '/etc/authselect/'
-        expected_config_files = ['custom', 'user-nsswitch.conf']
+        if version.parse(host.system_info.release).major < 10:
+            expected_config_files = ['custom', 'user-nsswitch.conf', ]
+        else:
+            expected_config_files = [
+                'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
+                'fingerprint-auth', 'nsswitch.conf', 'password-auth',
+                'postlogin', 'smartcard-auth', 'system-auth'
+            ]
         current_files = host.file(authselect_dir).listdir()
 
         print(current_files)
@@ -889,25 +901,28 @@ class TestsAuthConfig:
             f'Unexpected files found under {authselect_custom_dir}.' \
             f'This directory should be empty'
 
+    @pytest.mark.exclude_on(['rhel10'])
     def test_fingerprint_auth(self, host):
         """
         Check file /etc/pam.d/fingerprint-auth
         """
         self.__check_pam_d_file_content(host, 'fingerprint-auth')
 
+    @pytest.mark.exclude_on(['rhel10'])
     def test_password_auth(self, host):
         """
         Check file /etc/pam.d/password-auth
         """
         self.__check_pam_d_file_content(host, 'password-auth')
 
+    @pytest.mark.exclude_on(['rhel10'])
     def test_postlogin(self, host):
         """
         Check file /etc/pam.d/postlogin
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.jira_skip(['CLOUDX-511'])
+    @pytest.mark.exclude_on(['rhel10'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
@@ -916,6 +931,7 @@ class TestsAuthConfig:
 
         self.__check_pam_d_file_content(host, 'smartcard-auth')
 
+    @pytest.mark.exclude_on(['rhel10'])
     def test_system_auth(self, host):
         """
         Check file /etc/pam.d/system-auth
