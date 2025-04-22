@@ -223,7 +223,9 @@ class TestsGeneric:
         Check if root account is locked
         """
         with host.sudo():
-            if test_lib.is_rhel_atomic_host(host):
+            if version.parse(host.system_info.release).major >= 10:
+                result = host.run('passwd -S root | grep -q L').rc
+            elif test_lib.is_rhel_atomic_host(host):
                 result = host.run('passwd -S root | grep -q Alternate').rc
             else:
                 result = host.run('passwd -S root | grep -q LK').rc
