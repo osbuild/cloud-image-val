@@ -12,6 +12,7 @@ import sys
 import yaml
 
 from pprint import pprint
+from typing import Dict, List
 
 
 DEFAULT_CIV_CONFIG_PATH = "/tmp/civ_config.yaml"
@@ -165,23 +166,23 @@ def get_modified_methods_str():
     return " or ".join(list(modified_methods))
 
 
-def get_skip_vars():
-    skip_vars = {
+def get_skip_vars() -> Dict[str, str]:
+    skip_vars: Dict[str, str] = {
         "skip_aws": "false",
         "skip_azure": "false",
         "skip_gcp": "false"
     }
 
-    files_changed = get_files_changed()
+    files_changed: List[str] = get_files_changed()
 
     for file in files_changed:
         if "test_suite/generic/.*" in file:
             return skip_vars
 
     return {
-        "skip_aws": "test_suite/cloud/test_aws.py" in files_changed,
-        "skip_azure": "test_suite/cloud/test_azure.py" in files_changed,
-        "skip_gcp": "test_suite/cloud/test_gcp.py" in files_changed,
+        "skip_aws": "false" if "test_suite/cloud/test_aws.py" in files_changed else "true",
+        "skip_azure": "false" if "test_suite/cloud/test_azure.py" in files_changed else "true",
+        "skip_gcp": "false" if "test_suite/cloud/test_gcp.py" in files_changed else "true",
     }
 
 
