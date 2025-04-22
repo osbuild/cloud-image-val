@@ -252,17 +252,18 @@ class TestsAzure:
         Check that the expected packages are installed.
         """
         wanted_pkgs = [
-            'yum-utils', 'redhat-release-eula', 'cloud-init',
+            'yum-utils', 'redhat-release-eula', 'cloud-init', 'insights-client',
             'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',
             'grub2-tools', 'WALinuxAgent', 'firewalld', 'chrony',
             'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
         ]
 
+        # RHELMISC-4466 dhcp-client retired in RHEL10
+        # RHELMISC-6651 gdisk retired in RHEL10
         system_release = version.parse(host.system_info.release)
-        if system_release < version.parse('8.0'):
-            wanted_pkgs.append('dhclient')
-        else:
-            wanted_pkgs.extend(['insights-client', 'dhcp-client'])
+        if system_release.major >= 10:
+            wanted_pkgs.remove('dhcp-client')
+            wanted_pkgs.remove('gdisk')
 
         missing_pkgs = [pkg for pkg in wanted_pkgs if not host.package(pkg).is_installed]
 

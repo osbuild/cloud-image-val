@@ -259,17 +259,9 @@ class TestsAWS:
             'dracut-config-generic', 'grub2-tools',
         ]
 
-        required_pkgs_v7 = [
-            'kernel', 'yum-utils', 'cloud-init', 'dracut-config-generic',
-            'grub2', 'tar', 'rsync', 'chrony'
-        ]
-
         system_release = version.parse(host.system_info.release)
         if system_release >= version.parse('8.5'):
             required_pkgs.append('NetworkManager-cloud-setup')
-
-        if version.parse('8.3') > system_release >= version.parse('8.0'):
-            required_pkgs.append('rng-tools')
 
         # CLOUDX-451
         if system_release.major == 9 and system_release.minor >= 3 or \
@@ -281,11 +273,14 @@ class TestsAWS:
                 # UEFI boot mode related packages, not applicable to arm64 AMIs
                 required_pkgs.extend(['efibootmgr', 'grub2-efi-x64', 'shim-x64'])
 
+        # RHELMISC-4466 dhcp-client retired in RHEL10
+        # RHELMISC-6651 gdisk retired in RHEL10
+        if system_release.major >= 10:
+            required_pkgs.remove('dhcp-client')
+            required_pkgs.remove('gdisk')
+
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
-
-        if system_release < version.parse('8.0'):
-            required_pkgs = required_pkgs_v7
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
