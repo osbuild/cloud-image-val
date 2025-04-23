@@ -258,11 +258,9 @@ class TestsAzure:
             'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
         ]
 
-        # RHELMISC-4466 dhcp-client retired in RHEL10
         # RHELMISC-6651 gdisk retired in RHEL10
         system_release = version.parse(host.system_info.release)
         if system_release.major >= 10:
-            wanted_pkgs.remove('dhcp-client')
             wanted_pkgs.remove('gdisk')
 
         missing_pkgs = [pkg for pkg in wanted_pkgs if not host.package(pkg).is_installed]
