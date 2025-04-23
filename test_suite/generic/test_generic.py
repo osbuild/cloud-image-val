@@ -910,28 +910,28 @@ class TestsAuthConfig:
             f'Unexpected files found under {authselect_custom_dir}.' \
             f'This directory should be empty'
 
-    @pytest.mark.exclude_on(['rhel10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_fingerprint_auth(self, host):
         """
         Check file /etc/pam.d/fingerprint-auth
         """
         self.__check_pam_d_file_content(host, 'fingerprint-auth')
 
-    @pytest.mark.exclude_on(['rhel10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_password_auth(self, host):
         """
         Check file /etc/pam.d/password-auth
         """
         self.__check_pam_d_file_content(host, 'password-auth')
 
-    @pytest.mark.exclude_on(['rhel10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_postlogin(self, host):
         """
         Check file /etc/pam.d/postlogin
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.exclude_on(['rhel10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
@@ -940,7 +940,7 @@ class TestsAuthConfig:
 
         self.__check_pam_d_file_content(host, 'smartcard-auth')
 
-    @pytest.mark.exclude_on(['rhel10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_system_auth(self, host):
         """
         Check file /etc/pam.d/system-auth
