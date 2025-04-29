@@ -931,7 +931,7 @@ class TestsAuthConfig:
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.exclude_on(['>=rhel10.0'])
+    @pytest.mark.exclude_on(['>=rhel10.0', 'rhel8.10'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
