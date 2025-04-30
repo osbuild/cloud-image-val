@@ -931,14 +931,19 @@ class TestsAuthConfig:
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.exclude_on(['>=rhel10.0', 'rhel8.10'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
         Bugzilla: 1983683
         """
-
-        self.__check_pam_d_file_content(host, 'smartcard-auth')
+        if version.parse(host.system_info.release) == version.parse('8.10'):
+            local_file = 'data/generic/smartcard-auth_rhel8.10'
+            file_to_check = '/etc/pam.d/smartcard-auth'
+            assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+                f'{file_to_check} has unexpected content'
+        else:
+            self.__check_pam_d_file_content(host, 'smartcard-auth')
 
     @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_system_auth(self, host):
