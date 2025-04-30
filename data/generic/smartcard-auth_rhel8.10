@@ -1,0 +1,4 @@
+#%PAM-1.0
+# This file is auto-generated.
+# User changes will be destroyed the next time authselect is run.
+auth sufficient pam_sss.so allow_missing_name
