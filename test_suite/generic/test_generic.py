@@ -1083,11 +1083,6 @@ class TestsSecurity:
 @pytest.mark.order(1)
 @pytest.mark.run_on(['rhel'])
 class TestsAuthConfig:
-    @pytest.fixture(autouse=True)
-    def skip_on_aws(self, host, instance_data):
-        if instance_data['cloud'] == 'aws':
-            pytest.skip("Auth test cases don't apply to AWS.")
-
     def test_authselect_has_no_config(self, host):
         """
         Check authselect current
