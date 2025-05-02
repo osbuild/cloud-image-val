@@ -29,6 +29,8 @@ def generate_ssh_key_pair(identity_file):
             encryption_algorithm=serialization.NoEncryption()
         ))
 
+    os.chmod(identity_file, 0o600)
+
     # Generate public key
     public_key = private_key.public_key()
 
