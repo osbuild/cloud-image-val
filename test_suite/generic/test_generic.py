@@ -600,7 +600,7 @@ class TestsSubscriptionManager:
                 print(f'Waiting {interval}s for auto-registration to succeed...')
                 time.sleep(interval)
 
-    def test_subscription_manager_auto_config(self, host):
+    def test_subscription_manager_autoregv1_config(self, host):
         """
         BugZilla: 1932802, 1905398
         Verify that auto_registration is enabled in the image
@@ -608,6 +608,25 @@ class TestsSubscriptionManager:
         expected_config = [
             'auto_registration = 1',
             'manage_repos = 0'
+        ]
+
+        file_to_check = '/etc/rhsm/rhsm.conf'
+
+        with host.sudo():
+            for item in expected_config:
+                assert host.file(file_to_check).contains(item), \
+                    f'{file_to_check} has unexpected content'
+
+            assert host.service('rhsmcertd').is_enabled, \
+                'rhsmcertd service is expected to be enabled'
+    
+    def test_subscription_manager_autoregv2_config(self, host):
+        """
+
+        """
+        expected_config = [
+            'auto_register = 1',
+            'manage_repos = 1'
         ]
 
         file_to_check = '/etc/rhsm/rhsm.conf'
