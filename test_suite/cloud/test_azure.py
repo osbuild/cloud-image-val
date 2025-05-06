@@ -259,9 +259,13 @@ class TestsAzure:
         ]
 
         # RHELMISC-6651 gdisk retired in RHEL10
+        # CLOUDX-1335 hypervfcopyd retired in RHEL10 aarch64
         system_release = version.parse(host.system_info.release)
         if system_release.major >= 10:
             wanted_pkgs.remove('gdisk')
+
+            if host.system_info.arch == 'aarch64':
+                wanted_pkgs.remove('hypervfcopyd')
 
         missing_pkgs = [pkg for pkg in wanted_pkgs if not host.package(pkg).is_installed]
 
