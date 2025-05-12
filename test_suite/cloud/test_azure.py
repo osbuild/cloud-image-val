@@ -354,6 +354,12 @@ class TestsAzure:
             'rootdelay=300'
         ]
 
+        if host.system_info.arch == 'aarch64':
+            expected_config = ['console=ttyAMA0']
+
+        if version.parse(host.system_info.release) >= version.parse('9.6'):
+            expected_config.append('nvme_core.io_timeout=240')
+
         with host.sudo():
             for item in expected_config:
                 assert host.file(file_to_check).contains(item), \
