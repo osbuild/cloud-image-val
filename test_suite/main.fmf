@@ -1,0 +1,2 @@
+contact: Name Surname <email@address.org>
+test: "pytest -v "
