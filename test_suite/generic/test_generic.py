@@ -265,6 +265,7 @@ class TestsGeneric:
             * 10.y and Azure and LVM
             * Fedora
         In all other cases the /boot mount doesn't exist on a system.
+        If /boot exists it should be at least 960Mib (lower threshold of 1024MiB)
 
         JIRA: CLOUDX-930, CLOUDX-980
         """
@@ -282,6 +283,14 @@ class TestsGeneric:
            or is_fedora
            ):
             assert host.mount_point("/boot").exists, "/boot mount is missing"
+
+            result = host.run("df --block-size=1 /boot | tail -1")
+            parts = result.stdout.split()
+            total_bytes = int(parts[1])
+            min_size_mib = 960
+            required_size = min_size_mib * 1024 * 1024  # 960MiB
+            assert total_bytes >= required_size, \
+                f'Partition /boot is too small: {total_bytes} bytes'
         else:
             assert not host.mount_point("/boot").exists, "/boot mount is detected"
 
