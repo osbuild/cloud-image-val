@@ -1,5 +1,6 @@
 import os
 import json
+from packaging import version
 from lib import test_lib
 
 INSTANCES_JSON_PATH = os.environ['CIV_INSTANCES_JSON']
@@ -21,9 +22,9 @@ def check_avc_denials(host):
 
     no_avc_denials_found = 'no matches' in result.stdout
 
-    # ignore avc denial for irqbalance
-    # remove when RHEL-78630 is fixed
-    if 'irqbalance' in result.stdout:
+    # ignore avc denial for irqbalance in 9.6 and 10.0
+    # revise when RHEL-78630 is fixed
+    if 'irqbalance' in result.stdout and version.parse(host.system_info.release) in [9.6, 10.0]:
         no_avc_denials_found = True
 
     assert no_avc_denials_found, 'There should not be any avc denials (selinux)'
