@@ -1,0 +1,153 @@
+##################################
+#         RUNNERS BLOCK          #
+##################################
+.rhel_runners: &rhel_runners
+  RUNNER:
+    - aws/rhel-8.10-ga-x86_64
+    - aws/rhel-9.4-ga-x86_64
+    # - aws/rhel-9.5-ga-x86_64
+    - aws/centos-stream-9-x86_64
+    - aws/centos-stream-10-x86_64
+  NIGHTLY: [ "false" ]
+
+.rhel_runners_aarch64: &rhel_runners_aarch64
+  RUNNER:
+    - aws/rhel-8.10-ga-aarch64
+    - aws/rhel-9.4-ga-aarch64
+    # - aws/rhel-9.5-ga-aarch64
+    - aws/centos-stream-9-aarch64
+    - aws/centos-stream-10-aarch64
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "false" ]
+
+.rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
+  RUNNER:
+    - aws/rhel-9.6-nightly-x86_64
+    - aws/rhel-10.0-nightly-x86_64
+  INTERNAL_NIGHTLY: [ "internal" ]
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "true" ]
+
+.rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
+  RUNNER:
+    - aws/rhel-9.6-nightly-aarch64
+    - aws/rhel-10.0-nightly-aarch64
+  INTERNAL_NIGHTLY: [ "internal" ]
+  INTERNAL_NETWORK: [ "true" ]
+  NIGHTLY: [ "true" ]
+
+.fedora_runners: &fedora_runners
+  RUNNER:
+    - aws/fedora-41-x86_64
+  NIGHTLY: [ "false" ]
+
+##################################
+#      END OF RUNNERS BLOCK      #
+##################################
+
+init:
+  stage: init
+  rules:
+    - if: $CLOUDX_PKG_TESTING == "false"
+  script:
+    - schutzbot/update_github_status.sh start
+  tags:
+    - shell
+
+build-branch-container:
+  extends: .deps
+  rules:
+    - if: $CLOUDX_PKG_TESTING == "false"
+  stage: build
+  script:
+    - sudo docker run --privileged --rm tonistiigi/binfmt --install all
+    - sudo docker buildx create --use
+    - export build_cmd="sudo docker buildx build --push --platform linux/arm64,linux/amd64"
+    - if python schutzbot/update-base.py | grep -q "true" ; then ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}-base":latest -f base.Dockerfile .; fi
+    - ${build_cmd} -t "${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" -f Dockerfile .
+
+.image_builder_tests:
+  extends: .tests
+  variables:
+    ARTIFACTS: "/tmp/"
+  before_script:
+    - bash schutzbot/append_team_ssh_keys.sh
+  after_script:
+    - !reference [ .tests, after_script ]
+    - cp /tmp/report.html ./report.html
+
+image-builder-aws:
+  stage: test
+  extends: .image_builder_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
+  rules:
+    - if: $NIGHTLY == "false" && $CLOUDX_PKG_TESTING == "false"
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+      - *rhel_runners_aarch64
+
+image-builder-aws-nightly-compose:
+  stage: test
+  extends: .image_builder_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AWS == "false" ]; then bash /usr/libexec/tests/osbuild-composer/aws.sh; fi
+  rules:
+    - if: $NIGHTLY == "true" && $CLOUDX_PKG_TESTING == "false"
+  parallel:
+    matrix:
+      - *rhel_runners_x86_64_internal_nightlies
+      - *rhel_runners_aarch64_internal_nightlies
+
+image-builder-azure:
+  stage: test
+  extends: .image_builder_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
+  rules:
+    - if: $NIGHTLY == "false" && $CLOUDX_PKG_TESTING == "false"
+  parallel:
+    matrix:
+      - *fedora_runners
+      - *rhel_runners
+
+image-builder-azure-nightly-compose:
+  stage: test
+  extends: .image_builder_tests
+  script:
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - if [ $SKIP_AZURE == "false" ]; then bash /usr/libexec/tests/osbuild-composer/azure.sh; fi
+  rules:
+    - if: $NIGHTLY == "true" && $CLOUDX_PKG_TESTING == "false"
+  parallel:
+    matrix:
+      - *rhel_runners_x86_64_internal_nightlies
+
+promote-container-to-main:
+  extends: .deps
+  stage: finish
+  rules:
+    - if: $CI_COMMIT_REF_SLUG == "main" && $CLOUDX_PKG_TESTING == "false"
+  script:
+    - sudo dnf install skopeo -y
+    - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":latest
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":main docker://"${QUAY_IO_CONTAINER_URL}":prod
+
+finish:
+  stage: finish
+  rules:
+    - if: $CLOUDX_PKG_TESTING == "false"
+  script:
+    - schutzbot/update_github_status.sh finish
+  tags:
+    - shell
