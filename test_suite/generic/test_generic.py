@@ -190,12 +190,10 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    # TODO: does this apply to centos
-    # TODO: fix docstring
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_release_version(self, host):
         """
-        Check if rhel provider matches /etc/redhat-release
+        Check if release package version matches /etc/redhat-release
         """
         if test_lib.is_rhel_atomic_host(host):
             pytest.skip('Not run in atomic images')
