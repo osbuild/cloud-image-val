@@ -375,7 +375,6 @@ class TestsGeneric:
             assert authorized_keys_lines == '1', 'There is more than one public key in authorized_keys'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['rhel7.9'])
     def test_dnf_conf(self, host, instance_data):
         """
         Check /etc/dnf/dnf.conf
