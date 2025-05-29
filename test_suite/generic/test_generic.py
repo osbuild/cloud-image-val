@@ -393,16 +393,11 @@ class TestsGeneric:
         """
         Verify /etc/yum/pluginconf.d/langpacks.conf
         """
-        local_file = 'data/generic/langpacks.conf'
         file_to_check = '/etc/yum/pluginconf.d/langpacks.conf'
 
         with host.sudo():
-            if version.parse(host.system_info.release) < version.parse('8.0'):
-                assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-                    f'{file_to_check} has unexpected content'
-            else:
-                assert not host.file(file_to_check).exists, \
-                    f'{file_to_check} should not exist in RHEL-8 and above'
+            assert not host.file(file_to_check).exists, \
+                f'{file_to_check} should not exist in RHEL-8 and above'
 
     @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
     def test_bootc_installed(self, host):
