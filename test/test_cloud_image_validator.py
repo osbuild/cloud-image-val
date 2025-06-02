@@ -163,3 +163,59 @@ class TestCloudImageValidator:
             mocker.call(validator.config['ssh_config_file']),
             mocker.call(validator.config['instances_json'])
         ]
+
+    def test_attach_infrastructure(self, mocker, validator):
+        # Arrange
+        mock_opentofu_configurator = mocker.patch('main.cloud_image_validator.OpenTofuConfigurator')
+        mock_opentofu_controller = mocker.patch('main.cloud_image_validator.OpenTofuController')
+
+        # Act
+        result = validator.attach_infrastructure()
+
+        # Assert
+        mock_opentofu_configurator.assert_called_once_with(
+            ssh_key_path=validator.config['ssh_pub_key_file'],
+            resources_path=validator.config['resources_file'],
+            config=validator.config
+        )
+        mock_opentofu_controller.assert_called_once_with(
+            mock_opentofu_configurator.return_value,
+            validator.config['debug']
+        )
+        assert result == mock_opentofu_controller.return_value
+
+    def test_attach_instances(self, mocker, validator):
+        # Arrange
+        mock_infra_controller = mocker.patch.object(validator, 'infra_controller')
+        mock_get_instances = mocker.patch.object(mock_infra_controller, 'get_instances')
+
+        # Act
+        result = validator.attach_instances()
+
+        # Assert
+        mock_get_instances.assert_called_once()
+        assert result == mock_get_instances.return_value
+
+    def test_print_ssh_commands_for_instances(self, validator):
+        # Arrange
+        instances = {
+            'instance-1': {'name': 'instance-1', 'username': 'user1', 'address': 'address1'},
+            'instance-2': {'name': 'instance-2', 'username': 'user2', 'address': 'address2'}
+        }
+        expected_output = """instance-1:
+\tssh -i /tmp/ssh_key user1@address1
+instance-2:
+\tssh -i /tmp/ssh_key user2@address2
+"""
+
+        # Act
+        import io
+        from contextlib import redirect_stdout
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            validator.print_ssh_commands_for_instances(instances)
+        result = f.getvalue()
+
+        # Assert
+        assert result == expected_output

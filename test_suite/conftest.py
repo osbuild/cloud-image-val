@@ -165,7 +165,7 @@ def rhel_aws_marketplace_only(host, instance_data):
         pytest.skip('Not applicable to RHEL AWS Stratosphere images.')
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='module', autouse=True)
 def instance_data(host):
     values_to_find = [host.backend.hostname]
     values_to_find.extend(host.addr(host.backend.hostname).ipv4_addresses)
