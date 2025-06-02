@@ -81,9 +81,6 @@ class TestsAWS:
         """
         Check if release version is on the AMI name
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('This test does not apply to Atomic AMIs')
-
         cloud_image_name = instance_data['name']
         product_version = float(host.system_info.release)
 
@@ -119,9 +116,6 @@ class TestsAWS:
                 '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
             }
         }
-
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to Atomic hosts')
 
         auditd_service = 'auditd'
 
@@ -487,9 +481,6 @@ class TestsAWS:
         BugZilla 1932802
         Earlier than RHEL-8.4, yum plugin product-id and subscription-manager should be disabled by default.
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to RHEL Atomic Host AMIs')
-
         if version.parse(host.system_info.release) < version.parse('8.4'):
             expect_config = "enabled=0"
         else:
@@ -557,9 +548,6 @@ class TestsAWS:
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('rhel_aws_marketplace_only')
     def test_yum_group_install(self, host):
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to Atomic host AMIs')
-
         with host.sudo():
             dev_tools_install_command = 'yum -y groupinstall "Development tools"'
             result = host.run(dev_tools_install_command)
@@ -592,9 +580,6 @@ class TestsAWS:
         Test that kernel-debug and kernel-debug-devel matching current kernel version are available in repo
         Open Question: which versions does this test apply? using all rhel versions for now
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to Atomic host AMIs')
-
         print(f"kernel version: {host.check_output('uname -r')}")
 
         with host.sudo():
