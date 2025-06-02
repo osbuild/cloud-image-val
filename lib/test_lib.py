@@ -5,11 +5,6 @@ import time
 from lib import ssh_lib, console_lib
 
 
-def is_rhel_atomic_host(host):
-    with host.sudo():
-        return host.file('/etc/redhat-release').contains('Atomic')
-
-
 def is_rhel_sap(host):
     return __test_keyword_in_repositories(host, 'sap-')
 
