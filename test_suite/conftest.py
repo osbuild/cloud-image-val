@@ -153,12 +153,6 @@ def rhel_high_availability_only(host):
 
 
 @pytest.fixture
-def rhel_atomic_only(host):
-    if not test_lib.is_rhel_atomic_host(host):
-        pytest.skip('Image is not atomic RHEL')
-
-
-@pytest.fixture
 def rhel_aws_marketplace_only(host, instance_data):
     # Check if the image is AWS Stratosphere. If so, skip the test.
     if instance_data['cloud'] == 'aws' and aws_lib.is_rhel_aws_stratosphere(host):

@@ -195,9 +195,6 @@ class TestsGeneric:
         """
         Check if release package version matches /etc/redhat-release
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not run in atomic images')
-
         system_release = version.parse(host.system_info.release)
 
         release_file = 'redhat-release'
@@ -219,8 +216,6 @@ class TestsGeneric:
         with host.sudo():
             if version.parse(host.system_info.release).major >= 10:
                 result = host.run('passwd -S root | grep -q L').rc
-            elif test_lib.is_rhel_atomic_host(host):
-                result = host.run('passwd -S root | grep -q Alternate').rc
             else:
                 result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
@@ -482,9 +477,6 @@ class TestsServices:
         """
         UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not run in atomic images')
-
         kernel_config = '/etc/sysconfig/kernel'
         with host.sudo():
             assert host.file(kernel_config).contains('UPDATEDEFAULT=yes'), \
@@ -697,9 +689,6 @@ class TestsYum:
     # TODO: confirm if this test needs to be deprecated
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_yum_repoinfo(self, host):
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to RHEL Atomic host')
-
         yum_command = 'yum repoinfo'
 
         with host.sudo():
