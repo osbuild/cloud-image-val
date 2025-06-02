@@ -2,7 +2,7 @@
   "fedora-40": {
     "dependencies": {
       "osbuild": {
-        "commit": "aced2eaa00b8f85608b36e294d13ad7ee9ac467d"
+        "commit": "76f106834178021d404bb555a0fc521ee4a6627d"
       }
     },
     "repos": [
