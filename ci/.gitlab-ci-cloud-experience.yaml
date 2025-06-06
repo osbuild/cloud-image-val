@@ -18,13 +18,13 @@ variables:
       - "aws/rhel-9.6-nightly-aarch64"
       - "aws/rhel-10.0-nightly-x86_64"
       - "aws/rhel-10.0-nightly-aarch64"
-    description: "Specify which runner to use (fow now it only supports one runner at a time)."
+    description: "Specify which runner to use (for now it only supports one runner at a time)."
   PACKAGES_TESTING_AWS:
     value: "true"
     options:
       - "true"
       - "false"
-    description: "Specify if packages sohuld be tested in AWS instances."
+    description: "Specify if packages should be tested in AWS instances."
   KEEP_GENERATED_AMI:
     value: "true"
     options:
