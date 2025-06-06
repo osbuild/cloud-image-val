@@ -35,7 +35,7 @@ variables:
     value: "awscli2 opentelemetry-collector" # Add all CloudX-owned packages here by default
     description: "Specify a list of packages to install via blueprint (space-separeted). The package(s) must be available in compose's Appstream for the chosen runner (RUN_ON)."
   TEST_SUITES:
-    description: "Specify a list of test suite paths to run (space-separated). Default is CTC test suite which will run tests for all CloudX-owned packages."
+    description: "Specify a list of test suite paths to run (space-separated). Chec test_suites/ dir inside CIV project to know about the available options."
   NIGHTLY:
     value: "true"
     options:
