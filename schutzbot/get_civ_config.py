@@ -179,17 +179,17 @@ if __name__ == '__main__':
                   'test_filter': modified_methods_str}
 
     # This env var comes from GitLab CI pipeline
-    if os.getenv("CLOUDX_PKG_TESTING", "false") == "true":
+    if os.getenv("CLOUDX_PKG_TESTING", "false").lower() == "true":
         if 'CUSTOM_PACKAGES' in os.environ:
             civ_config['tags']['custom_packages'] = os.environ['CUSTOM_PACKAGES']
 
     # This env var comes from GitLab CI pipeline
-    if 'TEST_SUITES' in os.environ:
+    if os.getenv("TEST_SUITES", None) != "":
         civ_config['test_suites'] = []
-        civ_config['test_suites'].extend(os.environ['TEST_SUITES'].split(' '))
+        civ_config['test_suites'].extend(os.environ['TEST_SUITES'].strip().split(' '))
 
     # This env var comes from GitLab CI pipeline
-    if 'AWS_EFS' in os.environ and os.environ['AWS_EFS'].lower() == 'true':
+    if os.getenv("AWS_EFS", "false").lower() == "true":
         civ_config['tags']['aws-efs'] = True
 
     # If modified_methods_str is different than None, we might need to skip some clouds
