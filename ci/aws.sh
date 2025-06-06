@@ -119,22 +119,24 @@ version = "0.0.1"
 EOF
 
 # Append any packages that we want to install
-if ! [ -z "$CUSTOM_PACKAGES" ]; then
-    # shellcheck disable=SC2068
-    for pkg in ${CUSTOM_PACKAGES[@]}; do
-        pkg_name="${pkg%:*}"
-        pkg_version="${pkg##*:}"
+if ! [ -z "$CLOUDX_PKG_TESTING" ]; then
+    if ! [ -z "$CUSTOM_PACKAGES" ]; then
+        # shellcheck disable=SC2068
+        for pkg in ${CUSTOM_PACKAGES[@]}; do
+            pkg_name="${pkg%:*}"
+            pkg_version="${pkg##*:}"
 
-        if [[ "$pkg_version" == "$pkg_name" ]]; then
-            pkg_version='*'
-        fi
+            if [[ "$pkg_version" == "$pkg_name" ]]; then
+                pkg_version='*'
+            fi
 
-        echo "[[packages]]
-name = \"$pkg_name\"
-version = \"$pkg_version\"
+            echo "[[packages]]
+    name = \"$pkg_name\"
+    version = \"$pkg_version\"
 
-" >> "$BLUEPRINT_FILE"
-    done
+    " >> "$BLUEPRINT_FILE"
+        done
+    fi
 fi
 
 # Prepare the blueprint for the compose.
