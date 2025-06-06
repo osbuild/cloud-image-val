@@ -19,19 +19,26 @@ class CloudImageValidator:
     def __init__(self, config):
         self.config = config
 
-    def main(self):
+    def main(self, attach=False):
         exit_code = 0
         instances = None
 
         try:
-            console_lib.print_divider('Initializing infrastructure')
-            self.infra_controller = self.initialize_infrastructure()
+            if attach:
+                console_lib.print_divider('Attaching to exisintg infrastructure...')
+                self.infra_controller = self.attach_infrastructure()
 
-            console_lib.print_divider('Deploying infrastructure')
-            instances = self.deploy_infrastructure()
+                console_lib.print_divider('Attaching to exisintg instances...')
+                instances = self.attach_instances()
+            else:
+                console_lib.print_divider('Initializing infrastructure')
+                self.infra_controller = self.initialize_infrastructure()
 
-            console_lib.print_divider('Preparing environment')
-            self.prepare_environment(instances)
+                console_lib.print_divider('Deploying infrastructure')
+                instances = self.deploy_infrastructure()
+
+                console_lib.print_divider('Preparing environment')
+                self.prepare_environment(instances)
 
             console_lib.print_divider('Running tests')
             wait_status = self.run_tests_in_all_instances(instances)
@@ -68,6 +75,16 @@ class CloudImageValidator:
                 instance_name = inst['name']
                 print(f'{instance_name}:')
                 print(f'\t{ssh_command}')
+
+    def attach_infrastructure(self):
+        self.infra_configurator = OpenTofuConfigurator(ssh_key_path=self.config['ssh_pub_key_file'],
+                                                       resources_path=self.config['resources_file'],
+                                                       config=self.config)
+
+        return OpenTofuController(self.infra_configurator, self.config['debug'])
+
+    def attach_instances(self):
+        return self.infra_controller.get_instances()
 
     def initialize_infrastructure(self):
         ssh_lib.generate_ssh_key_pair(self.config['ssh_identity_file'])
