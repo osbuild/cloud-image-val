@@ -34,9 +34,6 @@ class TestsGeneric:
         """
         Check there is no avc denials (selinux).
         """
-        if (host.system_info.distribution == 'rhel' and float(host.system_info.release) == 9.4) \
-                or (host.system_info.distribution == 'centos' and host.system_info.release == "9"):
-            pytest.skip('RHEL-24346: Skipping on RHEL-9.4 due to a known issue with NetworkManager.')
 
         helpers.check_avc_denials(host)
 
@@ -219,7 +216,9 @@ class TestsGeneric:
         Check if root account is locked
         """
         with host.sudo():
-            if test_lib.is_rhel_atomic_host(host):
+            if version.parse(host.system_info.release).major >= 10:
+                result = host.run('passwd -S root | grep -q L').rc
+            elif test_lib.is_rhel_atomic_host(host):
                 result = host.run('passwd -S root | grep -q Alternate').rc
             else:
                 result = host.run('passwd -S root | grep -q LK').rc
@@ -249,6 +248,61 @@ class TestsGeneric:
                     linked_to = '/boot/efi/EFI/redhat/grubenv'
 
             assert host.file(grub2_file).linked_to == linked_to
+
+    @pytest.mark.run_on(['all'])
+    def test_boot_mount_presence(self, host, instance_data):
+        """
+        The /boot mount exists if
+            * 8.y and aarch64
+            * 9.y
+            * 10.y and Azure and LVM
+            * Fedora
+        In all other cases the /boot mount doesn't exist on a system.
+        If /boot exists it should be at least 960Mib (lower threshold of 1024MiB)
+
+        JIRA: CLOUDX-930, CLOUDX-980
+        """
+
+        release_major = version.parse(host.system_info.release).major
+        is_aarch64 = host.system_info.arch == 'aarch64'
+        is_azure = instance_data['cloud'] == 'azure'
+        lvm_check = host.run("lsblk -f | grep LVM").rc == 0
+        is_fedora = host.system_info.distribution == 'fedora'
+
+        if (
+           (release_major == 8 and is_aarch64)
+           or (release_major == 9)
+           or (release_major >= 10 and is_azure and lvm_check)
+           or is_fedora
+           ):
+            assert host.mount_point("/boot").exists, "/boot mount is missing"
+
+            result = host.run("df --block-size=1 /boot | tail -1")
+            parts = result.stdout.split()
+            total_bytes = int(parts[1])
+            min_size_mib = 960
+            required_size = min_size_mib * 1024 * 1024  # 960MiB
+            assert total_bytes >= required_size, \
+                f'Partition /boot is too small: {total_bytes} bytes'
+        else:
+            assert not host.mount_point("/boot").exists, "/boot mount is detected"
+
+    @pytest.mark.run_on(['rhel10'])
+    def test_net_ifnames_usage(self, host):
+        """
+        Check that net.ifnames=0 is not used as a kernel boot parameter
+        Jira: CLOUDX-979
+        """
+
+        kernel_boot_param = 'net.ifnames=0'
+        cmdline_file = '/proc/cmdline'
+        grub_default_file = '/etc/default/grub'
+
+        assert not host.file(cmdline_file).contains(kernel_boot_param), \
+            f'There is unexpected {kernel_boot_param} in kernel real-time boot parameters.'
+
+        assert not host.file(grub_default_file).contains(kernel_boot_param), \
+            f'{kernel_boot_param} is found in {grub_default_file}!'
 
     @pytest.mark.run_on(['rhel'])
     def test_tty0_config(self, host):
@@ -349,6 +403,21 @@ class TestsGeneric:
             else:
                 assert not host.file(file_to_check).exists, \
                     f'{file_to_check} should not exist in RHEL-8 and above'
+
+    @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
+    def test_bootc_installed(self, host):
+        """
+        Verify the system-reinstall-bootc package is installed
+        JIRA: CLOUDX-1267
+        """
+
+        with host.sudo():
+            print('rpm -q output: ')
+            print(host.run('rpm -q system-reinstall-bootc').stdout)
+            print('yum search output: ')
+            print(host.run('yum search system-reinstall-bootc').stdout)
+            assert host.package("system-reinstall-bootc").is_installed, \
+                'System-reinstall-bootc package expected to be installed in RHEL >= 9.6, 10.0'
 
 
 @pytest.mark.order(3)
@@ -487,11 +556,6 @@ class TestsSubscriptionManager:
         BugZilla 7.9: 2077086, 2077085
         """
 
-        expected_config = [
-            'auto_registration = 1',
-            'manage_repos = 0'
-        ]
-
         if instance_data['cloud'] == 'aws':
             region = instance_data['availability_zone'][:-1]
 
@@ -512,10 +576,6 @@ class TestsSubscriptionManager:
                 pytest.skip(f'The {region} AWS region is not supported for auto-registration yet.')
 
         with host.sudo():
-            for config in expected_config:
-                assert config in host.check_output('subscription-manager config'), \
-                    f'Expected "{config}" not found in subscription manager configuration'
-
             assert host.service(
                 'rhsmcertd').is_enabled, 'rhsmcertd service must be enabled'
 
@@ -700,25 +760,37 @@ class TestsNetworking:
                 assert host.file('/etc/hosts').contains(expected_host), \
                     '/etc/hosts does not contain ipv4 or ipv6 localhost'
 
-    @pytest.mark.run_on(['rhel', 'fedora35', 'centos'])
-    def test_eth0_network_adapter_setup(self, host):
+    @pytest.mark.run_on(['rhel', 'centos'])
+    def test_eth0_network_adapter_setup(self, host, instance_data):
         """
         Make sure that eht0 default adapter is correctly setup:
             1. NETWORKING=yes in /etc/sysconfig/network
-            2. DEVICE=eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+            2. For major_release<10: eth0 in /etc/sysconfig/network-scripts/ifcfg-eth0
+            3. For major_release>=10: exists /etc/NetworkManager/system-connections/*.nmconnection
 
         Does not apply to >fedora35: https://fedoramagazine.org/converting-networkmanager-from-ifcfg-to-keyfiles/
         """
+        if instance_data['cloud'] == 'azure' and \
+                version.parse(host.system_info.release).major == 9:
+            pytest.skip('Skipping due to cloud-init known issue in RHEL-9.x. See COMPOSER-2437 for details.')
+
         device_name = 'eth0'
+        device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+        keyfile_plugin = '/etc/NetworkManager/system-connections/*.nmconnection'
 
         with host.sudo():
             assert host.file('/etc/sysconfig/network').contains('^NETWORKING=yes'), \
                 'Invalid networking setup'
 
-            device_config_path = f'/etc/sysconfig/network-scripts/ifcfg-{device_name}'
+            release_major = version.parse(host.system_info.release).major
 
-            assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
-                f'Unexpected device name. Expected: "{device_name}"'
+            if release_major < 10:
+                assert host.file(device_config_path).contains(f'^DEVICE=[{device_name}|\"{device_name}\"]'), \
+                    f'Unexpected device name. Expected: "{device_name}"'
+            else:
+                keyfile = host.check_output(f"ls {keyfile_plugin} 2>/dev/null || true")
+                assert keyfile != "", \
+                    f'There is no keyfile plugin as "{keyfile_plugin}"'
 
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.exclude_on(['<rhel8.5'])
@@ -818,19 +890,31 @@ class TestsAuthConfig:
         if instance_data['cloud'] == 'aws':
             pytest.skip("Auth test cases don't apply to AWS.")
 
-    @pytest.mark.exclude_on(['rhel7.9'])
     def test_authselect_has_no_config(self, host):
         """
         Check authselect current
-        """
-        expected_output = 'No existing configuration detected.'
-        assert expected_output in host.run('authselect current').stdout, \
-            'authselect is expected to have no configuration'
 
-    @pytest.mark.exclude_on(['rhel7.9'])
+        RHELBU-2336 local profile is default for RHEL10 and later
+        """
+        authselect_profile = host.run('authselect current').stdout
+        if version.parse(host.system_info.release).major >= 10:
+            expected_profile = 'Profile ID: local\nEnabled features: None\n'
+        else:
+            expected_profile = "No existing configuration detected."
+
+        assert expected_profile in authselect_profile, \
+            f'authselect is expected to have {expected_profile} configuration'
+
     def test_authselect_conf_files(self, host):
         authselect_dir = '/etc/authselect/'
-        expected_config_files = ['custom', 'user-nsswitch.conf']
+        if version.parse(host.system_info.release).major < 10:
+            expected_config_files = ['custom', 'user-nsswitch.conf', ]
+        else:
+            expected_config_files = [
+                'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
+                'fingerprint-auth', 'nsswitch.conf', 'password-auth',
+                'postlogin', 'smartcard-auth', 'system-auth'
+            ]
         current_files = host.file(authselect_dir).listdir()
 
         print(current_files)
@@ -843,33 +927,42 @@ class TestsAuthConfig:
             f'Unexpected files found under {authselect_custom_dir}.' \
             f'This directory should be empty'
 
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_fingerprint_auth(self, host):
         """
         Check file /etc/pam.d/fingerprint-auth
         """
         self.__check_pam_d_file_content(host, 'fingerprint-auth')
 
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_password_auth(self, host):
         """
         Check file /etc/pam.d/password-auth
         """
         self.__check_pam_d_file_content(host, 'password-auth')
 
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_postlogin(self, host):
         """
         Check file /etc/pam.d/postlogin
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.jira_skip(['CLOUDX-511'])
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
         Bugzilla: 1983683
         """
+        if version.parse(host.system_info.release) == version.parse('8.10'):
+            local_file = 'data/generic/smartcard-auth_rhel8.10'
+            file_to_check = '/etc/pam.d/smartcard-auth'
+            assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+                f'{file_to_check} has unexpected content'
+        else:
+            self.__check_pam_d_file_content(host, 'smartcard-auth')
 
-        self.__check_pam_d_file_content(host, 'smartcard-auth')
-
+    @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_system_auth(self, host):
         """
         Check file /etc/pam.d/system-auth

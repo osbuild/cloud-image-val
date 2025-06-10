@@ -259,17 +259,9 @@ class TestsAWS:
             'dracut-config-generic', 'grub2-tools',
         ]
 
-        required_pkgs_v7 = [
-            'kernel', 'yum-utils', 'cloud-init', 'dracut-config-generic',
-            'grub2', 'tar', 'rsync', 'chrony'
-        ]
-
         system_release = version.parse(host.system_info.release)
         if system_release >= version.parse('8.5'):
             required_pkgs.append('NetworkManager-cloud-setup')
-
-        if version.parse('8.3') > system_release >= version.parse('8.0'):
-            required_pkgs.append('rng-tools')
 
         # CLOUDX-451
         if system_release.major == 9 and system_release.minor >= 3 or \
@@ -281,11 +273,14 @@ class TestsAWS:
                 # UEFI boot mode related packages, not applicable to arm64 AMIs
                 required_pkgs.extend(['efibootmgr', 'grub2-efi-x64', 'shim-x64'])
 
+        # RHELMISC-4466 dhcp-client retired in RHEL10
+        # RHELMISC-6651 gdisk retired in RHEL10
+        if system_release.major >= 10:
+            required_pkgs.remove('dhcp-client')
+            required_pkgs.remove('gdisk')
+
         if test_lib.is_rhel_high_availability(host):
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
-
-        if system_release < version.parse('8.0'):
-            required_pkgs = required_pkgs_v7
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
@@ -371,15 +366,20 @@ class TestsAWS:
         """
         Check that ssh files permission set are correct.
         BugZilla 2013644
+        Ensure permissions are aligned with a distro and release version
+        CLOUDX-994
         """
         files_to_check = ['ssh_host_ecdsa_key',
                           'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+
+        # Default permission for private keys
         expected_mode = 0o640
-        if host.system_info.distribution == 'fedora' and \
-                version.parse(host.system_info.release) >= version.parse('38'):
-            # On Fedora 38, ssh_keys group no longer exists and ssh-keygen no longer chmods to 640, see
-            # - https://src.fedoraproject.org/rpms/openssh/c/b615362fd0b4da657d624571441cb74983de6e3f?branch=rawhide
-            # - https://src.fedoraproject.org/rpms/openssh/c/7a21555354a2c5e724aa4c287b640c24bf108780?branch=rawhide
+        distro = host.system_info.distribution
+        release_major = version.parse(host.system_info.release).major
+
+        if distro == 'fedora' or \
+           ((distro == 'rhel' or distro == 'centos') and release_major == 10):
+            # Strict permissions
             expected_mode = 0o600
 
         print(host.run('rpm -q cloud-init').stdout)
@@ -443,12 +443,15 @@ class TestsAWS:
             assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
                 f'Actual value in io_timeout is not {expected_value}'
 
-    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.run_on(['<rhel10'])
     def test_cmdline_ifnames(self, host):
         """
         BugZilla 1859926
         ifnames should be specified
         https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking-ena.html
+
+        RHELPLAN-103894 net.ifnames=0 removed in RHEL10
+        There is a separate test checking on it: test_net_ifnames_usage
         """
         with host.sudo():
             assert host.file('/proc/cmdline').contains('net.ifnames=0'), \
@@ -499,7 +502,7 @@ class TestsAWS:
             assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
                 'Unexpected yum "subscription-manager" plugin status'
 
-    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):
         """
         Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"

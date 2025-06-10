@@ -1,0 +1,79 @@
+##################################
+#       CLOUDX CI VARIABLES      #
+##################################
+variables:
+  CLOUDX_PKG_TESTING:
+    value: "false"
+    options:
+      - "true"
+      - "false"
+    description: "Specify whether the pipeline run is about CloudX packages testing or not."
+  RUN_ON:
+    value: "aws/rhel-10.1-nightly-x86_64" # Just a defult value, needs to be updated regularly. See comments below.
+    options:
+      # This list needs to be updated regularly, when new runners are introduced by osbuild-composer.
+      # When a new RHEL version does GA, its nightly runner will become a "normal" runner (that is, without the "-nightly" suffix).
+      # See ci/.gitlab-ci-image-builder.yaml (check "RUNNERS BLOCK").
+      - "aws/rhel-9.7-nightly-x86_64"
+      - "aws/rhel-9.7-nightly-aarch64"
+      - "aws/rhel-10.1-nightly-x86_64"
+      - "aws/rhel-10.1-nightly-aarch64"
+    description: "Specify which runner to use (for now it only supports one runner at a time)."
+  PACKAGES_TESTING_AWS:
+    value: "true"
+    options:
+      - "true"
+      - "false"
+    description: "Specify if packages should be tested in AWS instances."
+  KEEP_GENERATED_AMI:
+    value: "true"
+    options:
+      - "true"
+      - "false"
+    description: "Specify where the AMI created with osbuild-composer should be kept or cleaned up afer testing. Only applicable if PACKAGES_TESTING_AWS is true. NOTE: Beware that cloud-cleaner will delete it after ~6 hours anyways."
+  CUSTOM_PACKAGES:
+    value: "awscli2 opentelemetry-collector" # Add all CloudX-owned packages here by default
+    description: "Specify a list of packages to install via blueprint (space-separeted). The package(s) must be available in compose's Appstream for the chosen runner (RUN_ON)."
+  TEST_SUITES:
+    description: "Specify a list of test suite paths to run (space-separated). Chec test_suites/ dir inside CIV project to know about the available options."
+  NIGHTLY:
+    value: "true"
+    options:
+      - "true"
+      - "false"
+    description: "Only change this if you know what you are doing."
+  INTERNAL_NIGHTLY:
+    value: "true"
+    options:
+      - "true"
+      - "false"
+    description: "Only change this if you know what you are doing."
+##################################
+#   END OF CLOUDX CI VARIABLES   #
+##################################
+
+.cloudx_packages_base:
+  extends: .tests
+  before_script:
+    - echo "DEBUG; CLOUDX_PKG_TESTING value is $CLOUDX_PKG_TESTING"
+    - schutzbot/deploy.sh
+    - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
+    - echo "Running packages testing for ${RUNNER}..."
+    - echo "Custom packages to be bundled with generated cloud image (${CUSTOM_PACKAGES})"
+  variables:
+    ARTIFACTS: "/tmp/"
+  after_script:
+    - !reference [ .tests, after_script ]
+    - cp /tmp/report.html ./report.html
+
+cloudx-packages-testing-aws:
+  extends: .cloudx_packages_base
+  stage: test
+  variables:
+    # The value passed via this variable must match a VALID osbuild-composer runner
+    # as defined in ci/.gitlab-ci-image-builder.yaml (check "RUNNERS BLOCK")
+    RUNNER: $RUN_ON
+  rules:
+    - if: $CLOUDX_PKG_TESTING == "true" && $PACKAGES_TESTING_AWS == "true"
+  script:
+    - bash ci/aws.sh
