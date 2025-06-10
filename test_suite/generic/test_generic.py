@@ -38,10 +38,6 @@ class TestsGeneric:
                 or (host.system_info.distribution == 'centos' and host.system_info.release == "9"):
             pytest.skip('RHEL-24346: Skipping on RHEL-9.4 due to a known issue with NetworkManager.')
 
-        # CLOUDX-320: This "if" is pending to be removed
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
-
         helpers.check_avc_denials(host)
 
     @pytest.mark.run_on(['all'])
