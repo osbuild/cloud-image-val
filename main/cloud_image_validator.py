@@ -25,10 +25,10 @@ class CloudImageValidator:
 
         try:
             if attach:
-                console_lib.print_divider('Attaching to exisintg infrastructure...')
+                console_lib.print_divider('Attaching to existing infrastructure...')
                 self.infra_controller = self.attach_infrastructure()
 
-                console_lib.print_divider('Attaching to exisintg instances...')
+                console_lib.print_divider('Attaching to existing instances...')
                 instances = self.attach_instances()
             else:
                 console_lib.print_divider('Initializing infrastructure')
