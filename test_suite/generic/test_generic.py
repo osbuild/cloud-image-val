@@ -190,16 +190,11 @@ class TestsGeneric:
                     assert 'si::sysinit:/etc/rc.d/rc.sysinit' in host.check_output("grep '^si:' /etc/inittab"), \
                         'Unexpected default inittab "id"'
 
-    # TODO: does this apply to centos
-    # TODO: fix docstring
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_release_version(self, host):
         """
-        Check if rhel provider matches /etc/redhat-release
+        Check if release package version matches /etc/redhat-release
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not run in atomic images')
-
         system_release = version.parse(host.system_info.release)
 
         release_file = 'redhat-release'
@@ -221,8 +216,6 @@ class TestsGeneric:
         with host.sudo():
             if version.parse(host.system_info.release).major >= 10:
                 result = host.run('passwd -S root | grep -q L').rc
-            elif test_lib.is_rhel_atomic_host(host):
-                result = host.run('passwd -S root | grep -q Alternate').rc
             else:
                 result = host.run('passwd -S root | grep -q LK').rc
         assert result == 0, 'Root account should be locked'
@@ -377,7 +370,6 @@ class TestsGeneric:
             assert authorized_keys_lines == '1', 'There is more than one public key in authorized_keys'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['rhel7.9'])
     def test_dnf_conf(self, host, instance_data):
         """
         Check /etc/dnf/dnf.conf
@@ -396,16 +388,11 @@ class TestsGeneric:
         """
         Verify /etc/yum/pluginconf.d/langpacks.conf
         """
-        local_file = 'data/generic/langpacks.conf'
         file_to_check = '/etc/yum/pluginconf.d/langpacks.conf'
 
         with host.sudo():
-            if version.parse(host.system_info.release) < version.parse('8.0'):
-                assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-                    f'{file_to_check} has unexpected content'
-            else:
-                assert not host.file(file_to_check).exists, \
-                    f'{file_to_check} should not exist in RHEL-8 and above'
+            assert not host.file(file_to_check).exists, \
+                f'{file_to_check} should not exist in RHEL-8 and above'
 
     @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
     def test_bootc_installed(self, host):
@@ -490,9 +477,6 @@ class TestsServices:
         """
         UPDATEDEFAULT=yes and DEFAULTKERNEL=kernel should be set in /etc/sysconfig/kernel
         """
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not run in atomic images')
-
         kernel_config = '/etc/sysconfig/kernel'
         with host.sudo():
             assert host.file(kernel_config).contains('UPDATEDEFAULT=yes'), \
@@ -705,9 +689,6 @@ class TestsYum:
     # TODO: confirm if this test needs to be deprecated
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_yum_repoinfo(self, host):
-        if test_lib.is_rhel_atomic_host(host):
-            pytest.skip('Not applicable to RHEL Atomic host')
-
         yum_command = 'yum repoinfo'
 
         with host.sudo():
