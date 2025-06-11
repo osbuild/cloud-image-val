@@ -865,7 +865,6 @@ class TestsAuthConfig:
         """
         self.__check_pam_d_file_content(host, 'postlogin')
 
-    @pytest.mark.jira_skip(['CLOUDX-511'])
     def test_smartcard_auth(self, host):
         """
         Check file /etc/pam.d/smartcard-auth
