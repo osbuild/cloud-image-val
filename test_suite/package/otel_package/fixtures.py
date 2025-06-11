@@ -13,7 +13,7 @@ def initialize_variables(request, host):
     values_to_find = [host.backend.hostname] + host.addr(host.backend.hostname).ipv4_addresses
     instance_data = helpers.__get_instance_data_from_json(key_to_find='address', values_to_find=values_to_find)
     self.instance_id = instance_data['instance_id']
-    self.instance_dns = instance_data['public_dns']
+    self.instance_address = instance_data['address']
     self.instance_region = instance_data['availability_zone'][:-1]
 
 
@@ -90,7 +90,7 @@ def install_packages(request, host):
         assert host.run(f'sudo yum remove -y {self.package_name}')
         cmd_output = host.run(f'rpm -q {self.package_name}').stdout
         assert "package redhat-opentelemetry-collector-main is not installed" in cmd_output
-        assert host.run(f'ssh {self.instance_dns}').failed
+        assert host.run(f'ssh {self.instance_address}').failed
         console_lib.print_divider("Verify logs don't appear")
         log_output = self.check_aws_cli_logs(self, host, self.instance_region).stdout
         assert re.search(r"invalid\s+user", log_output), "Expected 'invalid user' not found in logs"

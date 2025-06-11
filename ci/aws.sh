@@ -119,22 +119,24 @@ version = "0.0.1"
 EOF
 
 # Append any packages that we want to install
-if ! [ -z "$CUSTOM_PACKAGES" ]; then
-    # shellcheck disable=SC2068
-    for pkg in ${CUSTOM_PACKAGES[@]}; do
-        pkg_name="${pkg%:*}"
-        pkg_version="${pkg##*:}"
+if ! [ -z "$CLOUDX_PKG_TESTING" ]; then
+    if ! [ -z "$CUSTOM_PACKAGES" ]; then
+        # shellcheck disable=SC2068
+        for pkg in ${CUSTOM_PACKAGES[@]}; do
+            pkg_name="${pkg%:*}"
+            pkg_version="${pkg##*:}"
 
-        if [[ "$pkg_version" == "$pkg_name" ]]; then
-            pkg_version='*'
-        fi
+            if [[ "$pkg_version" == "$pkg_name" ]]; then
+                pkg_version='*'
+            fi
 
-        echo "[[packages]]
-name = \"$pkg_name\"
-version = \"$pkg_version\"
+            echo "[[packages]]
+    name = \"$pkg_name\"
+    version = \"$pkg_version\"
 
-" >> "$BLUEPRINT_FILE"
-    done
+    " >> "$BLUEPRINT_FILE"
+        done
+    fi
 fi
 
 # Prepare the blueprint for the compose.
@@ -253,6 +255,12 @@ sudo "${CONTAINER_RUNTIME}" pull "${CONTAINER_CLOUD_IMAGE_VAL}"
 
 greenprint "Running cloud-image-val on generated image"
 
+# Default instance type for x86_64
+instance_type="t3.medium"
+if [ "$ARCH" == "aarch64" ]; then
+    instance_type="m6g.large"
+fi
+
 tee "${TEMPDIR}/resource-file.json" <<EOF
 {
     "provider": "aws",
@@ -260,18 +268,16 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
         {
             "ami": "$AMI_IMAGE_ID",
             "region": "us-east-1",
-            "instance_type": "t3.medium",
+            "instance_type": "$instance_type",
             "username": "$SSH_USER",
             "name": "civ-pkg-testing-image",
-            "spot_instance": true
+            "custom_vpc_name": "$CLOUDX_AWS_INTERNAL_VPC_NAME",
+            "custom_subnet_name": "$CLOUDX_AWS_INTERNAL_SUBNET_NAME",
+            "custom_security_group_name": "$CLOUDX_AWS_INTERNAL_SECURITY_GROUP_NAME"
         }
     ]
 }
 EOF
-
-if [ "$ARCH" == "aarch64" ]; then
-    sed -i s/t3.medium/m6g.large/ "${TEMPDIR}/resource-file.json"
-fi
 
 if [ -z "$CIV_CONFIG_FILE" ]; then
     redprint "ERROR: please provide the variable CIV_CONFIG_FILE"

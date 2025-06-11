@@ -11,7 +11,7 @@ PROJECT=${1:-osbuild-composer}
 
 # set locale to en_US.UTF-8
 sudo dnf install -y glibc-langpack-en
-localectl set-locale LANG=en_US.UTF-8
+sudo localectl set-locale LANG=en_US.UTF-8
 
 # Colorful output.
 function greenprint {
@@ -26,7 +26,7 @@ function retry {
         count=$((count + 1))
         if [[ $count -lt $retries ]]; then
             echo "Retrying command..."
-            sleep 5
+            sleep 1
         else
             echo "Command failed after ${retries} retries. Giving up."
             return $exit
@@ -63,12 +63,15 @@ function get_last_passed_commit {
         base_curl="curl --header PRIVATE-TOKEN:${GITLAB_API_TOKEN}"
 
         # To get the schedule id use the ../pipeline_schedule endpoint
-        if [[ ${VERSION_ID%.*} == "8" ]]; then
-            # RHEL 8 scheduled pipeline id
-            schedule_id="233735"
-        else
+        if [[ ${VERSION_ID%.*} == "9" ]]; then
             # RHEL 9 scheduled pipeline id
             schedule_id="233736"
+        elif [[ ${VERSION_ID%.*} == "10" ]]; then
+            # RHEL 10 scheduled pipeline id (FYI - it was used for RHEL 8 before)
+            schedule_id="233735"
+        else
+            echo "No scheduled pipeline defined for RHEL $VERSION_ID"
+            exit 1
         fi
 
         # Last executed pipeline ID
@@ -108,9 +111,7 @@ function get_last_passed_commit {
 }
 
 # Get OS details.
-source /etc/os-release
-ARCH=$(uname -m)
-DISTRO_CODE="${DISTRO_CODE:-${ID}-${VERSION_ID//./}}"
+source ci/set-env-variables.sh
 
 if [[ $ID == "rhel" && ${VERSION_ID%.*} == "9" ]]; then
   # There's a bug in RHEL 9 that causes /tmp to be mounted on tmpfs.
@@ -181,7 +182,7 @@ greenprint "Installing test packages for ${PROJECT}"
 retry sudo dnf -y upgrade selinux-policy
 
 # Note: installing only -tests to catch missing dependencies
-retry sudo dnf -y install "${PROJECT}-tests" 
+retry sudo dnf -y install "${PROJECT}-tests"
 
 # Save osbuild-composer NVR to a file to be used as CI artifact
 rpm -q osbuild-composer > COMPOSER_NVR
