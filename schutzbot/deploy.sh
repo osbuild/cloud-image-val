@@ -75,7 +75,17 @@ function get_last_passed_commit {
         fi
 
         # Last executed pipeline ID
-        pipeline_id=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}" | jq '.last_pipeline.id')
+        response=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}")
+        if [ $? -ne 0 ] || [ -z "$response" ]; then
+            echo "ERROR: Failed to fetch pipeline schedule from GitLab API."
+            exit 1
+        fi
+        pipeline_id=$(echo "$response" | jq '.last_pipeline.id')
+        if [ "$pipeline_id" = "null" ] || [ -z "$pipeline_id" ]; then
+            echo "ERROR: Could not extract pipeline_id from GitLab API response:"
+            echo "$response"
+            exit 1
+        fi
 
         number_of_days=7
         warning_date=$(date -d "- $number_of_days days" +%s)
@@ -86,11 +96,11 @@ function get_last_passed_commit {
         fi
 
         statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
-        for status in ${statuses}; do 
+        for status in ${statuses}; do
             if [ "$status" == "failed" ]; then
                 echo "Last nightly pipeline ('rpmbuild' stage) failed in osbuild-composer CI. We will not run nightly-internal jobs in CIV."
                 exit 1
-            fi 
+            fi
         done
 
         commit=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.sha')
