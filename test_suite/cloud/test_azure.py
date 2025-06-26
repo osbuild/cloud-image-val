@@ -16,16 +16,26 @@ def instance_data_azure_web(host):
 
 @pytest.mark.order(2)
 class TestsAzure:
-    @pytest.mark.run_on(['rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_68_azure_sriov_nm_unmanaged_rules_file_content(self, host):
         """
         Check file /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
         """
+        system_release = version.parse(host.system_info.release)
         local_file = 'data/azure/68-azure-sriov-nm-unmanaged.rules'
         remote_file = '/etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules'
 
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
+        if system_release.major == 8:
+            assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
+                f'{remote_file} has unexpected content'
+
+        '''
+        # ToDO: uncomment this block when fixed in compose
+        # RHEL-100574
+        if system_release >= version.parse('9.7') or system_release >= version.parse('10.1'):
+            assert not host.file(remote_file).exists, \
+                f"The file '{remote_file}' should not exist on RHEL '{system_release}'"
+        '''
 
     @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
     def test_91_azure_datasource_file_content(self, host):
