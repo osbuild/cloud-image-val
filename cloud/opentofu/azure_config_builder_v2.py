@@ -13,7 +13,10 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         "azurerm": {"source": "hashicorp/azurerm", "version": f"~> {provider_version}"}
     }
 
-    default_x86_vm_size = 'Standard_DS1_v2'
+    default_x86_vm_size = {
+        "gen1": "Standard_DS1_v2",
+        "gen2": "Standard_B2ms"
+    }
     default_arm64_vm_size = 'Standard_D2pls_v5'
     default_hyper_v_generation = 'V2'
     default_admin_username = 'azure'
@@ -86,8 +89,6 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
                 self.__new_azure_shared_image(instance)
                 self.__new_azure_shared_image_version(instance)
 
-            self.__new_azure_public_ip(instance)
-            self.__new_azure_nic(instance)
             self.__new_azure_vm(instance)
 
         if not self.resources_tf['resource']['azurerm_shared_image_gallery']:
@@ -218,8 +219,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         self.resources_tf['resource']['azurerm_subnet'][name] = new_subnet
 
-    def __new_azure_public_ip(self, instance):
-        name = self.create_resource_name([instance['hostname'], 'public-ip'])
+    def __new_azure_public_ip(self, instance, gen_suffix=None):
+        suffix = f"-{gen_suffix}" if gen_suffix else ""
+        name = self.create_resource_name([instance['hostname'], 'public-ip']) + suffix
         instance['azurerm_public_ip'] = name
 
         new_public_ip = {
@@ -233,8 +235,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         self.resources_tf['resource']['azurerm_public_ip'][name] = new_public_ip
 
-    def __new_azure_nic(self, instance):
-        name = self.create_resource_name([instance['hostname'], 'nic'])
+    def __new_azure_nic(self, instance, gen_suffix=None):
+        suffix = f"-{gen_suffix}" if gen_suffix else ""
+        name = self.create_resource_name([instance['hostname'], 'nic']) + suffix
         instance['azurerm_network_interface'] = name
 
         ip_configuration = {
@@ -273,7 +276,20 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             if instance['arch'] == 'Arm64':
                 instance['instance_type'] = self.default_arm64_vm_size
             else:
-                instance['instance_type'] = self.default_x86_vm_size
+
+                for gen, vm_size in self.default_x86_vm_size.items():
+                    temp_instance = instance.copy()
+                    temp_instance['instance_type'] = vm_size
+                    temp_instance['hostname'] = self.create_resource_name([instance['hostname'], gen])
+                    self.__new_azure_public_ip(temp_instance, gen)
+                    self.__new_azure_nic(temp_instance, gen)
+                    self.__create_single_vm(temp_instance)
+        else:
+            self.__new_azure_public_ip(instance)
+            self.__new_azure_nic(instance)
+            self.__create_single_vm(instance)
+
+    def __create_single_vm(self, instance):
 
         instance_hostname = instance['hostname']
 
