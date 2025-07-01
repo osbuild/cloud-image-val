@@ -1,4 +1,3 @@
-import time
 import re
 import pytest
 from lib import console_lib
@@ -65,7 +64,6 @@ class TestOtel:
                     assert "invalid" in invalid, ('no logs of ssh connection failure exist')
                 except AssertionError as e:
                     print(f"AssertionError: {e}")
-                time.sleep(15)
 
             console_lib.print_divider("Check for error logs in aws cli logs")
             log_output = self.check_aws_cli_logs(host, self.instance_region).stdout
