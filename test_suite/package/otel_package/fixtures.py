@@ -101,8 +101,6 @@ def install_packages(request, host):
 @pytest.fixture(scope='function')
 def start_service(request, host):
     self = request.node.cls
-    time.sleep(1800)
-    print("Sleeping for 30 minutes to allow debugging")
     start_service = (f'systemctl start {self.service_name}')
     enable_service = (f'systemctl enable {self.service_name}')
     is_active = (f'systemctl is-active {self.service_name}')
