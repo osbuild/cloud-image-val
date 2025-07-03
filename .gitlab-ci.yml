@@ -11,7 +11,6 @@ stages:
     - sudo sh get-docker.sh
     - sudo systemctl start docker
     - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
-    - sudo dnf install -y containernetworking-plugins
 
   variables:
     RUNNER: aws/fedora-41-x86_64

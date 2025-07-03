@@ -75,5 +75,8 @@ cloudx-packages-testing-aws:
     RUNNER: $RUN_ON
   rules:
     - if: $CLOUDX_PKG_TESTING == "true" && $PACKAGES_TESTING_AWS == "true"
+  before_script:
+    - echo "Installing CNI plugins for Podman networking"
+    - sudo dnf install -y containernetworking-plugins
   script:
     - bash ci/aws.sh
