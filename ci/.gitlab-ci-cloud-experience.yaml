@@ -78,5 +78,6 @@ cloudx-packages-testing-aws:
   before_script:
     - echo "Installing CNI plugins for Podman networking"
     - sudo dnf install -y containernetworking-plugins
+    - sudo dnf install -y osbuild-composer-tests
   script:
     - bash ci/aws.sh
