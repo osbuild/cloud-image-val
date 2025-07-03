@@ -11,6 +11,15 @@ stages:
     - sudo sh get-docker.sh
     - sudo systemctl start docker
     - sudo docker login "${QUAY_IO_CONTAINER_URL}" -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD}
+    - |
+      if echo "$RUNNER" | grep -iq "rhel-9"; then
+        echo "Applying Podman network_backend fix for RHEL 9"
+        sudo mkdir -p /etc/containers/containers.conf.d
+        echo -e "[network]\nnetwork_backend = \"netavark\"" | sudo tee /etc/containers/containers.conf.d/network_backend.conf
+      else
+        echo "No Podman fix needed for $RUNNER"
+      fi
+
   variables:
     RUNNER: aws/fedora-41-x86_64
     INTERNAL_NETWORK: "true"
