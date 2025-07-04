@@ -169,7 +169,6 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_blocklist(self, host):
         """
         Check that a list of modules are disabled - not loaded.
