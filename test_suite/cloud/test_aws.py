@@ -152,7 +152,7 @@ class TestsAWS:
                     assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
                         'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
