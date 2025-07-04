@@ -51,21 +51,12 @@ class TestsAzure:
     @pytest.mark.run_on(['rhel'])
     def test_authconfig_file(self, host):
         """
-        Verify no /etc/sysconfig/authconfig file, or if it has correct content in RHEL 7.x
+        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
         """
         file_to_check = '/etc/sysconfig/authconfig'
 
-        with host.sudo():
-            if version.parse(host.system_info.release) < version.parse('8.0'):
-                # In RHEL-7, check authconfig content
-                local_file = 'data/azure/authconfig'
-
-                assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-                    f'{file_to_check} has unexpected content'
-            else:
-                # In RHEL-8 authconfig file should not exist
-                assert not host.file(file_to_check).exists, \
-                    f'{file_to_check} should not exist in RHEL 8 and later'
+        assert not host.file(file_to_check).exists, \
+            f'{file_to_check} should not exist in RHEL 8 and later'
 
     @pytest.mark.run_on(['rhel'])
     def test_blocklist(self, host):
