@@ -8,7 +8,7 @@ from lib import test_lib
 
 
 @pytest.fixture
-def instance_data_azure_web(host):
+def instance_data_azure_web(host):  # pylint: disable=bad-indentation
     azure_metadata_url = 'http://169.254.169.254/metadata/instance?api-version=2021-02-01'
     command_to_run = f'curl -s -H Metadata:true --noproxy "*" "{azure_metadata_url}"'
     return json.loads(host.check_output(command_to_run))
