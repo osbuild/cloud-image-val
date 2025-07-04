@@ -114,10 +114,6 @@ class TestsAWS:
             '8.0+': {
                 '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '7.0+': {
-                '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
-                '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
             }
         }
 
@@ -131,12 +127,8 @@ class TestsAWS:
             checksums = checksums_by_version['9.4+']
         elif version.parse('9.0') > system_release >= version.parse('8.10'):
             checksums = checksums_by_version['8.10+']
-        elif system_release >= version.parse('8.6'):
-            checksums = checksums_by_version['8.6+']
-        elif system_release >= version.parse('8.0'):
-            checksums = checksums_by_version['8.0+']
         else:
-            checksums = checksums_by_version['7.0+']
+            checksums = checksums_by_version['8.6+']
 
         with host.sudo():
             for path, md5 in checksums.items():
