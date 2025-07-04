@@ -48,17 +48,6 @@ class TestsAzure:
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
             f'{remote_file} has unexpected content'
 
-    @pytest.mark.run_on(['rhel7.9'])
-    def test_99_azure_product_uuid_rules_file_content(self, host):
-        """
-        Check file /etc/udev/rules.d/99-azure-product-uuid.rules
-        """
-        local_file = 'data/azure/99-azure-product-uuid.rules'
-        remote_file = '/etc/udev/rules.d/99-azure-product-uuid.rules'
-
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
-
     @pytest.mark.run_on(['rhel'])
     def test_authconfig_file(self, host):
         """
