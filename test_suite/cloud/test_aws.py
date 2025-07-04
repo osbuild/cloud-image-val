@@ -449,16 +449,12 @@ class TestsAWS:
     @pytest.mark.run_on(['rhel'])
     def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
         """
-        Check that Elastic Network Adapter support is enabled or disabled accordingly.
+        Check that Elastic Network Adapter support is enabled.
         """
         ena_support = bool(instance_data_aws_cli['EnaSupport'])
 
-        if version.parse(host.system_info.release) < version.parse('7.4'):
-            assert not ena_support, \
-                'ENA support expected to be disabled in RHEL older than 7.4'
-        else:
-            assert ena_support, \
-                'ENA support expected to be enabled in RHEL 7.4 and later'
+        assert ena_support, \
+            'ENA support expected to be enabled in RHEL 7.4 and later'
 
     @pytest.mark.run_on(['rhel'])
     def test_yum_plugins(self, host):
