@@ -460,19 +460,16 @@ class TestsAWS:
     def test_yum_plugins(self, host):
         """
         BugZilla 1932802
-        Earlier than RHEL-8.4, yum plugin product-id and subscription-manager should be disabled by default.
+        Verify yum/dnf product-id and subscription-manager plugins are enabled for RHEL 8.4+.
         """
-        if version.parse(host.system_info.release) < version.parse('8.4'):
-            expect_config = "enabled=0"
-        else:
-            expect_config = "enabled=1"
+        expect_config = "enabled=1"
 
         with host.sudo():
             assert host.file('/etc/yum/pluginconf.d/product-id.conf').contains(expect_config), \
-                'Unexpected yum "product-id" plugin status'
+                'yum "product-id" plugin must be enabled'
 
             assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
-                'Unexpected yum "subscription-manager" plugin status'
+                'yum "subscription-manager" must be enabled'
 
     @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):
