@@ -37,7 +37,7 @@ class TestsAzure:
                 f"The file '{remote_file}' should not exist on RHEL '{system_release}'"
         '''
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_91_azure_datasource_file_content(self, host):
         """
         Check file /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg
