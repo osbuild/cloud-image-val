@@ -83,13 +83,13 @@ class TestsAWS:
     @pytest.mark.run_on(['all'])
     def test_release_version_in_ami_name(self, host, instance_data):
         """
-        Check if release version is on the AMI name
+        Verify the major-minor release version is present in the AMI name.
         """
-        cloud_image_name = instance_data['name']
-        product_version = float(host.system_info.release)
+        ami_name = instance_data['name']
+        system_release = float(host.system_info.release)
 
-        assert str(product_version).replace('.', '-') in cloud_image_name, \
-            'Product version is not in AMI name'
+        assert str(system_release).replace('.', '-') in ami_name, \
+            'System release not found in AMI name'
 
     # TODO: verify logic, think if we should divide
     @pytest.mark.run_on(['rhel'])
