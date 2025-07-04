@@ -266,14 +266,9 @@ class TestsAzure:
     def test_logging_cfg(self, host):
         """
         Check /etc/cloud/cloud.cfg.d/05_logging.cfg
-        * For RHEL-7 it is 06_logging_override.cfg
         """
-        if version.parse(host.system_info.release) < version.parse('8.0'):
-            file_to_check = '/etc/cloud/cloud.cfg.d/06_logging_override.cfg'
-            local_file = 'data/azure/06_logging_override.cfg'
-        else:
-            file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
-            local_file = 'data/azure/05_logging.cfg'
+        file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
+        local_file = 'data/azure/05_logging.cfg'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
             f'{file_to_check} has unexpected content'
