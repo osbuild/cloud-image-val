@@ -192,7 +192,7 @@ class TestsAWS:
     def test_unwanted_packages_are_not_present(self, host):
         """
         Some pkgs are not required in EC2.
-        BugZilla 1888695, 2075815
+        BugZilla 2075815
         """
         unwanted_pkgs = [
             'aic94xx-firmware', 'alsa-firmware', 'alsa-lib', 'alsa-tools-firmware',
@@ -201,17 +201,8 @@ class TestsAWS:
             'iwl3945-firmware', 'iwl4965-firmware', 'iwl5000-firmware', 'iwl5150-firmware',
             'iwl6000-firmware', 'iwl6000g2a-firmware', 'iwl6000g2b-firmware', 'iwl6050-firmware',
             'iwl7260-firmware', 'libertas-sd8686-firmware', 'libertas-sd8787-firmware', 'libertas-usb8388-firmware',
-            'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
+            'firewalld', 'biosdevname', 'plymouth', 'iprutils'
         ]
-
-        system_release = version.parse(host.system_info.release)
-
-        # BugZilla 1888695
-        if version.parse('8.3') > system_release >= version.parse('8.0'):
-            unwanted_pkgs.remove('rng-tools')
-
-        if system_release < version.parse('8.5'):
-            unwanted_pkgs.remove('qemu-guest-agent')
 
         if test_lib.is_rhel_sap(host):
             # In RHEL SAP images, alsa-lib is allowed
