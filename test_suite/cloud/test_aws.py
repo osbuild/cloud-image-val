@@ -43,37 +43,41 @@ class TestsAWS:
         """
         assert host.file('/etc/machine-id').mode == 0o444, 'Expected 444 permissions for /etc/machine-id'
 
-    # TODO: Divide test. Analyze centos
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_ami_name(self, host, instance_data):
-        """
-        Check there is 'RHEL' in RHEL AMIs.
-        In the case of Red Hat SAP AMIs, check that they do not contain "Access2" in the AMI name.
-        In the case of Red Hat High Availability AMIs, check that they are not ARM and the name does not contain "arm64"
-        In the case of Fedora AMIs, check that it follows the right Fedora Cloud-Base name format.
+        """Validates AMI naming conventions based on distribution and type.
+
+        - all RHEL: Must contain 'RHEL'.
+        - RHEL SAP: Must not contain 'Access2' and include 'SAP'.
+        - RHEL HA: Must include 'HA' and not be ARM ('arm64' in name or aarch64 arch).
+        - Fedora: Must follow Fedora Cloud-Base naming format.
         """
         distro = host.system_info.distribution
         ami_name = instance_data['name']
 
         if distro == 'rhel':
-            assert 'RHEL' in ami_name, 'Expected "RHEL" in AMI name for Red Hat image'
+            assert 'RHEL' in ami_name, \
+                "AMI name for RHEL image must contain 'RHEL'."
 
             if test_lib.is_rhel_sap(host):
-                assert 'SAP' in ami_name, 'Expected "SAP" in Red Hat SAP AMI name'
+                assert 'SAP' in ami_name, \
+                    "AMI name for RHEL for SAP with HA and US image must contain 'SAP'."
                 assert 'Access2' not in ami_name, \
-                    'The Access2 images are not needed for this SAP image set (RHELDST-4739)'
+                    "SAP AMI name must not contain 'Access2' (RHELDST-4739)."
 
             if test_lib.is_rhel_high_availability(host):
-                assert 'HA' in ami_name, 'Expected "HA" in Red Hat High Availability AMI name'
+                assert 'HA' in ami_name, \
+                    "AMI name for RHEL High Availability image must contain 'HA'."
                 assert host.system_info.arch != 'aarch64' and 'arm64' not in ami_name, \
-                    'ARM (aarch64/arm64) is not supported in Red Hat High Availability images'
+                    f"RHEL High Availability AMI on architecture '{host.system_info.arch}' " \
+                     "does not support ARM (aarch64/arm64) architectures."
 
         elif distro == 'fedora':
             fedora_ami_name_format = re.compile(
                 r'Fedora-Cloud-Base-[\d]{2}-[\d]{8}.n.[\d].(?:aarch64|x86_64)')
             assert re.match(fedora_ami_name_format, ami_name), \
-                'Unexpected AMI name for Fedora image'
+                "AMI name for Fedora image does not follow the expected Cloud-Base format."
 
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
