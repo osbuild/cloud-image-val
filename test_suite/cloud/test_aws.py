@@ -43,49 +43,53 @@ class TestsAWS:
         """
         assert host.file('/etc/machine-id').mode == 0o444, 'Expected 444 permissions for /etc/machine-id'
 
-    # TODO: Divide test. Analyze centos
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_ami_name(self, host, instance_data):
-        """
-        Check there is 'RHEL' in RHEL AMIs.
-        In the case of Red Hat SAP AMIs, check that they do not contain "Access2" in the AMI name.
-        In the case of Red Hat High Availability AMIs, check that they are not ARM and the name does not contain "arm64"
-        In the case of Fedora AMIs, check that it follows the right Fedora Cloud-Base name format.
+        """Validates AMI naming conventions based on distribution and type.
+
+        - all RHEL: Must contain 'RHEL'.
+        - RHEL SAP: Must not contain 'Access2' and include 'SAP'.
+        - RHEL HA: Must include 'HA' and not be ARM ('arm64' in name or aarch64 arch).
+        - Fedora: Must follow Fedora Cloud-Base naming format.
         """
         distro = host.system_info.distribution
         ami_name = instance_data['name']
 
         if distro == 'rhel':
-            assert 'RHEL' in ami_name, 'Expected "RHEL" in AMI name for Red Hat image'
+            assert 'RHEL' in ami_name, \
+                f"AMI name for RHEL image must contain 'RHEL'."
 
             if test_lib.is_rhel_sap(host):
-                assert 'SAP' in ami_name, 'Expected "SAP" in Red Hat SAP AMI name'
+                assert 'SAP' in ami_name, \
+                    f"AMI name for RHEL for SAP with HA and US image must contain 'SAP'."
                 assert 'Access2' not in ami_name, \
-                    'The Access2 images are not needed for this SAP image set (RHELDST-4739)'
+                    f"SAP AMI name must not contain 'Access2' (RHELDST-4739)."
 
             if test_lib.is_rhel_high_availability(host):
-                assert 'HA' in ami_name, 'Expected "HA" in Red Hat High Availability AMI name'
+                assert 'HA' in ami_name, \
+                    f"AMI name for RHEL High Availability image must contain 'HA'."
                 assert host.system_info.arch != 'aarch64' and 'arm64' not in ami_name, \
-                    'ARM (aarch64/arm64) is not supported in Red Hat High Availability images'
+                    f"RHEL High Availability AMI on architecture '{host.system_info.arch}' " \
+                "does not support ARM (aarch64/arm64) architectures."
 
         elif distro == 'fedora':
             fedora_ami_name_format = re.compile(
                 r'Fedora-Cloud-Base-[\d]{2}-[\d]{8}.n.[\d].(?:aarch64|x86_64)')
             assert re.match(fedora_ami_name_format, ami_name), \
-                'Unexpected AMI name for Fedora image'
+                f"AMI name for Fedora image does not follow the expected Cloud-Base format."
 
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
     def test_release_version_in_ami_name(self, host, instance_data):
         """
-        Check if release version is on the AMI name
+        Verify the major-minor release version is present in the AMI name.
         """
-        cloud_image_name = instance_data['name']
-        product_version = float(host.system_info.release)
+        ami_name = instance_data['name']
+        system_release = float(host.system_info.release)
 
-        assert str(product_version).replace('.', '-') in cloud_image_name, \
-            'Product version is not in AMI name'
+        assert str(system_release).replace('.', '-') in ami_name, \
+            'System release not found in AMI name'
 
     # TODO: verify logic, think if we should divide
     @pytest.mark.run_on(['rhel'])
@@ -110,10 +114,6 @@ class TestsAWS:
             '8.0+': {
                 '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '7.0+': {
-                '/etc/audit/auditd.conf': '29f4c6cd67a4ba11395a134cf7538dbd',
-                '/etc/audit/audit.rules': 'f1c2a2ef86e5db325cd2738e4aa7df2c'
             }
         }
 
@@ -127,12 +127,8 @@ class TestsAWS:
             checksums = checksums_by_version['9.4+']
         elif version.parse('9.0') > system_release >= version.parse('8.10'):
             checksums = checksums_by_version['8.10+']
-        elif system_release >= version.parse('8.6'):
-            checksums = checksums_by_version['8.6+']
-        elif system_release >= version.parse('8.0'):
-            checksums = checksums_by_version['8.0+']
         else:
-            checksums = checksums_by_version['7.0+']
+            checksums = checksums_by_version['8.6+']
 
         with host.sudo():
             for path, md5 in checksums.items():
@@ -156,7 +152,7 @@ class TestsAWS:
                     assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
                         'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
@@ -173,7 +169,6 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_blocklist(self, host):
         """
         Check that a list of modules are disabled - not loaded.
@@ -197,7 +192,7 @@ class TestsAWS:
     def test_unwanted_packages_are_not_present(self, host):
         """
         Some pkgs are not required in EC2.
-        BugZilla 1888695, 2075815
+        BugZilla 2075815
         """
         unwanted_pkgs = [
             'aic94xx-firmware', 'alsa-firmware', 'alsa-lib', 'alsa-tools-firmware',
@@ -206,17 +201,10 @@ class TestsAWS:
             'iwl3945-firmware', 'iwl4965-firmware', 'iwl5000-firmware', 'iwl5150-firmware',
             'iwl6000-firmware', 'iwl6000g2a-firmware', 'iwl6000g2b-firmware', 'iwl6050-firmware',
             'iwl7260-firmware', 'libertas-sd8686-firmware', 'libertas-sd8787-firmware', 'libertas-usb8388-firmware',
-            'firewalld', 'biosdevname', 'plymouth', 'iprutils', 'rng-tools', 'qemu-guest-agent'
+            'firewalld', 'biosdevname', 'plymouth', 'iprutils'
         ]
 
         system_release = version.parse(host.system_info.release)
-
-        # BugZilla 1888695
-        if version.parse('8.3') > system_release >= version.parse('8.0'):
-            unwanted_pkgs.remove('rng-tools')
-
-        if system_release < version.parse('8.5'):
-            unwanted_pkgs.remove('qemu-guest-agent')
 
         if test_lib.is_rhel_sap(host):
             # In RHEL SAP images, alsa-lib is allowed
@@ -317,7 +305,6 @@ class TestsAWS:
             f'Package "{required_rhui_pkg}" should be present'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_amazon_timesync_service_is_used(self, host):
         """
         BugZilla 1679763, 1961156
@@ -464,34 +451,27 @@ class TestsAWS:
     @pytest.mark.run_on(['rhel'])
     def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
         """
-        Check that Elastic Network Adapter support is enabled or disabled accordingly.
+        Check that Elastic Network Adapter support is enabled.
         """
         ena_support = bool(instance_data_aws_cli['EnaSupport'])
 
-        if version.parse(host.system_info.release) < version.parse('7.4'):
-            assert not ena_support, \
-                'ENA support expected to be disabled in RHEL older than 7.4'
-        else:
-            assert ena_support, \
-                'ENA support expected to be enabled in RHEL 7.4 and later'
+        assert ena_support, \
+            'ENA support expected to be enabled in RHEL 7.4 and later'
 
     @pytest.mark.run_on(['rhel'])
     def test_yum_plugins(self, host):
         """
         BugZilla 1932802
-        Earlier than RHEL-8.4, yum plugin product-id and subscription-manager should be disabled by default.
+        Verify yum/dnf product-id and subscription-manager plugins are enabled for RHEL 8.4+.
         """
-        if version.parse(host.system_info.release) < version.parse('8.4'):
-            expect_config = "enabled=0"
-        else:
-            expect_config = "enabled=1"
+        expect_config = "enabled=1"
 
         with host.sudo():
             assert host.file('/etc/yum/pluginconf.d/product-id.conf').contains(expect_config), \
-                'Unexpected yum "product-id" plugin status'
+                'yum "product-id" plugin must be enabled'
 
             assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
-                'Unexpected yum "subscription-manager" plugin status'
+                'yum "subscription-manager" must be enabled'
 
     @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):

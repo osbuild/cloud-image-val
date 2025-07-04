@@ -8,7 +8,7 @@ from lib import test_lib
 
 
 @pytest.fixture
-def instance_data_azure_web(host):
+def instance_data_azure_web(host):  # pylint: disable=bad-indentation
     azure_metadata_url = 'http://169.254.169.254/metadata/instance?api-version=2021-02-01'
     command_to_run = f'curl -s -H Metadata:true --noproxy "*" "{azure_metadata_url}"'
     return json.loads(host.check_output(command_to_run))
@@ -16,27 +16,25 @@ def instance_data_azure_web(host):
 
 @pytest.mark.order(2)
 class TestsAzure:
-    @pytest.mark.run_on(['rhel7.9'])
-    def test_66_azure_storage_rules_file_content(self, host):
-        """
-        Check that file '/etc/udev/rules.d/66-azure-storage.rules' exists
-        """
-        remote_file = '/etc/udev/rules.d/66-azure-storage.rules'
-
-        assert host.file(remote_file).exists, f"The file '{remote_file}' doesn't exist"
-
-    @pytest.mark.run_on(['rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_68_azure_sriov_nm_unmanaged_rules_file_content(self, host):
         """
         Check file /etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules
         """
+        system_release = version.parse(host.system_info.release)
         local_file = 'data/azure/68-azure-sriov-nm-unmanaged.rules'
         remote_file = '/etc/udev/rules.d/68-azure-sriov-nm-unmanaged.rules'
 
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
+        if system_release.major == 8:
+            assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
+                f'{remote_file} has unexpected content'
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+        # RHEL-100574
+        if system_release >= version.parse('9.7') or system_release >= version.parse('10.1'):
+            assert not host.file(remote_file).exists, \
+                f"The file '{remote_file}' should not exist on RHEL '{system_release}'"
+
+    @pytest.mark.run_on(['rhel'])
     def test_91_azure_datasource_file_content(self, host):
         """
         Check file /etc/cloud/cloud.cfg.d/91-azure_datasource.cfg
@@ -47,35 +45,15 @@ class TestsAzure:
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
             f'{remote_file} has unexpected content'
 
-    @pytest.mark.run_on(['rhel7.9'])
-    def test_99_azure_product_uuid_rules_file_content(self, host):
-        """
-        Check file /etc/udev/rules.d/99-azure-product-uuid.rules
-        """
-        local_file = 'data/azure/99-azure-product-uuid.rules'
-        remote_file = '/etc/udev/rules.d/99-azure-product-uuid.rules'
-
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
-
     @pytest.mark.run_on(['rhel'])
     def test_authconfig_file(self, host):
         """
-        Verify no /etc/sysconfig/authconfig file, or if it has correct content in RHEL 7.x
+        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
         """
         file_to_check = '/etc/sysconfig/authconfig'
 
-        with host.sudo():
-            if version.parse(host.system_info.release) < version.parse('8.0'):
-                # In RHEL-7, check authconfig content
-                local_file = 'data/azure/authconfig'
-
-                assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-                    f'{file_to_check} has unexpected content'
-            else:
-                # In RHEL-8 authconfig file should not exist
-                assert not host.file(file_to_check).exists, \
-                    f'{file_to_check} should not exist in RHEL 8 and later'
+        assert not host.file(file_to_check).exists, \
+            f'{file_to_check} should not exist in RHEL 8 and later'
 
     @pytest.mark.run_on(['rhel'])
     def test_blocklist(self, host):
@@ -285,14 +263,9 @@ class TestsAzure:
     def test_logging_cfg(self, host):
         """
         Check /etc/cloud/cloud.cfg.d/05_logging.cfg
-        * For RHEL-7 it is 06_logging_override.cfg
         """
-        if version.parse(host.system_info.release) < version.parse('8.0'):
-            file_to_check = '/etc/cloud/cloud.cfg.d/06_logging_override.cfg'
-            local_file = 'data/azure/06_logging_override.cfg'
-        else:
-            file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
-            local_file = 'data/azure/05_logging.cfg'
+        file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
+        local_file = 'data/azure/05_logging.cfg'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
             f'{file_to_check} has unexpected content'
