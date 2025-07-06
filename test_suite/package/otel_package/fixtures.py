@@ -68,7 +68,7 @@ exporters:
     log_group_name: "testing-logs-emf"
     log_stream_name: "testing-integrations-stream-emf"
     region: "us-east-1"
-    
+
 service:
   pipelines:
     logs:
