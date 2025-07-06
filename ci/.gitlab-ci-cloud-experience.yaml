@@ -62,13 +62,12 @@ variables:
     - echo "Custom packages to be bundled with generated cloud image (${CUSTOM_PACKAGES})"
     - |
       if [[ "$RUNNER" == aws/rhel-9.* ]]; then
-        echo "Setting netavark as network backend for RHEL 9"
         sudo mkdir -p /etc/containers/containers.conf.d
         sudo tee /etc/containers/containers.conf.d/network_backend.conf > /dev/null << 'EOF'
-        [network]
-        network_backend = "netavark"
-        EOF
-      fi
+  [network]
+  network_backend = "netavark"
+  EOF
+    fi
   variables:
     ARTIFACTS: "/tmp/"
   after_script:
