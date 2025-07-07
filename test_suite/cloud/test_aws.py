@@ -71,7 +71,7 @@ class TestsAWS:
                     "AMI name for RHEL High Availability image must contain 'HA'."
                 assert host.system_info.arch != 'aarch64' and 'arm64' not in ami_name, \
                     f"RHEL High Availability AMI on architecture '{host.system_info.arch}' " \
-                     "does not support ARM (aarch64/arm64) architectures."
+                    "does not support ARM (aarch64/arm64) architectures."
 
         elif distro == 'fedora':
             fedora_ami_name_format = re.compile(
@@ -774,7 +774,6 @@ class TestsAWSSAP:
     # TODO: Only applicable to AWS
     @pytest.mark.run_on(['rhel'])
     def test_ha_specific_script(self, host, rhel_high_availability_only):
-        # TODO: This script does not run correctly on RHEL-9.0 since awscli is not present in the repo.
         local_file_path = 'scripts/aws/rhel-ha-aws-check.sh'
 
         result = test_lib.run_local_script_in_host(host, local_file_path)
