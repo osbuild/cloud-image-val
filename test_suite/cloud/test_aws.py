@@ -502,7 +502,7 @@ class TestsAWS:
         assert file_found, 'sgdisk.conf file not found.'
         assert config_ok, 'Expected configuration was not found in sgdisk.conf'
 
-    @pytest.mark.run_on(['rhel8.5', 'rhel8.6', 'rhel9.0'])
+    @pytest.mark.run_on(['rhel'])
     def test_dracut_conf_xen(self, host):
         """
         BugZilla 1849082
@@ -517,7 +517,7 @@ class TestsAWS:
         with host.sudo():
             if host.system_info.arch == 'aarch64':
                 assert not host.file(file_to_check).exists, \
-                    f'Unexpected configuration file found in "{file_to_check}".'
+                    f'Unexpected configuration file found: "{file_to_check}".'
             else:
                 assert host.file(file_to_check).contains(expected_config), \
                     f'Expected configuration was not found in "{file_to_check}"'
