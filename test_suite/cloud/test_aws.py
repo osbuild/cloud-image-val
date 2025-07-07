@@ -561,8 +561,8 @@ class TestsAWS:
         print(f"kernel version: {host.check_output('uname -r')}")
 
         with host.sudo():
-            assert host.run_test('yum -y install install kernel-debug-devel-$(uname -r)')
-            assert host.run_test('yum -y install install kernel-debug-$(uname -r)')
+            assert host.run_test('yum -y install kernel-debug-devel-$(uname -r)')
+            assert host.run_test('yum -y install kernel-debug-$(uname -r)')
 
     @pytest.mark.run_on(['all'])
     def test_number_of_cpus_are_correct(self, host, instance_data_aws_cli):
