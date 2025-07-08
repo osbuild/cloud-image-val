@@ -771,7 +771,6 @@ class TestsNetworking:
                     f'There is no keyfile plugin as "{keyfile_plugin}"'
 
     @pytest.mark.run_on(['rhel'])
-    @pytest.mark.exclude_on(['<rhel8.5'])
     def test_network_manager_cloud_setup(self, host, instance_data):
         """
         BugZilla 1822853
@@ -794,11 +793,6 @@ class TestsNetworking:
                 ]
             }
         }
-
-        # EXDSP-813
-        if instance_data['cloud'] == 'azure' and \
-                version.parse(host.system_info.release) == version.parse('8.5'):
-            pytest.skip("There is a known issue affecting RHEL 8.5 on Azure images and won't be fixed (EXDSP-813).")
 
         with host.sudo():
             assert host.package('NetworkManager-cloud-setup').is_installed, \
