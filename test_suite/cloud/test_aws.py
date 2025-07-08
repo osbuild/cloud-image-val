@@ -422,20 +422,6 @@ class TestsAWS:
             assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
                 f'Actual value in io_timeout is not {expected_value}'
 
-    @pytest.mark.run_on(['<rhel10'])
-    def test_cmdline_ifnames(self, host):
-        """
-        BugZilla 1859926
-        ifnames should be specified
-        https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking-ena.html
-
-        RHELPLAN-103894 net.ifnames=0 removed in RHEL10
-        There is a separate test checking on it: test_net_ifnames_usage
-        """
-        with host.sudo():
-            assert host.file('/proc/cmdline').contains('net.ifnames=0'), \
-                'ifnames expected to be specified'
-
     @pytest.mark.run_on(['rhel'])
     def test_libc6_xen_conf_file_does_not_exist(self, host):
         """
