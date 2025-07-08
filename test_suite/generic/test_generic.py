@@ -530,7 +530,6 @@ class TestsServices:
 
 @pytest.mark.pub
 @pytest.mark.run_on(['rhel'])
-@pytest.mark.exclude_on(['<rhel8.3'])
 @pytest.mark.usefixtures('rhel_aws_marketplace_only')
 class TestsSubscriptionManager:
     def test_subscription_manager_auto(self, host, instance_data):
