@@ -154,11 +154,7 @@ class TestsGeneric:
         Issue RHELPLAN-60817
         """
         system_release = version.parse(host.system_info.release)
-
-        if system_release < version.parse('8.0'):
-            rpm_to_check = 'redhat-release-server'
-        else:
-            rpm_to_check = 'redhat-release'
+        rpm_to_check = 'redhat-release'
 
         with host.sudo():
             host.run_test(f'rpm -q {rpm_to_check}')
