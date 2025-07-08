@@ -279,22 +279,29 @@ class TestsGeneric:
         else:
             assert not host.mount_point("/boot").exists, "/boot mount is detected"
 
-    @pytest.mark.run_on(['rhel10'])
-    def test_net_ifnames_usage(self, host):
+    @pytest.mark.run_on(['rhel'])
+    def test_net_ifnames_usage(self, host, instance_data):
         """
-        Check that net.ifnames=0 is not used as a kernel boot parameter
-        Jira: CLOUDX-979
+        CLOUDX-979, RHELPLAN-103894 drop net.ifnames=0 kernel boot parameter on RHEL10 and later
+        BZ1859926 ifnames should be specified on AWS for RHEL9 and earlier releases
+        https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/enhanced-networking-ena.html
         """
-
         kernel_boot_param = 'net.ifnames=0'
         cmdline_file = '/proc/cmdline'
         grub_default_file = '/etc/default/grub'
+        system_release_major = version.parse(host.system_info.release).major
 
-        assert not host.file(cmdline_file).contains(kernel_boot_param), \
-            f'There is unexpected {kernel_boot_param} in kernel real-time boot parameters.'
+        if system_release_major >= 10:
+            assert not host.file(cmdline_file).contains(kernel_boot_param), \
+                f'There is unexpected {kernel_boot_param} in kernel real-time boot parameters.'
 
-        assert not host.file(grub_default_file).contains(kernel_boot_param), \
-            f'{kernel_boot_param} is found in {grub_default_file}!'
+            assert not host.file(grub_default_file).contains(kernel_boot_param), \
+                f'{kernel_boot_param} is found in {grub_default_file}!'
+        else:
+            if instance_data['cloud'] == 'aws':
+                with host.sudo():
+                    assert host.file(cmdline_file).contains(kernel_boot_param), \
+                        'ifnames expected to be specified'
 
     @pytest.mark.run_on(['rhel'])
     def test_tty0_config(self, host):
@@ -355,7 +362,7 @@ class TestsGeneric:
     @pytest.mark.run_on(['all'])
     def test_no_extra_public_keys(self, host):
         """
-        Verify there's only one key in /root/.ssh/authorized_keys
+        Verify there is only one key in /root/.ssh/authorized_keys
         BugZilla 2127969
         """
         with host.sudo():
