@@ -109,7 +109,7 @@ def get_modified_methods():
                     return None
                 elif method[0:4] != 'test':
                     print(f'The method "{method}" is not a test')
-                    return None
+                    continue
                 else:
                     modified_methods.add(method)
 
