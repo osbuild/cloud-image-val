@@ -13,7 +13,7 @@ Example: After upgrading from RHEL-9.6 to RHEL-10.0, make sure components work.
 
 @pytest.mark.cut
 class TestsComponentsUpgrade:
-    @pytest.mark.run_on(['rhel9.6', 'rhel10.0'])
+    @pytest.mark.run_on(['rhel9.7', 'rhel10.1'])
     def test_cut_rhel_90_to_rhel_100(self, host, instance_data):
         console_lib.print_divider('Testing components BEFORE major upgrade...')
         assert run_cloudx_components_testing.main()
@@ -36,7 +36,7 @@ class TestsComponentsUpgrade:
 
         # We will use the latest compose by defualt.
         # This can be manually changed in a CIV pull request for debugging purposes.
-        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.0"
+        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.1"
 
         basearch = host.system_info.arch
 
