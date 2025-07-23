@@ -5,8 +5,8 @@
   RUNNER:
     - aws/rhel-8.10-ga-x86_64
     - aws/rhel-9.5-ga-x86_64
-    # - aws/rhel-9.6-ga-x86_64
-    # - aws/rhel-10.0-ga-x86_64
+    #- aws/rhel-9.6-ga-x86_64
+    #- aws/rhel-10.0-ga-x86_64
     - aws/centos-stream-9-x86_64
     - aws/centos-stream-10-x86_64
   NIGHTLY: [ "false" ]
@@ -15,8 +15,8 @@
   RUNNER:
     - aws/rhel-8.10-ga-aarch64
     - aws/rhel-9.5-ga-aarch64
-    # - aws/rhel-9.6-ga-aarch64
-    # - aws/rhel-10.0-ga-aarch64
+    #- aws/rhel-9.6-ga-aarch64
+    #- aws/rhel-10.0-ga-aarch64
     - aws/centos-stream-9-aarch64
     - aws/centos-stream-10-aarch64
   INTERNAL_NETWORK: [ "true" ]
