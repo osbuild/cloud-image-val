@@ -75,7 +75,7 @@ gpgcheck=0
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.6 to RHEL-10.0 even after reboot.'
+            'Failed to upgrade from RHEL-9.7 to RHEL-10.1 even after reboot.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
