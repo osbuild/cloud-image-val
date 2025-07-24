@@ -1,4 +1,5 @@
 import pytest
+import time
 from packaging import version
 from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
@@ -62,6 +63,8 @@ gpgcheck=0
             host,
             'leapp upgrade --no-rhsm --enablerepo AppStream10 --enablerepo BaseOS10',
             capture_result=True)
+        print('debug')
+        time.sleep(7200)
 
         if result.failed:
             reapp_report_file = '/var/log/leapp/leapp-report.txt'
@@ -75,7 +78,7 @@ gpgcheck=0
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.6 to RHEL-10.0 even after reboot.'
+            'Failed to upgrade from RHEL-9.7 to RHEL-10.1 even after reboot.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
