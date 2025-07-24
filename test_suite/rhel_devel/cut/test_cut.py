@@ -1,4 +1,5 @@
 import pytest
+import time
 from packaging import version
 from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
@@ -62,6 +63,8 @@ gpgcheck=0
             host,
             'leapp upgrade --no-rhsm --enablerepo AppStream10 --enablerepo BaseOS10',
             capture_result=True)
+        print('debug')
+        time.sleep(7200)
 
         if result.failed:
             reapp_report_file = '/var/log/leapp/leapp-report.txt'
