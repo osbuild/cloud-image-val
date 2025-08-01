@@ -413,29 +413,98 @@ class TestsAWS:
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('rhel_aws_marketplace_only')
     def test_yum_group_install(self, host):
+        """
+        Test that the "Development tools" package group can be successfully installed.
+
+        This test verifies system package management functionality by attempting to install
+        the Development tools group, which contains essential packages for software development
+        like gcc, make, and glibc-devel.
+
+        The test also validates RPM database health before installation and handles known
+        subscription manager issues that may interfere with package installation.
+
+        Failure of this test indicates system-level issues such as:
+        - RPM database corruption
+        - Repository configuration problems
+        - RHUI content availability issues
+        - Subscription management issues
+        - Package dependency conflicts
+        """
         with host.sudo():
+            # Assert RPM database health before attempting installation
+            rpm_check = host.run('rpm --verifydb')
+            assert rpm_check.succeeded, \
+                f'RPM database is corrupted or inaccessible. Error: {rpm_check.stderr}. ' \
+                'This is a system-level issue that must be resolved.'
+
             dev_tools_install_command = 'yum -y groupinstall "Development tools"'
             result = host.run(dev_tools_install_command)
 
             if result.failed:
-                print(f'Command faild with error on first attempt: {result.stderr}')
+                print(f'Command failed with error on first attempt: {result.stderr}')
                 err_message = "This system is not registered to Red Hat Subscription Management"
                 if err_message in result.stderr:
-                    print('"Development tools" installation attempt failed. Trying to apply a workaround...')
-                    host.run(
+                    print('"Development tools" installation failed. Applying a workaround...')
+                    workaround_result = host.run(
                         'echo -e "enabled=0" > /etc/yum/pluginconf.d/subscription-manager.conf'
                         ' && yum clean all'
                     )
 
-                    assert host.run(dev_tools_install_command).succeeded, (
-                        f'Error while installing Development tools '
-                        f'group after two attempts with error: {result.stderr}'
-                    )
-            print('"Development tools" installed successfully.')
+                    if workaround_result.failed:
+                        print(f'Workaround failed: {workaround_result.stderr}')
 
-            package_to_check = 'glibc-devel'
-            assert host.package(package_to_check).is_installed, \
-                f'{package_to_check} is not installed'
+                    retry_result = host.run(dev_tools_install_command)
+                    assert retry_result.succeeded, (
+                        'Error while installing Development tools group after two attempts.\n'
+                        f'First attempt error: {result.stderr}\n'
+                        f'Retry attempt error: {retry_result.stderr}'
+                    )
+                else:
+                    # If it's not a subscription issue, fail immediately with detailed info
+                    assert result.succeeded, (
+                        'Development tools installation failed with unexpected error: '
+                        f'{result.stderr}\n'
+                        'Possible repository configuration or RHUI content availability issues.'
+                    )
+
+            # Verify installation with multiple key packages from Development tools group
+            essential_dev_packages = [
+                'gcc',           # C compiler
+                'gcc-c++',       # C++ compiler
+                'glibc-devel',   # C library development files
+                'make',          # Build automation tool
+                'pkgconf'        # Package configuration tool (replaces pkg-config in newer RHEL)
+            ]
+
+            # Check what Development tools packages are actually installed
+            print('Verifying Development tools packages installation...')
+            test_lib.print_host_command_output(
+                host, 'rpm -qa | grep -E "(gcc|glibc-devel|make|pkgconf)" | sort')
+
+            missing_packages = []
+            for package in essential_dev_packages:
+                if not host.package(package).is_installed:
+                    missing_packages.append(package)
+
+            # Provide detailed failure information if packages are missing
+            if missing_packages:
+                print('Missing essential Development tools packages: '
+                      f'{", ".join(missing_packages)}')
+
+                # Show what was actually installed vs what was expected
+                test_lib.print_host_command_output(host, 'yum history list | head -10')
+                test_lib.print_host_command_output(host, 'rpm -qa | grep -i devel | wc -l')
+
+                # Check if this might be an RPM database issue
+                rpm_verify = host.run('rpm -V glibc-devel 2>/dev/null')
+                if rpm_verify.failed:
+                    print('RPM verification failed - possible database corruption')
+
+                assert False, (
+                    'Development tools group installation appeared to succeed, '
+                    f'but essential packages are missing: {", ".join(missing_packages)}. '
+                    'This may indicate RPM database issues or incomplete group installation.'
+                )
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
