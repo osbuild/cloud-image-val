@@ -475,17 +475,34 @@ class TestsAWS:
         Check that specified gpg keys are installed
         """
         with host.sudo():
-            # print the gpg public keys installed
-            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+            # Query all installed RPMs and their GPG signature status
+            rpm_signature_query_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\\n'"
 
-            gpg_pubkey_base_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
+            # Get all lines for software packages
+            package_signature_lines = host.check_output(
+                rpm_signature_query_cmd + ' | grep -v gpg-pubkey'
+            ).splitlines()
 
-            # check no pkg signature is none
-            assert 'none' not in host.check_output(gpg_pubkey_base_cmd + '| grep -v gpg-pubkey'), \
-                'No pkg signature must be disabled'
+            # Identify any lines that indicate an unsigned package
+            # (i.e., contain 'none' in the signature field)
+            unsigned_packages = [line for line in package_signature_lines if 'none' in line]
+
+            # Construct a detailed error message if unsigned packages are found.
+            error_message = (
+                "ERROR: The following software packages were found to be installed "
+                "without a valid GPG signature:\n"
+                f"{chr(10).join(unsigned_packages)}\n"
+                "This indicates that signature verification might be disabled, or "
+                "packages were installed with '--nogpgcheck'. "
+                "Ensure 'gpgcheck=1' is set for all enabled repositories and "
+                "packages are from trusted sources."
+            )
+
+            # Assert that no unsigned packages were found.
+            assert not unsigned_packages, error_message
 
             # check use only one keyid
-            key_ids_command = ' '.join([gpg_pubkey_base_cmd,
+            key_ids_command = ' '.join([rpm_signature_query_cmd,
                                         "| grep -vE '(gpg-pubkey|rhui)'",
                                         "| awk -F' ' '{print $NF}' | sort | uniq | wc -l"])
             assert int(host.check_output(key_ids_command)) == 1, \
