@@ -574,17 +574,70 @@ class TestsAWS:
         Check that specified gpg keys are installed
         """
         with host.sudo():
-            # print the gpg public keys installed
-            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+            # Query all installed RPMs and their GPG signature status
+            rpm_signature_query_cmd = (
+                "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} "
+                "%{SIGPGP:pgpsig}\\n'"
+            )
+            filter_gpg_pubkey = f"{rpm_signature_query_cmd} | grep -v gpg-pubkey"
 
-            gpg_pubkey_base_cmd = "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} %{SIGPGP:pgpsig}\n'"
+            # Get all lines for software packages
+            package_signature_lines = host.check_output(filter_gpg_pubkey).splitlines()
 
-            # check no pkg signature is none
-            assert 'none' not in host.check_output(gpg_pubkey_base_cmd + '| grep -v gpg-pubkey'), \
-                'No pkg signature must be disabled'
+            # --- START WORKAROUND: RPM Signature Check Fix (2025-08-04) RHEL-107187 ---
+
+            # Identify any lines that indicate an unsigned package
+            # (i.e., contain 'none' in the signature field)
+            # unsigned_packages = [line for line in package_signature_lines if 'none' in line]
+
+            # Construct a detailed error message if unsigned packages are found.
+            # error_message = (
+            #    "ERROR: The following software packages were found to be installed "
+            #    "without a valid GPG signature:\n"
+            #    f"{chr(10).join(unsigned_packages)}\n"
+            #    "This indicates that signature verification might be disabled, or "
+            #    "packages were installed with '--nogpgcheck'. "
+            #    "Ensure 'gpgcheck=1' is set for all enabled repositories and "
+            #    "packages are from trusted sources."
+            # )
+
+            # Assert that no unsigned packages were found.
+            # assert not unsigned_packages, error_message
+
+            unsigned_packages_from_query = []
+            for line in package_signature_lines:
+                if 'none' in line:
+                    unsigned_packages_from_query.append(line)
+
+            if unsigned_packages_from_query:
+                print("\n--- Packages flagged as 'none' by initial query - potential false positives ---")
+
+                for pkg_line in unsigned_packages_from_query:
+                    parts = pkg_line.split(' ')
+                    package_full_name = parts[0]  # e.g., kernel-core-5.14.0-570.30.1.el9_6
+
+                    print(f"Checking '{package_full_name}' with 'rpm -qi'...")
+
+                    qi_output = host.check_output(f"rpm -qi {package_full_name}")
+
+                    signature_check_regex = re.compile(
+                        r"^\s*Signature\s*:\s*(RSA/SHA256|DSA/SHA|PGP|GPG|V3|V4).*Key ID\s+[0-9a-fA-F]+",
+                        re.MULTILINE | re.IGNORECASE
+                    )
+
+                    # Search the entire output for the robust signature pattern
+                    match = signature_check_regex.search(qi_output)
+
+                    # Assert that the signature line and its content are found
+                    assert match, \
+                        f"FAIL: '{package_full_name}' does NOT have a valid 'Signature :' line " \
+                        f"or it's in an unexpected format in 'rpm -qi' output. " \
+                        f"This is truly unsigned or problematic."
+
+            # --- END WORKAROUND: RPM Signature Check Fix ---
 
             # check use only one keyid
-            key_ids_command = ' '.join([gpg_pubkey_base_cmd,
+            key_ids_command = ' '.join([rpm_signature_query_cmd,
                                         "| grep -vE '(gpg-pubkey|rhui)'",
                                         "| awk -F' ' '{print $NF}' | sort | uniq | wc -l"])
             assert int(host.check_output(key_ids_command)) == 1, \
