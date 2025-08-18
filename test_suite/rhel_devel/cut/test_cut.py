@@ -29,6 +29,13 @@ class TestsComponentsUpgrade:
 
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
+        console_lib.print_divider('Migrating legacy network configuration workaround')
+        if host.file('/etc/sysconfig/network-scripts/ifcfg-eth0').exists:
+            test_lib.print_host_command_output(
+                host,
+                'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
+            )
+
         console_lib.print_divider('Installing leapp package...')
         result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
 
@@ -60,6 +67,7 @@ gpgcheck=0
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
             host,
+            'LEAPP_UNSUPPORTED=1 LEAPP_DEVEL_SKIP_CHECK_OS_RELEASE=1 '
             'leapp upgrade --no-rhsm --enablerepo AppStream10 --enablerepo BaseOS10',
             capture_result=True)
 
@@ -75,7 +83,7 @@ gpgcheck=0
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.6 to RHEL-10.0 even after reboot.'
+            'Failed to upgrade from RHEL-9.7 to RHEL-10.1 even after reboot.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
