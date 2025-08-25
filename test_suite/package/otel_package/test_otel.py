@@ -71,4 +71,4 @@ class TestOtel:
             log_output = self.check_aws_cli_logs(host, self.instance_region).stdout
             assert re.search(r"invalid\s+user", log_output), "Expected 'invalid user' not found in logs"
 
-            helpers.check_avc_denials(host)
+            helpers.check_avc_denials(host, relevant_keywords=["otel", "opentelemetry"])

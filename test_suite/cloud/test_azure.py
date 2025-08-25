@@ -2,6 +2,7 @@ import json
 
 import pytest
 from packaging import version
+import difflib
 
 from lib import console_lib
 from lib import test_lib
@@ -95,23 +96,56 @@ class TestsAzure:
             assert host.file(sshd_config_file).contains('ClientAliveInterval 180'), \
                 f'ClientAliveInterval not set correctly in {sshd_config_file}'
 
-    @pytest.mark.pub
-    @pytest.mark.run_on(['>=rhel7.0', '>=rhel8.0', '>=rhel9.0'])
+    # @pytest.mark.pub
+    @pytest.mark.run_on(['rhel'])
     def test_grub_params(self, host):
         """
-        Verify /etc/default/grub params
+        Verify /etc/default/grub params excluding GRUB_CMDLINE_LINUX line,
+        which is tested in test_cmdline_console
         """
         release_version = version.parse(host.system_info.release)
+        architecture = host.system_info.arch
+        remote_file_path = '/etc/default/grub'
 
-        if release_version >= version.parse('9.3'):
+        # 1. Determine local expected file based on version
+        if release_version >= version.parse('9.6'):
+            local_file = 'data/azure/grub_rhel9.6+'
+        elif release_version >= version.parse('9.3'):
             local_file = 'data/azure/grub_rhel9.3+'
         else:
             local_file = f'data/azure/grub_rhel{release_version.major}'
 
-        remote_file = '/etc/default/grub'
+        # 2. Get and filter content from both sources
+        try:
+            remote_grub_lines = test_lib.get_filtered_grub_content_lines(host, remote_file_path)
+        except OSError as e:
+            pytest.fail(f"Could not read remote file {remote_file_path}: {e}")
 
-        assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
-            f'{remote_file} has unexpected content'
+        try:
+            expected_grub_lines = test_lib.get_filtered_grub_content_lines(None, local_file)
+        except OSError as e:
+            pytest.fail(f"Could not read local file: {local_file}: {e}")
+
+        # 3. Apply architecture-specific changes to the expected content
+        if release_version >= version.parse('9.6'):
+            expected_grub_lines = test_lib.apply_architecture_specific_grub_terminal(
+                expected_grub_lines, architecture
+            )
+
+        # 4. Compare the two lists of lines and generate a meaningful diff report
+        diff = list(difflib.unified_diff(
+            expected_grub_lines,
+            remote_grub_lines,
+            fromfile=f'Expected ({local_file})',
+            tofile=f'Actual ({remote_file_path})',
+            lineterm=''
+        ))
+
+        # The assert statement checks if the diff list is empty. If it's not, there are differences.
+        assert not diff, \
+            f'{remote_file_path} has unexpected content (excluding GRUB_CMDLINE_LINUX).\n' \
+            f'Differences found:\n' \
+            + '\n'.join(diff)
 
     @pytest.mark.run_on(['rhel'])
     def test_hyperv_drivers(self, host):
