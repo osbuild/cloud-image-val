@@ -146,56 +146,6 @@ def compare_local_and_remote_file(host,
         return result.exit_status == 0
 
 
-def get_filtered_grub_content_lines(host_object, file_path, exclude_pattern=r"^GRUB_CMDLINE_LINUX"):
-    """Reads file content from host or local, filters lines, and returns a list of lines."""
-    if host_object:
-        # Assuming a `host` object exists for remote files
-        content = host_object.file(file_path).content_string
-    else:
-        # Assuming a simple file path for local files
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-    return [
-        line.strip()
-        for line in content.splitlines()
-        if line.strip() and not re.match(exclude_pattern, line.strip())
-    ]
-
-
-def apply_architecture_specific_grub_terminal(lines, architecture):
-    """
-    Updates GRUB_TERMINAL in a list of lines based on architecture.
-    Assumes GRUB_TERMINAL appears exactly once.
-    """
-    updated_lines = []
-    found_grub_terminal_count = 0
-
-    if architecture == 'x86_64':
-        expected_line = 'GRUB_TERMINAL="serial"'
-    elif architecture == 'aarch64':
-        expected_line = 'GRUB_TERMINAL="console"'
-
-    for line in lines:
-        if line.startswith('GRUB_TERMINAL='):
-            found_grub_terminal_count += 1
-            updated_lines.append(expected_line)
-        else:
-            updated_lines.append(line)
-
-    # Add a post-loop assertion for robustness
-    if found_grub_terminal_count > 1:
-        raise ValueError(
-            f"Expected exactly one 'GRUB_TERMINAL=' line, but found {found_grub_terminal_count}."
-        )
-    elif found_grub_terminal_count == 0:
-        raise ValueError(
-            "Expected exactly one 'GRUB_TERMINAL=' line, but found None."
-        )
-
-    return updated_lines
-
-
 def filter_host_log_file_by_keywords(host,
                                      log_file,
                                      log_levels,

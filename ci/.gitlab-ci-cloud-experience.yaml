@@ -60,12 +60,6 @@ variables:
     - python3 schutzbot/get_civ_config.py /tmp/civ_vars.sh && source /tmp/civ_vars.sh
     - echo "Running packages testing for ${RUNNER}..."
     - echo "Custom packages to be bundled with generated cloud image (${CUSTOM_PACKAGES})"
-    - |
-      sudo mkdir -p /etc/containers/containers.conf.d
-      sudo tee /etc/containers/containers.conf.d/network_backend.conf > /dev/null << EOF
-      [network]
-      network_backend = "netavark"
-      EOF
   variables:
     ARTIFACTS: "/tmp/"
   after_script:
