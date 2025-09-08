@@ -6,5 +6,7 @@ GRUB_DISABLE_SUBMENU=true
 GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
 GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
 GRUB_TERMINAL="serial"
+GRUB_TERMINAL_INPUT="serial"
+GRUB_TERMINAL_OUTPUT="serial"
 GRUB_TIMEOUT_STYLE=countdown
 GRUB_DEFAULT=saved
