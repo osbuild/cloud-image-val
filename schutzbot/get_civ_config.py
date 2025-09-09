@@ -22,14 +22,36 @@ GENERIC_TEST_FILE = 'test_suite/generic/test_generic.py'
 
 
 def get_files_changed():
-    subprocess.run('git remote add upstream https://github.com/osbuild/cloud-image-val.git', shell=True, check=True)
-    subprocess.run('git fetch upstream', shell=True, check=True)
+    try:
+        # Use subprocess.run to fetch the upstream main branch
+        subprocess.run('git remote add upstream https://github.com/osbuild/cloud-image-val.git', shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        subprocess.run('git fetch upstream', shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: Git command failed during setup: {e.stderr.decode()}")
+        exit(1)
+
     files_changed_cmd = ['git', 'diff', '--name-only', 'HEAD', 'upstream/main']
-    files_changed_raw = subprocess.run(files_changed_cmd, stdout=subprocess.PIPE, check=True)
-    if files_changed_raw.stdout == b'' or files_changed_raw.stderr is not None:
-        print('ERROR: git diff command failed or there are no changes in the PR')
-        exit()
-    return [f.strip() for f in str(files_changed_raw.stdout)[2:-3].split('\\n')]
+    try:
+        files_changed_raw = subprocess.run(
+            files_changed_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR: git diff command failed with status {e.returncode}")
+        print(f"stderr: {e.stderr}")
+        exit(1)
+
+    files_changed_list = [f.strip() for f in files_changed_raw.stdout.splitlines() if f.strip()]
+
+    if not files_changed_list:
+        print('INFO: No changes detected. Proceeding with a full test run.')
+        # Return a special list to signify a full run is needed.
+        return ['_FULL_RUN_TRIGGER_']
+
+    return files_changed_list
 
 
 def get_method_changes_for_file(test_file):
@@ -42,7 +64,15 @@ def get_method_changes_for_file(test_file):
         # Use -U10000 to get a large context, which is necessary to reliably
         # find the function definition enclosing a changed line.
         diff_cmd = ['git', 'diff', '-U10000', 'HEAD', 'upstream/main', '--', test_file]
-        diff_output = subprocess.run(diff_cmd, capture_output=True, text=True, check=True)
+
+        diff_output = subprocess.run(
+            diff_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=True
+        )
+
     except subprocess.CalledProcessError:
         return set()
 
