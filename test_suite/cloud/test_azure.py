@@ -325,7 +325,7 @@ class TestsAzure:
             cert_file = ''
             cert_found = False
 
-            if test_lib.is_rhel_sap(host):
+            if test_lib.is_rhel_saphaus(host):
                 cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
                 cert_found = host.file(cert_file).exists
             else:

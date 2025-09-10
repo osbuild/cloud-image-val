@@ -60,7 +60,7 @@ class TestsAWS:
             assert 'RHEL' in ami_name, \
                 "AMI name for RHEL image must contain 'RHEL'."
 
-            if test_lib.is_rhel_sap(host):
+            if test_lib.is_rhel_saphaus(host):
                 assert 'SAP' in ami_name, \
                     "AMI name for RHEL for SAP with HA and US image must contain 'SAP'."
                 assert 'Access2' not in ami_name, \
@@ -204,7 +204,7 @@ class TestsAWS:
             'firewalld', 'biosdevname', 'plymouth', 'iprutils'
         ]
 
-        if test_lib.is_rhel_sap(host):
+        if test_lib.is_rhel_saphaus(host):
             # In RHEL SAP images, alsa-lib is allowed
             unwanted_pkgs.remove('alsa-lib')
 
@@ -283,7 +283,7 @@ class TestsAWS:
 
         if test_lib.is_rhel_high_availability(host):
             required_rhui_pkg = 'rh-amazon-rhui-client-ha'
-        elif test_lib.is_rhel_sap(host):
+        elif test_lib.is_rhel_saphaus(host):
             required_rhui_pkg = 'rh-amazon-rhui-client-sap-bundle'
         else:
             required_rhui_pkg = 'rh-amazon-rhui-client'
@@ -333,7 +333,7 @@ class TestsAWS:
 
         with host.sudo():
             for line in cstate_setting_lines:
-                if test_lib.is_rhel_sap(host):
+                if test_lib.is_rhel_saphaus(host):
                     assert host.file('/proc/cmdline').contains(line), \
                         f'{line} must be specified in SAP AMIs'
                 else:
@@ -645,118 +645,6 @@ class TestsAWS:
         else:
             pytest.skip('This test case is only applicable to RHEL-8.9+ and RHEL-9.3+.')
 
-
-# TODO: Almost all these tests are cloud-agnostic
-@pytest.mark.order(2)
-@pytest.mark.usefixtures('rhel_sap_only')
-class TestsAWSSAP:
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_security_limits(self, host):
-        """
-        BugZilla 1959963
-        JIRA RHELDST-10710
-        """
-        options = [
-            '@sapsys hard nofile 1048576',
-            '@sapsys soft nofile 1048576',
-            '@dba hard nofile 1048576',
-            '@dba soft nofile 1048576',
-            '@sapsys hard nproc unlimited',
-            '@sapsys soft nproc unlimited',
-            '@dba hard nproc unlimited',
-            '@dba soft nproc unlimited'
-        ]
-
-        with host.sudo():
-            config_file = '/etc/security/limits.d/99-sap.conf'
-
-            assert host.file(config_file).exists, \
-                f'"{config_file}" is supposed to exist in SAP images'
-
-            command_to_run = f"cat {config_file} | awk -F' ' '{{print($1,$2,$3,$4)}}'"
-
-            content = host.check_output(command_to_run)
-
-            for opt in options:
-                assert opt in content, f'{opt} was expected in {config_file}'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_sysctl_files(self, host):
-        """
-        Check that sysctl config file(s) have the expected config
-        BugZilla 1959962
-        """
-        cfg_files_to_check = [
-            '/usr/lib/sysctl.d/sap.conf',
-            '/etc/sysctl.d/sap.conf'
-        ]
-
-        expected_cfg_items = [
-            'kernel.pid_max = 4194304',
-            'vm.max_map_count = 2147483647'
-        ]
-
-        self.__check_sap_files_have_expected_config(host,
-                                                    cfg_files_to_check,
-                                                    expected_cfg_items,
-                                                    'sysctl')
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_tmp_files(self, host):
-        """
-        Check that temporary SAP config file(s) have the expected config
-        BugZilla 1959979
-        """
-        cfg_files_to_check = [
-            '/usr/lib/tmpfiles.d/sap.conf',
-            '/etc/tmpfiles.d/sap.conf'
-        ]
-
-        expected_cfg_items = [
-            re.escape('x /tmp/.sap*'),
-            re.escape('x /tmp/.hdb*lock'),
-            re.escape('x /tmp/.trex*lock')
-        ]
-
-        self.__check_sap_files_have_expected_config(host,
-                                                    cfg_files_to_check,
-                                                    expected_cfg_items,
-                                                    'tmp')
-
-    def __check_sap_files_have_expected_config(self,
-                                               host,
-                                               files_to_check,
-                                               expected_config_items,
-                                               files_type_name):
-        with host.sudo():
-            for cfg_file in files_to_check:
-                missing_files_count = 0
-                if host.file(cfg_file).exists:
-                    for item in expected_config_items:
-                        assert host.file(cfg_file).contains(item), \
-                            f'"{item}" was expected in "{cfg_file}"'
-                else:
-                    missing_files_count += 1
-
-        assert missing_files_count < len(files_to_check), \
-            f'No SAP {files_type_name} files found'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_tuned(self, host):
-        """
-        Check that "sap-hana" is active in tuned-adm profile for SAP AMIs
-        BugZilla 1959962
-        """
-        expected_cfg = 'sap-hana'
-
-        with host.sudo():
-            tuned_profile_cfg_file = '/etc/tuned/active_profile'
-            assert host.file(tuned_profile_cfg_file).contains(expected_cfg), \
-                f'"{expected_cfg}" is not set in "{tuned_profile_cfg_file}"'
-
-            assert expected_cfg in host.check_output('tuned-adm active'), \
-                'tuned-adm command returned unexpected active setting'
-
     # TODO: Only applicable to AWS
     @pytest.mark.run_on(['rhel'])
     def test_ha_specific_script(self, host, rhel_high_availability_only):
@@ -765,51 +653,6 @@ class TestsAWSSAP:
         result = test_lib.run_local_script_in_host(host, local_file_path)
 
         assert result.rc == 0
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_required_packages_are_installed(self, host):
-        system_release = version.parse(host.system_info.release)
-
-        required_pkgs = []
-
-        required_pkgs.extend(['rhel-system-roles-sap'])
-
-        # BugZilla 1959813
-        required_pkgs.extend(['bind-utils', 'nfs-utils', 'tcsh'])
-
-        # BugZilla 1959813
-        required_pkgs.append('uuidd')
-
-        # BugZilla 1959923, 1961168
-        required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
-                              'iptraf-ng', 'krb5-workstation', 'libaio'])
-
-        # BugZilla 1959923, 1961168
-        required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
-                              'libtool-ltdl', 'lm_sensors', 'net-tools'])
-
-        required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
-
-        # BugZilla 1959962
-        required_pkgs.append('tuned-profiles-sap-hana')
-
-        # CLOUDX-557
-        if system_release < version.parse('8.0'):
-            required_pkgs.append('libpng12')
-
-        # CLOUDX-367, CLOUDX-557
-        if system_release >= version.parse('8.6'):
-            required_pkgs.append('ansible-core')
-        else:
-            required_pkgs.append('ansible')
-
-        # CLOUDX-557
-        if system_release < version.parse('9.0'):
-            required_pkgs.append('compat-sap-c++-9')
-
-        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
-
-        assert len(missing_pkgs) == 0, f'Missing packages required by RHEL-SAP: {", ".join(missing_pkgs)}'
 
 
 @pytest.mark.order(2)
