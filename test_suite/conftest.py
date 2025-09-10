@@ -142,7 +142,7 @@ def check_markers(host, request):
 
 @pytest.fixture
 def rhel_sap_only(host):
-    if not test_lib.is_rhel_sap(host):
+    if not test_lib.is_rhel_saphaus(host):
         pytest.skip('Image is not SAP RHEL')
 
 
