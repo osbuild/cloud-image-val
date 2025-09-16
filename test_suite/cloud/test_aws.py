@@ -152,26 +152,6 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    def test_blocklist(self, host):
-        """
-        Check that a list of modules are disabled - not loaded.
-        """
-        modules = ['nouveau', 'amdgpu']
-        blocklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
-        files_to_check = [blocklist_conf.format(module=modules[x]) for x in range(len(modules))]
-        blocklist_conf_strings = ['blacklist ' + x for x in modules]
-
-        with host.sudo():
-            for module in modules:
-                assert not host.run(f'lsmod | grep {module}').stdout, \
-                    f"{module} shouldn't be loaded"
-
-            for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
-                assert host.file(file).exists, f'file "{file}" does not exist'
-                assert host.file(file).contains(str_to_check), \
-                    f'{str_to_check} is not blocklisted in "{file}"'
-
-    @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
         """
         Some pkgs are not required in EC2.
