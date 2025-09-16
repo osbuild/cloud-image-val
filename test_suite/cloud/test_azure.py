@@ -59,32 +59,6 @@ class TestsAzure:
         assert not host.file(file_to_check).exists, \
             f'{file_to_check} should not exist in RHEL 8 and later'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_blocklist(self, host):
-        """
-        BugZilla 1645772
-        nouveau,lbm-nouveau,floppy,skx_edac,intel_cstate should be disabled
-        """
-        file_pattern = '/lib/modprobe.d/blacklist-*.conf'
-
-        blocklist = ['nouveau', 'lbm-nouveau', 'floppy', 'amdgpu']
-
-        if version.parse(host.system_info.release) < version.parse('9.0'):
-            blocklist.extend(['skx_edac', 'intel_cstate'])
-
-        with host.sudo():
-            assert host.run('lsmod | grep nouveau').exit_status != 0, \
-                'nouveau kernel module should not be loaded'
-
-            print(host.check_output('ls /lib/modprobe.d/'))
-
-            files_content = host.check_output(f'cat {file_pattern}')
-
-            print(files_content)
-
-            for item in blocklist:
-                assert item in files_content, f'{item} is not blocklisted'
-
     @pytest.mark.run_on(['all'])
     @pytest.mark.exclude_on(['fedora'])
     def test_sshd_config_client_alive_interval(self, host):

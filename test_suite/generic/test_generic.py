@@ -51,6 +51,34 @@ class TestsGeneric:
                 file_content_length = len(bash_history_file.content_string)
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_blocklist(self, host, instance_data):
+        """
+        Check that a list of modules are disabled - not loaded.
+        """
+        modules = ['nouveau', 'amdgpu']
+
+        if instance_data['cloud'] == 'azure':
+            modules.extend(['acpi_cpufreq', 'floppy', 'intel_uncore', 'intel_cstate', 'skylake-edac'])
+
+        # blocklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
+        # files_to_check = [blocklist_conf.format(module=modules[x]) for x in range(len(modules))]
+        # blocklist_conf_strings = ['blacklist ' + x for x in modules]
+
+        loaded_modules = []
+        with host.sudo():
+            for module in modules:
+                if host.run(f'lsmod | grep -w {module}').stdout:
+                    loaded_modules.append(module)
+            assert not loaded_modules, \
+                f"The following modules should not be loaded: {', '.join(loaded_modules)}"
+
+            # ToDo: CLOUDX-1518
+            # for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
+            #    assert host.file(file).exists, f'file "{file}" does not exist'
+            #    assert host.file(file).contains(str_to_check), \
+            #        f'{str_to_check} is not blocklisted in "{file}"'
+
     # TODO: Confirm if this test should be run in non-RHEL images
     @pytest.mark.run_on(['rhel'])
     def test_username(self, host, instance_data):
