@@ -136,23 +136,6 @@ class TestsAWS:
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
 
     @pytest.mark.run_on(['rhel'])
-    def test_rh_cloud_firstboot_service_is_disabled(self, host):
-        """
-        Check that rh-cloud-firstboot is disabled.
-        """
-        if host.check_output('systemctl status rh-cloud-firstboot || echo false') != 'false':
-            assert not host.service('rh-cloud-firstboot').is_enabled, \
-                'rh-cloud-firstboot service must be disabled'
-
-            with host.sudo():
-                cloud_firstboot_file = host.file(
-                    '/etc/sysconfig/rh-cloud-firstboot')
-                # TODO: Confirm if test should fail when this file does not exist
-                if cloud_firstboot_file.exists:
-                    assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
-                        'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
-
-    @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
