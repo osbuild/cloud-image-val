@@ -680,11 +680,6 @@ class TestsAWSNetworking:
             f'rhui.{region}.aws.ce.redhat.com',
             f'rhui4-cds01.{region}.aws.ce.redhat.com',
             f'rhui4-cds02.{region}.aws.ce.redhat.com',
-            f'rhui3-cds01.{region}.aws.ce.redhat.com',
-            f'rhui3-cds02.{region}.aws.ce.redhat.com',
-            f'rhui3-cds03.{region}.aws.ce.redhat.com',
-            f'rhui2-cds01.{region}.aws.ce.redhat.com',
-            f'rhui2-cds02.{region}.aws.ce.redhat.com',
         ]
 
         with host.sudo():
