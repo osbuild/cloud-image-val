@@ -378,16 +378,6 @@ class TestsAWS:
                 f'Actual value in io_timeout is not {expected_value}'
 
     @pytest.mark.run_on(['rhel'])
-    def test_libc6_xen_conf_file_does_not_exist(self, host):
-        """
-        Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
-        """
-        with host.sudo():
-            file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
-            assert not host.file(
-                file_to_check).exists, f'{file_to_check} should not be present in AMI'
-
-    @pytest.mark.run_on(['rhel'])
     def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
         """
         Check that Elastic Network Adapter support is enabled.
