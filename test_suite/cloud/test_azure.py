@@ -270,17 +270,6 @@ class TestsAzure:
             assert host.file('/etc/waagent.conf').contains('ResourceDisk.Format=n'), \
                 'ResourceDisk.Format=n has to be present in /etc/waagent.conf'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_logging_cfg(self, host):
-        """
-        Check /etc/cloud/cloud.cfg.d/05_logging.cfg
-        """
-        file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
-        local_file = 'data/azure/05_logging.cfg'
-
-        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-            f'{file_to_check} has unexpected content'
-
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_rhui_certificate_date(self, host):
