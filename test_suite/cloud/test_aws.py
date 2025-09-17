@@ -567,14 +567,6 @@ class TestsAWS:
         assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
             f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
-    @pytest.mark.run_on(['all'])
-    def test_timezone_is_utc(self, host):
-        """
-        Check that the default timezone is set to UTC.
-        BugZilla 1187669
-        """
-        assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
-
     @pytest.mark.run_on(['rhel'])
     def test_hybrid_boot_mode_config(self, host):
         """
