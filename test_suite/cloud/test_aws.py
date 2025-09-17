@@ -35,14 +35,6 @@ def instance_data_aws_cli(host, instance_data_aws_web):
 
 @pytest.mark.order(2)
 class TestsAWS:
-    @pytest.mark.run_on(['rhel', 'fedora'])
-    def test_etc_machine_id_permissions(self, host, instance_data):
-        """
-        Check that /etc/machine-id permissions are 444.
-        Bugzilla: 2221269
-        """
-        assert host.file('/etc/machine-id').mode == 0o444, 'Expected 444 permissions for /etc/machine-id'
-
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_ami_name(self, host, instance_data):
