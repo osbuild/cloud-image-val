@@ -425,6 +425,15 @@ class TestsGeneric:
             assert not host.file(file_to_check).exists, \
                 f'{file_to_check} should not exist in RHEL-8 and above'
 
+    @pytest.mark.run_on(['all'])
+    def test_timezone_is_utc(self, host):
+        """
+        Check that the default timezone is set to UTC.
+        BugZilla 1187669
+        """
+        timezone = host.check_output('date +%Z').strip()
+        assert timezone == 'UTC', f'Unexpected timezone: {timezone}. Expected to be UTC'
+
     @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
     def test_bootc_installed(self, host):
         """
