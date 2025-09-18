@@ -528,6 +528,29 @@ class TestsGeneric:
                 assert md5 in host.check_output(
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_ha_specific_script(self, host, rhel_high_availability_only, instance_data):
+        """
+        Verify HA functionality
+        """
+        cloud = instance_data['cloud'].lower()
+        local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
+        expected_success_message = "HA check passed successfully."
+
+        result = None
+        try:
+            result = test_lib.run_local_script_in_host(host, local_file_path)
+        finally:
+            if result and result.rc != 0:
+                print(f"Script stdout:\n{result.stdout}")
+                print(f"Script stderr:\n{result.stderr}")
+
+        assert result is not None, "HA check script did not return a result."
+        assert result.rc == 0, \
+            f"HA check script for cloud '{cloud}' failed with rc={result.rc}"
+        assert expected_success_message in result.stdout, \
+            "There is no the expected success message in the script stdout."
+
 
 @pytest.mark.order(3)
 class TestsServices:

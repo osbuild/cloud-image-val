@@ -538,15 +538,6 @@ class TestsAWS:
         else:
             pytest.skip('This test case is only applicable to RHEL-8.9+ and RHEL-9.3+.')
 
-    # TODO: Only applicable to AWS
-    @pytest.mark.run_on(['rhel'])
-    def test_ha_specific_script(self, host, rhel_high_availability_only):
-        local_file_path = 'scripts/aws/rhel-ha-aws-check.sh'
-
-        result = test_lib.run_local_script_in_host(host, local_file_path)
-
-        assert result.rc == 0
-
 
 @pytest.mark.order(2)
 class TestsAWSNetworking:

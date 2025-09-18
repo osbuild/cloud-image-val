@@ -2,14 +2,14 @@
 
 ################################################################################
 #
-# rhel-ha-aws-check.sh - Sanity check script for RHEL HA running on AWS.
+# rhel-ha-azure-check.sh - Sanity check script for RHEL HA running on Azure.
 #
 # Author: Brandon Perkins <bperkins@redhat.com>
 #
 # This script is designed to be run on a single instance and does not perform
 # any multi-node tests.  This script validates the ability to install,
-# configure, and run the very basics of a pacemaker cluster, the AWS fence
-# agent, and the AWS resource agents.
+# configure, and run the very basics of a pacemaker cluster, the Azure fence
+# agent, and the Azure resource agents.
 #
 ################################################################################
 
@@ -19,22 +19,22 @@ RHELMAJOR=$(rpm -q --queryformat="%{VERSION}" \
 	      $(rpm -q --whatprovides redhat-release) | cut -d\. -f1)
 
 # List of packages that should be installed when in a
-# RHEL HA environment running within AWS EC2:
-#           awscli - Universal Command Line Environment for AWS
-#       bind-utils - Utilities for querying DNS name servers
-# fence-agents-aws - Fence agent for Amazon AWS
-#              pcs - Pacemaker Configuration System
-#  python-requests - HTTP library, written in Python (RHEL7 only)
-HAPKGS="bind-utils fence-agents-aws pcs"
+# RHEL HA environment running within Microsoft Azure:
+#              azure-cli - Universal Command Line Environment for Azure
+#             bind-utils - Utilities for querying DNS name servers
+# fence-agents-azure-arm - Fence agent for Microsoft Azure
+#                    pcs - Pacemaker Configuration System
+#        python-requests - HTTP library, written in Python (RHEL7 only)
+HAPKGS="bind-utils fence-agents-azure-arm pcs"
 if [ ${RHELMAJOR} -lt 8 ]; then
     #subscription-manager config will be changed without python-requests installed, eg. auto-reg disabled
     echo "python-requests is required by subscription-manager, cloudinit,redhat-cloud-client-configuration, do not remove/install it in RHEL-7"
     #HAPKGS+=" python-requests"
 fi
-# awscli was dropped from RHEL-9
+# azure-cli was dropped from RHEL-9
 # https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html-single/considerations_in_adopting_rhel_9/index#assembly_changes-to-packages_considerations-in-adopting-RHEL-9
 if [ ${RHELMAJOR} -lt 9 ]; then
-    HAPKGS+=" awscli"
+    HAPKGS+=" azure-cli"
 else
     HAPKGS+=" python3-pip resource-agents-cloud"
 fi
@@ -73,11 +73,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Install awscli from pip
+# Install azure-cli from pip
 if [ ${RHELMAJOR} -ge 9 ]; then
     python -m venv /tmp/test_env
     source /tmp/test_env/bin/activate
-    pip install -U awscli
+    pip install -U azure-cli
 fi
 # Verify that the "pacemaker-libs" package created the "hacluster" user
 id hacluster
@@ -193,15 +193,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Show options for the fence agent for AWS (to verify it is installed)
-pcs stonith describe fence_aws
+# Show options for the fence agent for Azure (to verify it is installed)
+pcs stonith describe fence_azure_arm
 if [ $? -ne 0 ]; then
-    echo "Cannot load fence agent fence_aws."
+    echo "Cannot load fence agent fence_azure_arm."
     exit 1
 fi
 
-# Create "fence_aws" stonith device with specified type and options
-pcs stonith create clusterfence fence_aws
+# Create "fence_azure_arm" stonith device with specified type and options
+pcs stonith create clusterfence fence_azure_arm
 if [ $? -ne 0 ]; then
     echo "Cannot create stonith resource."
     exit 1
@@ -229,15 +229,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Verify that the AWS CLI command runs without errors
-aws configure list
+# Verify that the Azure CLI command runs without errors
+#azure configure list
+az config get
 if [ $? -ne 0 ]; then
-    echo "AWS configuration failed."
+    echo "Azure configuration failed."
     exit 1
 fi
 
-# Find all AWS resource agents
-RAS=/usr/lib/ocf/resource.d/heartbeat/*aws*
+# Find all Azure resource agents
+RAS=/usr/lib/ocf/resource.d/heartbeat/*azure*
 
 # For each resource agent:
 #   1) Show options for the specified resource (to verify it is installed)
@@ -449,11 +450,12 @@ for HAPKG in ${HAPKGS}; do
     fi
 done
 
-# Remove awscli
+# Remove azure-cli
 if [ ${RHELMAJOR} -ge 9 ]; then
-    pip uninstall -y awscli
+    pip uninstall -y azure-cli
     deactivate
     rm -rf /tmp/test_env
 fi
 # Success
+echo "HA check passed successfully."
 exit 0
