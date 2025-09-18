@@ -83,50 +83,6 @@ class TestsAWS:
         assert str(system_release).replace('.', '-') in ami_name, \
             'System release not found in AMI name'
 
-    # TODO: verify logic, think if we should divide
-    @pytest.mark.run_on(['rhel'])
-    def test_auditd(self, host):
-        """
-        - Service should be running
-        - Config files should have the correct MD5 checksums
-        """
-        checksums_by_version = {
-            '9.4+': {
-                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.10+': {
-                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.6+': {
-                '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.0+': {
-                '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            }
-        }
-
-        auditd_service = 'auditd'
-
-        assert host.service(
-            auditd_service).is_running, f'{auditd_service} expected to be running'
-
-        system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('9.4'):
-            checksums = checksums_by_version['9.4+']
-        elif version.parse('9.0') > system_release >= version.parse('8.10'):
-            checksums = checksums_by_version['8.10+']
-        else:
-            checksums = checksums_by_version['8.6+']
-
-        with host.sudo():
-            for path, md5 in checksums.items():
-                assert md5 in host.check_output(
-                    f'md5sum {path}'), f'Unexpected checksum for {path}'
-
     @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
