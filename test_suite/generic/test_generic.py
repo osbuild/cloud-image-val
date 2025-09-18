@@ -529,10 +529,16 @@ class TestsGeneric:
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
 
     @pytest.mark.run_on(['rhel'])
-    def test_ha_specific_script(self, host, rhel_high_availability_only, instance_data):
+    def test_ha_specific_script(self, host, instance_data):
         """
-        Verify HA functionality
+        Verify HA functionality on RHEL HA and RHEL SAP HA and US images
         """
+        # Run on HA or SAP+HA images only
+        is_ha = test_lib.is_rhel_high_availability(host)
+        is_sap_ha = test_lib.is_rhel_saphaus(host)
+        if not (is_ha or is_sap_ha):
+            pytest.skip("Not a HA or SAP+HA image.")
+
         cloud = instance_data['cloud'].lower()
         local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
         expected_success_message = "HA check passed successfully."
