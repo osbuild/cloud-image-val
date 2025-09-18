@@ -470,6 +470,24 @@ class TestsGeneric:
         assert not host.file(file_to_check).exists, \
             f'{file_to_check} should not exist in RHEL 8 and later'
 
+    @pytest.mark.run_on(['all'])
+    @pytest.mark.exclude_on(['fedora'])
+    def test_services_running(self, host, instance_data):
+        """
+        Verify the necessary services are running
+        """
+        service_list = [
+            'cloud-init-local', 'cloud-init',
+            'cloud-config', 'cloud-final', 'sshd',
+        ]
+
+        if instance_data['cloud'] == 'azure':
+            service_list.extend(['waagent', 'hypervkvpd'])
+
+        with host.sudo():
+            for service in service_list:
+                assert host.service(service).is_running
+
 
 @pytest.mark.order(3)
 class TestsServices:
