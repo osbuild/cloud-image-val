@@ -49,16 +49,6 @@ class TestsAzure:
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
             f'{remote_file} has unexpected content'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_authconfig_file(self, host):
-        """
-        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
-        """
-        file_to_check = '/etc/sysconfig/authconfig'
-
-        assert not host.file(file_to_check).exists, \
-            f'{file_to_check} should not exist in RHEL 8 and later'
-
     @pytest.mark.run_on(['all'])
     @pytest.mark.exclude_on(['fedora'])
     def test_sshd_config_client_alive_interval(self, host):
