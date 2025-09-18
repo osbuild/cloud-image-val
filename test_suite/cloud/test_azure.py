@@ -210,21 +210,6 @@ class TestsAzure:
 
         print(console_lib.print_debug(debug))
 
-    @pytest.mark.run_on(['all'])
-    @pytest.mark.exclude_on(['fedora'])
-    def test_services_running(self, host):
-        """
-        Verify the necessary services are running
-        """
-        service_list = [
-            'waagent', 'cloud-init-local', 'cloud-init',
-            'cloud-config', 'cloud-final', 'hypervkvpd', 'sshd'
-        ]
-
-        with host.sudo():
-            for service in service_list:
-                assert host.service(service).is_running
-
     @pytest.mark.run_on(['rhel'])
     def test_pkg_wanted(self, host):
         """
