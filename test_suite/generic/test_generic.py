@@ -460,6 +460,16 @@ class TestsGeneric:
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
             f'{file_to_check} has unexpected content'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_authconfig_file(self, host):
+        """
+        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
+        """
+        file_to_check = '/etc/sysconfig/authconfig'
+
+        assert not host.file(file_to_check).exists, \
+            f'{file_to_check} should not exist in RHEL 8 and later'
+
 
 @pytest.mark.order(3)
 class TestsServices:
