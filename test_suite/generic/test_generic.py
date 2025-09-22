@@ -34,9 +34,6 @@ class TestsGeneric:
         """
         Check there is no avc denials (selinux).
         """
-        # CLOUDX-320: This "if" is pending to be removed
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
 
         helpers.check_avc_denials(host)
 
