@@ -288,27 +288,3 @@ class TestsAzure:
 
             assert result.succeeded, \
                 'The certificate appears to have expired. Check the test case output for more details.'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_cmdline_console(self, host):
-        """
-        Verify that console=ttyS0 earlyprintk=ttyS0 rootdelay=300 are in cmdline
-        """
-        file_to_check = '/proc/cmdline'
-
-        expected_config = [
-            'console=ttyS0',
-            'earlyprintk=ttyS0',
-            'rootdelay=300'
-        ]
-
-        if host.system_info.arch == 'aarch64':
-            expected_config = ['console=ttyAMA0']
-
-        if version.parse(host.system_info.release) >= version.parse('9.6'):
-            expected_config.append('nvme_core.io_timeout=240')
-
-        with host.sudo():
-            for item in expected_config:
-                assert host.file(file_to_check).contains(item), \
-                    f'{item} was expected in {file_to_check}'

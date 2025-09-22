@@ -89,12 +89,33 @@ class TestsGeneric:
             assert host.check_output('whoami') == instance_data['username']
 
     @pytest.mark.run_on(['all'])
-    def test_console_is_redirected_to_ttys0(self, host):
+    def test_cmdline_console_and_params(self, host, instance_data):
         """
-        Console output should be redirected to serial for HVM instances.
+        Verify the console and other required parameters in the kernel command line.
         """
-        assert host.file('/proc/cmdline').contains('console=ttyS0'), \
-            'Serial console should be redirected to ttyS0'
+        file_to_check = '/proc/cmdline'
+
+        expected_config = []
+
+        # Define expected console based on architecture and platform
+        if host.system_info.arch == 'aarch64' and instance_data['cloud'] == 'azure':
+            expected_config.append('console=ttyAMA0')
+        else:
+            expected_config.append('console=ttyS0')
+
+        # Add Azure-specific parameters
+        if host.system_info.arch == 'x86_64' and instance_data['cloud'] == 'azure':
+            expected_config.extend(['earlyprintk=ttyS0', 'rootdelay=300'])
+
+        # Add RHEL 9.6+ specific parameter
+        if version.parse(host.system_info.release) >= version.parse('9.6') and \
+                instance_data['cloud'] == 'azure':
+            expected_config.append('nvme_core.io_timeout=240')
+
+        with host.sudo():
+            for item in expected_config:
+                assert host.file(file_to_check).contains(item), \
+                    f'{item} was expected in {file_to_check}'
 
     # TODO: does this apply to fedora and centos
     @pytest.mark.run_on(['rhel'])
