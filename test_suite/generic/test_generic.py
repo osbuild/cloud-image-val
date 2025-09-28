@@ -547,9 +547,12 @@ class TestsGeneric:
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
 
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_aws_marketplace_only')
     def test_ha_specific_script(self, host, instance_data):
         """
         Verify HA functionality on RHEL HA and RHEL SAP HA and US images
+        Skip AWS 3p amis since they don't have billing codes and
+        and therefore no RHUI access in stage.
         """
         # Run on HA or SAP+HA images only
         is_ha = test_lib.is_rhel_high_availability(host)
