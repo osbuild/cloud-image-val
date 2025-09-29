@@ -85,7 +85,7 @@ class TestsGeneric:
 
             assert host.check_output('whoami') == instance_data['username']
 
-    @pytest.mark.run_on(['all'])
+    @pytest.mark.run_on(['rhel'])
     def test_cmdline_console_and_params(self, host, instance_data):
         """
         Verify the console and other required parameters in the kernel command line.
