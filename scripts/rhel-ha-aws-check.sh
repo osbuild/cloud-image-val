@@ -53,9 +53,23 @@ for HAPKG in ${HAPKGS}; do
         fi
     fi
 
-    yum -y install ${HAPKG}
-    if [ $? -ne 0 ]; then
-        echo "Install of ${HAPKG} failed."
+    # Retry logic for yum lock errors
+    MAX_RETRIES=5
+    RETRY_COUNT=0
+    SUCCESS=0
+    while [ ${RETRY_COUNT} -lt ${MAX_RETRIES} ] && [ ${SUCCESS} -eq 0 ]; do
+        yum -y install ${HAPKG}
+        if [ $? -eq 0 ]; then
+            SUCCESS=1
+        else
+            echo "Attempt $((RETRY_COUNT+1)) to install ${HAPKG} failed. Retrying in 5 seconds..."
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+        fi
+    done
+
+    if [ ${SUCCESS} -ne 1 ]; then
+        echo "Install of ${HAPKG} failed after multiple retries."
         exit 1
     else
         rpm -q ${HAPKG}
