@@ -5,8 +5,9 @@ import time
 from lib import ssh_lib, console_lib
 
 
-def is_rhel_sap(host):
-    return __test_keyword_in_repositories(host, 'sap-')
+def is_rhel_saphaus(host):
+    # RHEL for SAP HA and US with sap-solutions and sap-netweaver repositories
+    return __test_keyword_in_repositories(host, 'sap-solutions')
 
 
 def is_rhel_high_availability(host):

@@ -49,42 +49,6 @@ class TestsAzure:
         assert test_lib.compare_local_and_remote_file(host, local_file, remote_file), \
             f'{remote_file} has unexpected content'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_authconfig_file(self, host):
-        """
-        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
-        """
-        file_to_check = '/etc/sysconfig/authconfig'
-
-        assert not host.file(file_to_check).exists, \
-            f'{file_to_check} should not exist in RHEL 8 and later'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_blocklist(self, host):
-        """
-        BugZilla 1645772
-        nouveau,lbm-nouveau,floppy,skx_edac,intel_cstate should be disabled
-        """
-        file_pattern = '/lib/modprobe.d/blacklist-*.conf'
-
-        blocklist = ['nouveau', 'lbm-nouveau', 'floppy', 'amdgpu']
-
-        if version.parse(host.system_info.release) < version.parse('9.0'):
-            blocklist.extend(['skx_edac', 'intel_cstate'])
-
-        with host.sudo():
-            assert host.run('lsmod | grep nouveau').exit_status != 0, \
-                'nouveau kernel module should not be loaded'
-
-            print(host.check_output('ls /lib/modprobe.d/'))
-
-            files_content = host.check_output(f'cat {file_pattern}')
-
-            print(files_content)
-
-            for item in blocklist:
-                assert item in files_content, f'{item} is not blocklisted'
-
     @pytest.mark.run_on(['all'])
     @pytest.mark.exclude_on(['fedora'])
     def test_sshd_config_client_alive_interval(self, host):
@@ -246,21 +210,6 @@ class TestsAzure:
 
         print(console_lib.print_debug(debug))
 
-    @pytest.mark.run_on(['all'])
-    @pytest.mark.exclude_on(['fedora'])
-    def test_services_running(self, host):
-        """
-        Verify the necessary services are running
-        """
-        service_list = [
-            'waagent', 'cloud-init-local', 'cloud-init',
-            'cloud-config', 'cloud-final', 'hypervkvpd', 'sshd'
-        ]
-
-        with host.sudo():
-            for service in service_list:
-                assert host.service(service).is_running
-
     @pytest.mark.run_on(['rhel'])
     def test_pkg_wanted(self, host):
         """
@@ -296,17 +245,6 @@ class TestsAzure:
             assert host.file('/etc/waagent.conf').contains('ResourceDisk.Format=n'), \
                 'ResourceDisk.Format=n has to be present in /etc/waagent.conf'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_logging_cfg(self, host):
-        """
-        Check /etc/cloud/cloud.cfg.d/05_logging.cfg
-        """
-        file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
-        local_file = 'data/azure/05_logging.cfg'
-
-        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
-            f'{file_to_check} has unexpected content'
-
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_rhui_certificate_date(self, host):
@@ -325,7 +263,7 @@ class TestsAzure:
             cert_file = ''
             cert_found = False
 
-            if test_lib.is_rhel_sap(host):
+            if test_lib.is_rhel_saphaus(host):
                 cert_file = '/etc/pki/rhui/product/content-sap-ha.crt'
                 cert_found = host.file(cert_file).exists
             else:
@@ -350,27 +288,3 @@ class TestsAzure:
 
             assert result.succeeded, \
                 'The certificate appears to have expired. Check the test case output for more details.'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_cmdline_console(self, host):
-        """
-        Verify that console=ttyS0 earlyprintk=ttyS0 rootdelay=300 are in cmdline
-        """
-        file_to_check = '/proc/cmdline'
-
-        expected_config = [
-            'console=ttyS0',
-            'earlyprintk=ttyS0',
-            'rootdelay=300'
-        ]
-
-        if host.system_info.arch == 'aarch64':
-            expected_config = ['console=ttyAMA0']
-
-        if version.parse(host.system_info.release) >= version.parse('9.6'):
-            expected_config.append('nvme_core.io_timeout=240')
-
-        with host.sudo():
-            for item in expected_config:
-                assert host.file(file_to_check).contains(item), \
-                    f'{item} was expected in {file_to_check}'

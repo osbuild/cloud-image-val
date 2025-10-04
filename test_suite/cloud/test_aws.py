@@ -35,14 +35,6 @@ def instance_data_aws_cli(host, instance_data_aws_web):
 
 @pytest.mark.order(2)
 class TestsAWS:
-    @pytest.mark.run_on(['rhel', 'fedora'])
-    def test_etc_machine_id_permissions(self, host, instance_data):
-        """
-        Check that /etc/machine-id permissions are 444.
-        Bugzilla: 2221269
-        """
-        assert host.file('/etc/machine-id').mode == 0o444, 'Expected 444 permissions for /etc/machine-id'
-
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_ami_name(self, host, instance_data):
@@ -60,7 +52,7 @@ class TestsAWS:
             assert 'RHEL' in ami_name, \
                 "AMI name for RHEL image must contain 'RHEL'."
 
-            if test_lib.is_rhel_sap(host):
+            if test_lib.is_rhel_saphaus(host):
                 assert 'SAP' in ami_name, \
                     "AMI name for RHEL for SAP with HA and US image must contain 'SAP'."
                 assert 'Access2' not in ami_name, \
@@ -91,67 +83,6 @@ class TestsAWS:
         assert str(system_release).replace('.', '-') in ami_name, \
             'System release not found in AMI name'
 
-    # TODO: verify logic, think if we should divide
-    @pytest.mark.run_on(['rhel'])
-    def test_auditd(self, host):
-        """
-        - Service should be running
-        - Config files should have the correct MD5 checksums
-        """
-        checksums_by_version = {
-            '9.4+': {
-                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.10+': {
-                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.6+': {
-                '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            },
-            '8.0+': {
-                '/etc/audit/auditd.conf': '7bfa16d314ddb8b96a61a7f617b8cca0',
-                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
-            }
-        }
-
-        auditd_service = 'auditd'
-
-        assert host.service(
-            auditd_service).is_running, f'{auditd_service} expected to be running'
-
-        system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('9.4'):
-            checksums = checksums_by_version['9.4+']
-        elif version.parse('9.0') > system_release >= version.parse('8.10'):
-            checksums = checksums_by_version['8.10+']
-        else:
-            checksums = checksums_by_version['8.6+']
-
-        with host.sudo():
-            for path, md5 in checksums.items():
-                assert md5 in host.check_output(
-                    f'md5sum {path}'), f'Unexpected checksum for {path}'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_rh_cloud_firstboot_service_is_disabled(self, host):
-        """
-        Check that rh-cloud-firstboot is disabled.
-        """
-        if host.check_output('systemctl status rh-cloud-firstboot || echo false') != 'false':
-            assert not host.service('rh-cloud-firstboot').is_enabled, \
-                'rh-cloud-firstboot service must be disabled'
-
-            with host.sudo():
-                cloud_firstboot_file = host.file(
-                    '/etc/sysconfig/rh-cloud-firstboot')
-                # TODO: Confirm if test should fail when this file does not exist
-                if cloud_firstboot_file.exists:
-                    assert cloud_firstboot_file.contains('RUN_FIRSTBOOT=NO'), \
-                        'rh-cloud-firstboot must be configured with RUN_FIRSTBOOT=NO'
-
     @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
@@ -169,26 +100,6 @@ class TestsAWS:
                 assert iommu_option_present, f'{option} must be present in ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
-    def test_blocklist(self, host):
-        """
-        Check that a list of modules are disabled - not loaded.
-        """
-        modules = ['nouveau', 'amdgpu']
-        blocklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
-        files_to_check = [blocklist_conf.format(module=modules[x]) for x in range(len(modules))]
-        blocklist_conf_strings = ['blacklist ' + x for x in modules]
-
-        with host.sudo():
-            for module in modules:
-                assert not host.run(f'lsmod | grep {module}').stdout, \
-                    f"{module} shouldn't be loaded"
-
-            for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
-                assert host.file(file).exists, f'file "{file}" does not exist'
-                assert host.file(file).contains(str_to_check), \
-                    f'{str_to_check} is not blocklisted in "{file}"'
-
-    @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
         """
         Some pkgs are not required in EC2.
@@ -204,7 +115,7 @@ class TestsAWS:
             'firewalld', 'biosdevname', 'plymouth', 'iprutils'
         ]
 
-        if test_lib.is_rhel_sap(host):
+        if test_lib.is_rhel_saphaus(host):
             # In RHEL SAP images, alsa-lib is allowed
             unwanted_pkgs.remove('alsa-lib')
 
@@ -283,7 +194,7 @@ class TestsAWS:
 
         if test_lib.is_rhel_high_availability(host):
             required_rhui_pkg = 'rh-amazon-rhui-client-ha'
-        elif test_lib.is_rhel_sap(host):
+        elif test_lib.is_rhel_saphaus(host):
             required_rhui_pkg = 'rh-amazon-rhui-client-sap-bundle'
         else:
             required_rhui_pkg = 'rh-amazon-rhui-client'
@@ -333,7 +244,7 @@ class TestsAWS:
 
         with host.sudo():
             for line in cstate_setting_lines:
-                if test_lib.is_rhel_sap(host):
+                if test_lib.is_rhel_saphaus(host):
                     assert host.file('/proc/cmdline').contains(line), \
                         f'{line} must be specified in SAP AMIs'
                 else:
@@ -421,16 +332,6 @@ class TestsAWS:
         if 'nvme' in host.check_output('lsblk'):
             assert host.file('/sys/module/nvme_core/parameters/io_timeout').contains(expected_value), \
                 f'Actual value in io_timeout is not {expected_value}'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_libc6_xen_conf_file_does_not_exist(self, host):
-        """
-        Check for /etc/ld.so.conf.d/libc6-xen.conf absence on RHEL
-        """
-        with host.sudo():
-            file_to_check = '/etc/ld.so.conf.d/libc6-xen.conf'
-            assert not host.file(
-                file_to_check).exists, f'{file_to_check} should not be present in AMI'
 
     @pytest.mark.run_on(['rhel'])
     def test_ena_support_correctly_set(self, host, instance_data_aws_cli):
@@ -612,14 +513,6 @@ class TestsAWS:
         assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
             f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
-    @pytest.mark.run_on(['all'])
-    def test_timezone_is_utc(self, host):
-        """
-        Check that the default timezone is set to UTC.
-        BugZilla 1187669
-        """
-        assert 'UTC' in host.check_output('date'), 'Unexpected timezone. Expected to be UTC'
-
     @pytest.mark.run_on(['rhel'])
     def test_hybrid_boot_mode_config(self, host):
         """
@@ -644,172 +537,6 @@ class TestsAWS:
                     pytest.fail('efibootmgr command failed in EFI-booted image.')
         else:
             pytest.skip('This test case is only applicable to RHEL-8.9+ and RHEL-9.3+.')
-
-
-# TODO: Almost all these tests are cloud-agnostic
-@pytest.mark.order(2)
-@pytest.mark.usefixtures('rhel_sap_only')
-class TestsAWSSAP:
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_security_limits(self, host):
-        """
-        BugZilla 1959963
-        JIRA RHELDST-10710
-        """
-        options = [
-            '@sapsys hard nofile 1048576',
-            '@sapsys soft nofile 1048576',
-            '@dba hard nofile 1048576',
-            '@dba soft nofile 1048576',
-            '@sapsys hard nproc unlimited',
-            '@sapsys soft nproc unlimited',
-            '@dba hard nproc unlimited',
-            '@dba soft nproc unlimited'
-        ]
-
-        with host.sudo():
-            config_file = '/etc/security/limits.d/99-sap.conf'
-
-            assert host.file(config_file).exists, \
-                f'"{config_file}" is supposed to exist in SAP images'
-
-            command_to_run = f"cat {config_file} | awk -F' ' '{{print($1,$2,$3,$4)}}'"
-
-            content = host.check_output(command_to_run)
-
-            for opt in options:
-                assert opt in content, f'{opt} was expected in {config_file}'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_sysctl_files(self, host):
-        """
-        Check that sysctl config file(s) have the expected config
-        BugZilla 1959962
-        """
-        cfg_files_to_check = [
-            '/usr/lib/sysctl.d/sap.conf',
-            '/etc/sysctl.d/sap.conf'
-        ]
-
-        expected_cfg_items = [
-            'kernel.pid_max = 4194304',
-            'vm.max_map_count = 2147483647'
-        ]
-
-        self.__check_sap_files_have_expected_config(host,
-                                                    cfg_files_to_check,
-                                                    expected_cfg_items,
-                                                    'sysctl')
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_tmp_files(self, host):
-        """
-        Check that temporary SAP config file(s) have the expected config
-        BugZilla 1959979
-        """
-        cfg_files_to_check = [
-            '/usr/lib/tmpfiles.d/sap.conf',
-            '/etc/tmpfiles.d/sap.conf'
-        ]
-
-        expected_cfg_items = [
-            re.escape('x /tmp/.sap*'),
-            re.escape('x /tmp/.hdb*lock'),
-            re.escape('x /tmp/.trex*lock')
-        ]
-
-        self.__check_sap_files_have_expected_config(host,
-                                                    cfg_files_to_check,
-                                                    expected_cfg_items,
-                                                    'tmp')
-
-    def __check_sap_files_have_expected_config(self,
-                                               host,
-                                               files_to_check,
-                                               expected_config_items,
-                                               files_type_name):
-        with host.sudo():
-            for cfg_file in files_to_check:
-                missing_files_count = 0
-                if host.file(cfg_file).exists:
-                    for item in expected_config_items:
-                        assert host.file(cfg_file).contains(item), \
-                            f'"{item}" was expected in "{cfg_file}"'
-                else:
-                    missing_files_count += 1
-
-        assert missing_files_count < len(files_to_check), \
-            f'No SAP {files_type_name} files found'
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_tuned(self, host):
-        """
-        Check that "sap-hana" is active in tuned-adm profile for SAP AMIs
-        BugZilla 1959962
-        """
-        expected_cfg = 'sap-hana'
-
-        with host.sudo():
-            tuned_profile_cfg_file = '/etc/tuned/active_profile'
-            assert host.file(tuned_profile_cfg_file).contains(expected_cfg), \
-                f'"{expected_cfg}" is not set in "{tuned_profile_cfg_file}"'
-
-            assert expected_cfg in host.check_output('tuned-adm active'), \
-                'tuned-adm command returned unexpected active setting'
-
-    # TODO: Only applicable to AWS
-    @pytest.mark.run_on(['rhel'])
-    def test_ha_specific_script(self, host, rhel_high_availability_only):
-        local_file_path = 'scripts/aws/rhel-ha-aws-check.sh'
-
-        result = test_lib.run_local_script_in_host(host, local_file_path)
-
-        assert result.rc == 0
-
-    @pytest.mark.run_on(['rhel'])
-    def test_sap_required_packages_are_installed(self, host):
-        system_release = version.parse(host.system_info.release)
-
-        required_pkgs = []
-
-        required_pkgs.extend(['rhel-system-roles-sap'])
-
-        # BugZilla 1959813
-        required_pkgs.extend(['bind-utils', 'nfs-utils', 'tcsh'])
-
-        # BugZilla 1959813
-        required_pkgs.append('uuidd')
-
-        # BugZilla 1959923, 1961168
-        required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
-                              'iptraf-ng', 'krb5-workstation', 'libaio'])
-
-        # BugZilla 1959923, 1961168
-        required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
-                              'libtool-ltdl', 'lm_sensors', 'net-tools'])
-
-        required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
-
-        # BugZilla 1959962
-        required_pkgs.append('tuned-profiles-sap-hana')
-
-        # CLOUDX-557
-        if system_release < version.parse('8.0'):
-            required_pkgs.append('libpng12')
-
-        # CLOUDX-367, CLOUDX-557
-        if system_release >= version.parse('8.6'):
-            required_pkgs.append('ansible-core')
-        else:
-            required_pkgs.append('ansible')
-
-        # CLOUDX-557
-        if system_release < version.parse('9.0'):
-            required_pkgs.append('compat-sap-c++-9')
-
-        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
-
-        assert len(missing_pkgs) == 0, f'Missing packages required by RHEL-SAP: {", ".join(missing_pkgs)}'
 
 
 @pytest.mark.order(2)
@@ -882,11 +609,6 @@ class TestsAWSNetworking:
             f'rhui.{region}.aws.ce.redhat.com',
             f'rhui4-cds01.{region}.aws.ce.redhat.com',
             f'rhui4-cds02.{region}.aws.ce.redhat.com',
-            f'rhui3-cds01.{region}.aws.ce.redhat.com',
-            f'rhui3-cds02.{region}.aws.ce.redhat.com',
-            f'rhui3-cds03.{region}.aws.ce.redhat.com',
-            f'rhui2-cds01.{region}.aws.ce.redhat.com',
-            f'rhui2-cds02.{region}.aws.ce.redhat.com',
         ]
 
         with host.sudo():

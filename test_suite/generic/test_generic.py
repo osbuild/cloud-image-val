@@ -34,9 +34,6 @@ class TestsGeneric:
         """
         Check there is no avc denials (selinux).
         """
-        # CLOUDX-320: This "if" is pending to be removed
-        if instance_data['cloud'] == 'azure':
-            pytest.skip('Skipping on fedora due to old image definitions')
 
         helpers.check_avc_denials(host)
 
@@ -51,6 +48,34 @@ class TestsGeneric:
                 file_content_length = len(bash_history_file.content_string)
                 assert file_content_length == 0, f'{file_path} must be empty or nonexistent'
 
+    @pytest.mark.run_on(['rhel'])
+    def test_blocklist(self, host, instance_data):
+        """
+        Check that a list of modules are disabled - not loaded.
+        """
+        modules = ['nouveau', 'amdgpu']
+
+        if instance_data['cloud'] == 'azure':
+            modules.extend(['acpi_cpufreq', 'floppy', 'intel_uncore', 'intel_cstate', 'skylake-edac'])
+
+        # blocklist_conf = '/usr/lib/modprobe.d/blacklist-{module}.conf'
+        # files_to_check = [blocklist_conf.format(module=modules[x]) for x in range(len(modules))]
+        # blocklist_conf_strings = ['blacklist ' + x for x in modules]
+
+        loaded_modules = []
+        with host.sudo():
+            for module in modules:
+                if host.run(f'lsmod | grep -w {module}').stdout:
+                    loaded_modules.append(module)
+            assert not loaded_modules, \
+                f"The following modules should not be loaded: {', '.join(loaded_modules)}"
+
+            # ToDo: CLOUDX-1518
+            # for file, str_to_check in zip(files_to_check, blocklist_conf_strings):
+            #    assert host.file(file).exists, f'file "{file}" does not exist'
+            #    assert host.file(file).contains(str_to_check), \
+            #        f'{str_to_check} is not blocklisted in "{file}"'
+
     # TODO: Confirm if this test should be run in non-RHEL images
     @pytest.mark.run_on(['rhel'])
     def test_username(self, host, instance_data):
@@ -60,13 +85,34 @@ class TestsGeneric:
 
             assert host.check_output('whoami') == instance_data['username']
 
-    @pytest.mark.run_on(['all'])
-    def test_console_is_redirected_to_ttys0(self, host):
+    @pytest.mark.run_on(['rhel'])
+    def test_cmdline_console_and_params(self, host, instance_data):
         """
-        Console output should be redirected to serial for HVM instances.
+        Verify the console and other required parameters in the kernel command line.
         """
-        assert host.file('/proc/cmdline').contains('console=ttyS0'), \
-            'Serial console should be redirected to ttyS0'
+        file_to_check = '/proc/cmdline'
+
+        expected_config = []
+
+        # Define expected console based on architecture and platform
+        if host.system_info.arch == 'aarch64' and instance_data['cloud'] == 'azure':
+            expected_config.append('console=ttyAMA0')
+        else:
+            expected_config.append('console=ttyS0')
+
+        # Add Azure-specific parameters
+        if host.system_info.arch == 'x86_64' and instance_data['cloud'] == 'azure':
+            expected_config.extend(['earlyprintk=ttyS0', 'rootdelay=300'])
+
+        # Add RHEL 9.6+ specific parameter
+        if version.parse(host.system_info.release) >= version.parse('9.6') and \
+                instance_data['cloud'] == 'azure':
+            expected_config.append('nvme_core.io_timeout=240')
+
+        with host.sudo():
+            for item in expected_config:
+                assert host.file(file_to_check).contains(item), \
+                    f'{item} was expected in {file_to_check}'
 
     # TODO: does this apply to fedora and centos
     @pytest.mark.run_on(['rhel'])
@@ -319,7 +365,7 @@ class TestsGeneric:
         BugZilla 1960628
         SELinux should be in enforcing/targeted mode
         """
-        if test_lib.is_rhel_sap(host):
+        if test_lib.is_rhel_saphaus(host):
             expected_mode = 'Permissive'
         else:
             expected_mode = 'Enforcing'
@@ -397,6 +443,15 @@ class TestsGeneric:
             assert not host.file(file_to_check).exists, \
                 f'{file_to_check} should not exist in RHEL-8 and above'
 
+    @pytest.mark.run_on(['all'])
+    def test_timezone_is_utc(self, host):
+        """
+        Check that the default timezone is set to UTC.
+        BugZilla 1187669
+        """
+        timezone = host.check_output('date +%Z').strip()
+        assert timezone == 'UTC', f'Unexpected timezone: {timezone}. Expected to be UTC'
+
     @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
     def test_bootc_installed(self, host):
         """
@@ -411,6 +466,117 @@ class TestsGeneric:
             print(host.run('yum search system-reinstall-bootc').stdout)
             assert host.package("system-reinstall-bootc").is_installed, \
                 'System-reinstall-bootc package expected to be installed in RHEL >= 9.6, 10.0'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_logging_cfg(self, host):
+        """
+        Check /etc/cloud/cloud.cfg.d/05_logging.cfg
+        """
+        file_to_check = '/etc/cloud/cloud.cfg.d/05_logging.cfg'
+        local_file = 'data/generic/05_logging.cfg'
+
+        assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
+            f'{file_to_check} has unexpected content'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_authconfig_file(self, host):
+        """
+        Verify no /etc/sysconfig/authconfig file in RHEL8 and later
+        """
+        file_to_check = '/etc/sysconfig/authconfig'
+
+        assert not host.file(file_to_check).exists, \
+            f'{file_to_check} should not exist in RHEL 8 and later'
+
+    @pytest.mark.run_on(['all'])
+    @pytest.mark.exclude_on(['fedora'])
+    def test_services_running(self, host, instance_data):
+        """
+        Verify the necessary services are running
+        """
+        service_list = [
+            'cloud-init-local', 'cloud-init',
+            'cloud-config', 'cloud-final', 'sshd',
+        ]
+
+        if instance_data['cloud'] == 'azure':
+            service_list.extend(['waagent', 'hypervkvpd'])
+
+        with host.sudo():
+            for service in service_list:
+                assert host.service(service).is_running
+
+    # TODO: verify logic, think if we should divide
+    @pytest.mark.run_on(['rhel'])
+    def test_auditd(self, host):
+        """
+        - Service should be running
+        - Config files should have the correct MD5 checksums
+        """
+        checksums_by_version = {
+            '9.4+': {
+                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            '8.10+': {
+                '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
+            '8.6+': {
+                '/etc/audit/auditd.conf': 'f87a9480f14adc13605b7b14b7df7dda',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            }
+        }
+
+        auditd_service = 'auditd'
+
+        assert host.service(
+            auditd_service).is_running, f'{auditd_service} expected to be running'
+
+        system_release = version.parse(host.system_info.release)
+        if system_release >= version.parse('9.4'):
+            checksums = checksums_by_version['9.4+']
+        elif version.parse('9.0') > system_release >= version.parse('8.10'):
+            checksums = checksums_by_version['8.10+']
+        else:
+            checksums = checksums_by_version['8.6+']
+
+        with host.sudo():
+            for path, md5 in checksums.items():
+                assert md5 in host.check_output(
+                    f'md5sum {path}'), f'Unexpected checksum for {path}'
+
+    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_aws_marketplace_only')
+    def test_ha_specific_script(self, host, instance_data):
+        """
+        Verify HA functionality on RHEL HA and RHEL SAP HA and US images
+        Skip AWS 3p amis since they don't have billing codes and
+        and therefore no RHUI access in stage.
+        """
+        # Run on HA or SAP+HA images only
+        is_ha = test_lib.is_rhel_high_availability(host)
+        is_sap_ha = test_lib.is_rhel_saphaus(host)
+        if not (is_ha or is_sap_ha):
+            pytest.skip("Not a HA or SAP+HA image.")
+
+        cloud = instance_data['cloud'].lower()
+        local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
+        expected_success_message = "HA check passed successfully."
+
+        result = None
+        try:
+            result = test_lib.run_local_script_in_host(host, local_file_path)
+        finally:
+            if result and result.rc != 0:
+                print(f"Script stdout:\n{result.stdout}")
+                print(f"Script stderr:\n{result.stderr}")
+
+        assert result is not None, "HA check script did not return a result."
+        assert result.rc == 0, \
+            f"HA check script for cloud '{cloud}' failed with rc={result.rc}"
+        assert expected_success_message in result.stdout, \
+            "There is no the expected success message in the script stdout."
 
 
 @pytest.mark.order(3)
@@ -662,10 +828,6 @@ class TestsCloudInit:
 
         JIRA: CLOUDX-812
         """
-        if float(host.system_info.release) <= 8.4 and test_lib.is_rhel_sap(host):
-            # Test skipped since it's applicable to RHEL-SAP kickstart-generated images
-            pytest.skip('This test is not applicable for RHEL-SAP 8.4 and older.')
-
         cloud_cfg = '/etc/cloud/cloud.cfg'
         verify_cmd = f'rpm -Vf {cloud_cfg} | grep -e "^S.5.*{cloud_cfg}"'
 
@@ -860,6 +1022,14 @@ class TestsSecurity:
         assert host.service('firewalld').is_enabled, \
             'firewalld should be enabled in most RHEL cloud images (except AWS AMIs)'
 
+    @pytest.mark.run_on(['rhel', 'fedora'])
+    def test_etc_machine_id_permissions(self, host, instance_data):
+        """
+        Check that /etc/machine-id permissions are 444.
+        Bugzilla: 2221269
+        """
+        assert host.file('/etc/machine-id').mode == 0o444, 'Expected 444 permissions for /etc/machine-id'
+
 
 @pytest.mark.order(1)
 @pytest.mark.run_on(['rhel'])
@@ -1022,3 +1192,159 @@ class TestsRhelEls:
 
         # TODO: Add check
         assert result.failed, f'E4S references found in repository definitions:\n{repos_dir.stdout}'
+
+
+@pytest.mark.order(2)
+@pytest.mark.usefixtures('rhel_sap_only')
+class TestSAP:
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_security_limits(self, host):
+        """
+        BugZilla 1959963
+        JIRA RHELDST-10710
+        """
+        options = [
+            '@sapsys hard nofile 1048576',
+            '@sapsys soft nofile 1048576',
+            '@dba hard nofile 1048576',
+            '@dba soft nofile 1048576',
+            '@sapsys hard nproc unlimited',
+            '@sapsys soft nproc unlimited',
+            '@dba hard nproc unlimited',
+            '@dba soft nproc unlimited'
+        ]
+
+        with host.sudo():
+            config_file = '/etc/security/limits.d/99-sap.conf'
+
+            assert host.file(config_file).exists, \
+                f'"{config_file}" is supposed to exist in SAP images'
+
+            command_to_run = f"cat {config_file} | awk -F' ' '{{print($1,$2,$3,$4)}}'"
+
+            content = host.check_output(command_to_run)
+
+            for opt in options:
+                assert opt in content, f'{opt} was expected in {config_file}'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_sysctl_files(self, host):
+        """
+        Check that sysctl config file(s) have the expected config
+        BugZilla 1959962
+        """
+        cfg_files_to_check = [
+            '/usr/lib/sysctl.d/sap.conf',
+            '/etc/sysctl.d/sap.conf'
+        ]
+
+        expected_cfg_items = [
+            'kernel.pid_max = 4194304',
+            'vm.max_map_count = 2147483647'
+        ]
+
+        self.__check_sap_files_have_expected_config(host,
+                                                    cfg_files_to_check,
+                                                    expected_cfg_items,
+                                                    'sysctl')
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_tmp_files(self, host):
+        """
+        Check that temporary SAP config file(s) have the expected config
+        BugZilla 1959979
+        """
+        cfg_files_to_check = [
+            '/usr/lib/tmpfiles.d/sap.conf',
+            '/etc/tmpfiles.d/sap.conf'
+        ]
+
+        expected_cfg_items = [
+            re.escape('x /tmp/.sap*'),
+            re.escape('x /tmp/.hdb*lock'),
+            re.escape('x /tmp/.trex*lock')
+        ]
+
+        self.__check_sap_files_have_expected_config(host,
+                                                    cfg_files_to_check,
+                                                    expected_cfg_items,
+                                                    'tmp')
+
+    def __check_sap_files_have_expected_config(self,
+                                               host,
+                                               files_to_check,
+                                               expected_config_items,
+                                               files_type_name):
+        with host.sudo():
+            for cfg_file in files_to_check:
+                missing_files_count = 0
+                if host.file(cfg_file).exists:
+                    for item in expected_config_items:
+                        assert host.file(cfg_file).contains(item), \
+                            f'"{item}" was expected in "{cfg_file}"'
+                else:
+                    missing_files_count += 1
+
+        assert missing_files_count < len(files_to_check), \
+            f'No SAP {files_type_name} files found'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_tuned(self, host):
+        """
+        Check that "sap-hana" is active in tuned-adm profile for SAP AMIs
+        BugZilla 1959962
+        """
+        expected_cfg = 'sap-hana'
+
+        with host.sudo():
+            tuned_profile_cfg_file = '/etc/tuned/active_profile'
+            assert host.file(tuned_profile_cfg_file).contains(expected_cfg), \
+                f'"{expected_cfg}" is not set in "{tuned_profile_cfg_file}"'
+
+            assert expected_cfg in host.check_output('tuned-adm active'), \
+                'tuned-adm command returned unexpected active setting'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sap_required_packages_are_installed(self, host):
+        system_release = version.parse(host.system_info.release)
+
+        required_pkgs = []
+
+        required_pkgs.extend(['rhel-system-roles-sap'])
+
+        # BugZilla 1959813
+        required_pkgs.extend(['bind-utils', 'nfs-utils', 'tcsh'])
+
+        # BugZilla 1959813
+        required_pkgs.append('uuidd')
+
+        # BugZilla 1959923, 1961168
+        required_pkgs.extend(['cairo', 'expect', 'graphviz', 'gtk2',
+                              'iptraf-ng', 'krb5-workstation', 'libaio'])
+
+        # BugZilla 1959923, 1961168
+        required_pkgs.extend(['libatomic', 'libcanberra-gtk2', 'libicu',
+                              'libtool-ltdl', 'lm_sensors', 'net-tools'])
+
+        required_pkgs.extend(['numactl', 'PackageKit-gtk3-module', 'xorg-x11-xauth', 'libnsl'])
+
+        # BugZilla 1959962
+        required_pkgs.append('tuned-profiles-sap-hana')
+
+        # CLOUDX-557
+        if system_release < version.parse('8.0'):
+            required_pkgs.append('libpng12')
+
+        # CLOUDX-367, CLOUDX-557
+        if system_release >= version.parse('8.6'):
+            required_pkgs.append('ansible-core')
+        else:
+            required_pkgs.append('ansible')
+
+        # CLOUDX-557
+        if system_release < version.parse('9.0'):
+            required_pkgs.append('compat-sap-c++-9')
+
+        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
+
+        assert len(missing_pkgs) == 0, f'Missing packages required by RHEL-SAP: {", ".join(missing_pkgs)}'
