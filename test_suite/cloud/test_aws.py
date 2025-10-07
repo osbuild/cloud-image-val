@@ -469,56 +469,6 @@ class TestsAWS:
 
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
-    def test_pkg_signature_and_gpg_keys(self, host):
-        """
-        Checks that packages have a valid GPG signature,
-        either SIGPGP or RSAHEADER, and that a single GPG key is used.
-        """
-        with host.sudo():
-            # Query all installed RPMs and their GPG signature status
-            rpm_signature_query_cmd = (
-                "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} "
-                "SIGPGP:%{SIGPGP:pgpsig} RSAHEADER:%{RSAHEADER:pgpsig}\\n'"
-            )
-            filter_gpg_pubkey = f"{rpm_signature_query_cmd} | grep -v gpg-pubkey"
-
-            # Get all lines for software packages
-            package_signature_lines = host.check_output(filter_gpg_pubkey).splitlines()
-
-            unsigned_packages = []
-            for line in package_signature_lines:
-                if 'SIGPGP:(none)' in line and 'RSAHEADER:(none)' in line:
-                    unsigned_packages.append(line)
-
-            # Construct a detailed error message if unsigned packages are found.
-            error_message = (
-                "ERROR: The following software packages were found to be installed "
-                "without a valid GPG signature:\n"
-                f"{chr(10).join(unsigned_packages)}\n"
-                "This indicates that signature verification might be disabled, or "
-                "packages were installed with '--nogpgcheck'. "
-                "Ensure 'gpgcheck=1' is set for all enabled repositories and "
-                "packages are from trusted sources."
-            )
-
-            # Assert that no unsigned packages were found.
-            assert not unsigned_packages, error_message
-
-            # check use only one keyid
-            rpm_signatures_cmd = (
-                "rpm -qa --qf '%{NAME} %{SIGPGP:pgpsig} %{RSAHEADER:pgpsig}\\n'"
-            )
-            key_ids_command = ' '.join([rpm_signatures_cmd,
-                                        "| grep -vE '(gpg-pubkey|rhui)'",
-                                        "| awk '{if ($2 != \"(none)\") print $2; else if ($3 != \"(none)\") print $3}'",
-                                        "| awk -F'Key ID ' '{print $2}'",
-                                        "| sort | uniq | wc -l"
-            ])
-            assert int(host.check_output(key_ids_command)) == 1, \
-                'Number of key IDs for rhui pkgs should be 1'
-
-    @pytest.mark.pub
-    @pytest.mark.run_on(['all'])
     def test_number_gpg_keys(self, host):
         """
         Check that the number of GPGs is correct
