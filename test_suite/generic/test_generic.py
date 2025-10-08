@@ -628,6 +628,28 @@ class TestsGeneric:
                 'Number of key IDs for rhui pkgs should be 1'
 
     @pytest.mark.pub
+    @pytest.mark.run_on(['all'])
+    def test_number_gpg_keys(self, host):
+        """
+        Check that the number of GPGs is correct
+        """
+        with host.sudo():
+            # print the gpg public keys installed
+            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+
+            if host.system_info.distribution == 'fedora':
+                num_of_gpg_keys = 1
+            elif host.system_info.distribution == 'rhel' and \
+                    version.parse(host.system_info.release) >= version.parse('9.0'):
+                num_of_gpg_keys = 3
+            else:
+                num_of_gpg_keys = 2
+
+        # check correct number of gpg keys installed
+        assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
+            f'There should be {num_of_gpg_keys} gpg key(s) installed'
+
+    @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     def test_yum_package_install_kernel_debug(self, host):
         """
