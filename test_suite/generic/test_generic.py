@@ -627,6 +627,20 @@ class TestsGeneric:
             assert int(host.check_output(key_ids_command)) == 1, \
                 'Number of key IDs for rhui pkgs should be 1'
 
+    @pytest.mark.pub
+    @pytest.mark.run_on(['rhel'])
+    def test_yum_package_install_kernel_debug(self, host):
+        """
+        BugZilla: 2117700
+        Test that kernel-debug and kernel-debug-devel matching current kernel version are available in repo
+        Open Question: which versions does this test apply? using all rhel versions for now
+        """
+        print(f"kernel version: {host.check_output('uname -r')}")
+
+        with host.sudo():
+            assert host.run_test('yum -y install kernel-debug-devel-$(uname -r)')
+            assert host.run_test('yum -y install kernel-debug-$(uname -r)')
+
 
 @pytest.mark.order(3)
 class TestsServices:
