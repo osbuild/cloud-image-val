@@ -641,6 +641,36 @@ class TestsGeneric:
             assert host.run_test('yum -y install kernel-debug-devel-$(uname -r)')
             assert host.run_test('yum -y install kernel-debug-$(uname -r)')
 
+    @pytest.mark.run_on(['all'])
+    def test_hostkey_permissions(self, host):
+        """
+        Check that ssh files permission set are correct.
+        BugZilla 2013644
+        Ensure permissions are aligned with a distro and release version
+        CLOUDX-994
+        """
+        files_to_check = ['ssh_host_ecdsa_key',
+                          'ssh_host_ed25519_key', 'ssh_host_rsa_key']
+
+        # Default permission for private keys
+        expected_mode = 0o640
+        distro = host.system_info.distribution
+        release_major = version.parse(host.system_info.release).major
+
+        if distro == 'fedora' or \
+           (distro == 'centos' and release_major == 9) or \
+           ((distro == 'rhel' or distro == 'centos') and release_major == 10):
+            # Strict permissions
+            expected_mode = 0o600
+
+        print(host.run('rpm -q cloud-init').stdout)
+
+        for file in files_to_check:
+            print(host.run(f'stat -c "%a %n" /etc/ssh/{file}*').stdout)
+            if host.file(f'/etc/ssh/{file}').exists:
+                assert host.file(f'/etc/ssh/{file}').mode == expected_mode, \
+                    'ssh files permissions are not set correctly'
+
 
 @pytest.mark.order(3)
 class TestsServices:
