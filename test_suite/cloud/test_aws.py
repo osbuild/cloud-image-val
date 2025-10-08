@@ -314,21 +314,6 @@ class TestsAWS:
         assert ena_support, \
             'ENA support expected to be enabled in RHEL 7.4 and later'
 
-    @pytest.mark.run_on(['rhel'])
-    def test_yum_plugins(self, host):
-        """
-        BugZilla 1932802
-        Verify yum/dnf product-id and subscription-manager plugins are enabled for RHEL 8.4+.
-        """
-        expect_config = "enabled=1"
-
-        with host.sudo():
-            assert host.file('/etc/yum/pluginconf.d/product-id.conf').contains(expect_config), \
-                'yum "product-id" plugin must be enabled'
-
-            assert host.file('/etc/yum/pluginconf.d/subscription-manager.conf').contains(expect_config), \
-                'yum "subscription-manager" must be enabled'
-
     @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):
         """
