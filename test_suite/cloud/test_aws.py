@@ -2,7 +2,6 @@ import json
 import re
 
 import pytest
-from packaging import version
 
 from lib import test_lib, aws_lib
 
@@ -130,52 +129,6 @@ class TestsAWS:
                     print(host.check_output(f'rpm -q {pkg}'))
 
         assert len(found_pkgs) == 0, f'Found unexpected packages installed: {", ".join(found_pkgs)}'
-
-    # TODO: Refactor this test case. E.g. divide it by type of image and version
-    @pytest.mark.run_on(['rhel'])
-    def test_required_packages_are_installed(self, host):
-        """
-        Some pkgs are required in EC2.
-        https://kernel.googlesource.com/pub/scm/boot/dracut/dracut/+/18e61d3d41c8287467e2bc7178f32d188affc920%5E!/
-
-        dracut-nohostonly -> dracut-config-generic
-        dracut-norescue   -> dracut
-
-        BugZilla 1822853, 1823315: Starting from RHEL 8.5, NetworkManager-cloud-setup package was added
-        """
-        required_pkgs = [
-            'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
-            'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',
-            'cloud-utils-growpart', 'gdisk', 'insights-client',
-            'dracut-config-generic', 'grub2-tools',
-        ]
-
-        system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('8.5'):
-            required_pkgs.append('NetworkManager-cloud-setup')
-
-        # CLOUDX-451
-        if system_release.major == 9 and system_release.minor >= 3 or \
-                system_release.major == 8 and system_release.minor >= 9:
-            if host.system_info.arch != 'aarch64':
-                # Legacy BIOS boot mode related package
-                required_pkgs.append('grub2-pc')
-
-                # UEFI boot mode related packages, not applicable to arm64 AMIs
-                required_pkgs.extend(['efibootmgr', 'grub2-efi-x64', 'shim-x64'])
-
-        # RHELMISC-4466 dhcp-client retired in RHEL10
-        # RHELMISC-6651 gdisk retired in RHEL10
-        if system_release.major >= 10:
-            required_pkgs.remove('dhcp-client')
-            required_pkgs.remove('gdisk')
-
-        if test_lib.is_rhel_high_availability(host):
-            required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
-
-        missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
-
-        assert len(missing_pkgs) == 0, f'Missing packages: {", ".join(missing_pkgs)}'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])

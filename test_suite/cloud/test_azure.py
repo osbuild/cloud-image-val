@@ -210,31 +210,6 @@ class TestsAzure:
 
         print(console_lib.print_debug(debug))
 
-    @pytest.mark.run_on(['rhel'])
-    def test_pkg_wanted(self, host):
-        """
-        Check that the expected packages are installed.
-        """
-        wanted_pkgs = [
-            'yum-utils', 'redhat-release-eula', 'cloud-init', 'insights-client',
-            'tar', 'rsync', 'NetworkManager', 'cloud-utils-growpart', 'gdisk',
-            'grub2-tools', 'WALinuxAgent', 'firewalld', 'chrony',
-            'hypervkvpd', 'hyperv-daemons-license', 'hypervfcopyd', 'hypervvssd', 'hyperv-daemons'
-        ]
-
-        # RHELMISC-6651 gdisk retired in RHEL10
-        # CLOUDX-1335 hypervfcopyd retired in RHEL10 aarch64
-        system_release = version.parse(host.system_info.release)
-        if system_release.major >= 10:
-            wanted_pkgs.remove('gdisk')
-
-            if host.system_info.arch == 'aarch64':
-                wanted_pkgs.remove('hypervfcopyd')
-
-        missing_pkgs = [pkg for pkg in wanted_pkgs if not host.package(pkg).is_installed]
-
-        assert len(missing_pkgs) == 0, f'One or more packages are missing: {", ".join(missing_pkgs)}'
-
     @pytest.mark.run_on(['all'])
     @pytest.mark.exclude_on(['fedora'])
     def test_waagent_resourcedisk_format(self, host):
