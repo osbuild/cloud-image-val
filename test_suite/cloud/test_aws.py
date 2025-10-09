@@ -267,6 +267,9 @@ class TestsAWS:
         distro = host.system_info.distribution
         release_major = version.parse(host.system_info.release).major
 
+        if distro == 'centos' and release_major == 9:
+            expected_mode = 0o600
+
         if distro == 'fedora' or \
            ((distro == 'rhel' or distro == 'centos') and release_major == 10):
             # Strict permissions
