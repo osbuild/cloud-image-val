@@ -676,6 +676,9 @@ class TestsGeneric:
 
         BugZilla 1822853, 1823315: Starting from RHEL 8.5, NetworkManager-cloud-setup package was added
         """
+        if test_lib.is_rhel_cvm:
+            pytest.skip("Not applicable to CVM images")
+
         required_pkgs = [
             'kernel', 'yum-utils', 'redhat-release', 'redhat-release-eula',
             'cloud-init', 'tar', 'rsync', 'dhcp-client', 'NetworkManager',

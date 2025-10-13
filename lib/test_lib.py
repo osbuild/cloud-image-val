@@ -5,6 +5,13 @@ import time
 from lib import ssh_lib, console_lib
 
 
+def is_rhel_cvm(host):
+    # Confidential RHEL on Azure cloud
+    with host.sudo():
+        bootctl_output = str(host.run('bootctl | grep Stub').stdout)
+    return re.search('Stub: systemd-stub', bootctl_output)
+
+
 def is_rhel_saphaus(host):
     # RHEL for SAP HA and US with sap-solutions and sap-netweaver repositories
     return __test_keyword_in_repositories(host, 'sap-solutions')
