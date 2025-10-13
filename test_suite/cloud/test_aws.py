@@ -2,6 +2,7 @@ import json
 import re
 
 import pytest
+from packaging import version
 
 from lib import test_lib, aws_lib
 
