@@ -149,7 +149,7 @@ def __copy_team_ssh_keys_to_instance(instance, ssh_config_file, team_ssh_keys):
         f'{username}@{instance_address} "{composed_echo_command}" > /dev/null 2>&1'
     )
 
-    if (os.system(ssh_command) >> 8) == 0:
-        print(f"[{instance_address}] Public SSH key(s) copied successfully!")
-    else:
-        print(f"[{instance_address}] WARNING: Could not copy public SSH key(s)")
+    success = (os.system(ssh_command) >> 8) == 0
+
+    assert success, f"[{instance_address}] ERROR: Could not copy public SSH key(s)"
+    print(f"[{instance_address}] Public SSH key(s) copied successfully!")
