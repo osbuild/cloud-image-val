@@ -143,6 +143,7 @@ class TestsAzure:
 
     # @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_grub_params(self, host):
         """
         Verify /etc/default/grub params excluding GRUB_CMDLINE_LINUX line,
@@ -243,6 +244,7 @@ class TestsAzure:
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_osdisk_size(self, host):
         """
         Verify os disk size is 63G/62.9G

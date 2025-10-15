@@ -141,6 +141,12 @@ def check_markers(host, request):
 
 
 @pytest.fixture
+def rhel_cvm_skip(host):
+    if test_lib.is_rhel_cvm(host):
+        pytest.skip('This test is not applicable to CVM')
+
+
+@pytest.fixture
 def rhel_sap_only(host):
     if not test_lib.is_rhel_saphaus(host):
         pytest.skip('Image is not SAP RHEL')
