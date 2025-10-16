@@ -748,10 +748,11 @@ class TestsGeneric:
         expected_mode = 0o640
         distro = host.system_info.distribution
         release_major = version.parse(host.system_info.release).major
+        system_release = version.parse(host.system_info.release)
 
         if distro == 'fedora' or \
-           (distro == 'centos' and release_major == 9) or \
-           ((distro == 'rhel' or distro == 'centos') and release_major == 10):
+           (distro == 'centos' and release_major >= 9) or \
+           (distro == 'rhel' and system_release >= version.parse('9.8')):
             # Strict permissions
             expected_mode = 0o600
 
