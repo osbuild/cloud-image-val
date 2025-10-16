@@ -1,6 +1,5 @@
 import os
 import json
-from lib import test_lib
 
 INSTANCES_JSON_PATH = os.environ['CIV_INSTANCES_JSON']
 
@@ -63,4 +62,3 @@ def check_avc_denials(host, relevant_keywords=None):
             # If any AVCs remain after filtering, fail
             if filtered_output:
                 assert False, f"Unexpected AVC denials found:\n{filtered_output}"
-
