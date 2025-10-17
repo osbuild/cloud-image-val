@@ -560,6 +560,10 @@ class TestsGeneric:
         if not (is_ha or is_sap_ha):
             pytest.skip("Not a HA or SAP+HA image.")
 
+        release_major = version.parse(host.system_info.release).major
+        if instance_data['cloud'] == 'azure' and release_major == 8:
+            pytest.skip("Skip due to no azure-cli on RHEL8 Azure")
+
         cloud = instance_data['cloud'].lower()
         local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
         expected_success_message = "HA check passed successfully."
