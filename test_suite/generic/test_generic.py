@@ -110,6 +110,7 @@ class TestsGeneric:
             expected_config.append('nvme_core.io_timeout=240')
 
         # CVM specific parameters
+        print(f'test_lib.is_rhel_cvm: {test_lib.is_rhel_cvm}')
         if test_lib.is_rhel_cvm:
             expected_config = ['console=tty0', 'console=ttyS0']
 
