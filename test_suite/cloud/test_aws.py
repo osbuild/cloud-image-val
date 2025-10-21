@@ -271,32 +271,18 @@ class TestsAWS:
     @pytest.mark.run_on(['<rhel10'])
     def test_dracut_conf_sgdisk(self, host):
         """
-        Enable resizing on copied AMIs, added 'install_items+=" sgdisk "' to "/etc/dracut.conf.d/sgdisk.conf"
+        Enable resizing on copied AMIs, added 'install_items+=" sgdisk "'
+        to "/usr/lib/dracut/dracut.conf.d/sgdisk.conf"
         JIRA: CLOUDX-373
         """
         assert host.package('gdisk').is_installed, 'Package "gdisk" is expected to be installed'
 
-        # Before RHEL 8.5, AMIs were built using ks file. So the path is different.
-        files_to_check = [
-            '/etc/dracut.conf.d/sgdisk.conf',
-            '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
-        ]
+        file_to_check = '/usr/lib/dracut/dracut.conf.d/sgdisk.conf'
 
         with host.sudo():
-            test_lib.print_host_command_output(host, 'ls -R /etc/dracut* /usr/lib/dracut/dracut*')
+            config_ok = host.file(file_to_check).contains('install_items+=" sgdisk "')
 
-            file_found = False
-            config_ok = False
-
-            for file in files_to_check:
-                if host.file(file).exists:
-                    file_found = True
-                    test_lib.print_host_command_output(host, f'cat {file}')
-
-                    if host.file(file).contains('install_items+=" sgdisk "'):
-                        config_ok = True
-
-        assert file_found, 'sgdisk.conf file not found.'
+        assert host.file(file_to_check).exists, 'sgdisk.conf file not found.'
         assert config_ok, 'Expected configuration was not found in sgdisk.conf'
 
     @pytest.mark.run_on(['rhel'])
@@ -304,7 +290,6 @@ class TestsAWS:
         """
         BugZilla 1849082
         JIRA COMPOSER-1096
-        Add ' xen-netfront xen-blkfront ' to '/etc/dracut.conf.d/xen.conf' in x86 AMIs prior RHEL-8.4.
         Using image builder from RHEL-8.5, add ' nvme xen-blkfront ' to '/usr/lib/dracut/dracut.conf.d/ec2.conf'.
         This is not required in arm AMIs.
         """
