@@ -109,6 +109,10 @@ class TestsGeneric:
                 instance_data['cloud'] == 'azure':
             expected_config.append('nvme_core.io_timeout=240')
 
+        # CVM specific parameters
+        if test_lib.is_rhel_cvm(host):
+            expected_config = ['console=tty0', 'console=ttyS0']
+
         with host.sudo():
             for item in expected_config:
                 assert host.file(file_to_check).contains(item), \
@@ -272,6 +276,7 @@ class TestsGeneric:
 
     # TODO: create test case for aarch64 grub config file
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_grub_config(self, host):
         current_arch = host.system_info.arch
         if current_arch != 'x86_64':
@@ -288,6 +293,7 @@ class TestsGeneric:
             assert host.file(grub2_file).linked_to == linked_to
 
     @pytest.mark.run_on(['all'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_boot_mount_presence(self, host, instance_data):
         """
         The /boot mount exists if
@@ -326,6 +332,7 @@ class TestsGeneric:
             assert not host.mount_point("/boot").exists, "/boot mount is detected"
 
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_net_ifnames_usage(self, host, instance_data):
         """
         CLOUDX-979, RHELPLAN-103894 drop net.ifnames=0 kernel boot parameter on RHEL10 and later
@@ -500,7 +507,9 @@ class TestsGeneric:
         ]
 
         if instance_data['cloud'] == 'azure':
-            service_list.extend(['waagent', 'hypervkvpd'])
+            service_list.append('waagent')
+            if not test_lib.is_rhel_cvm(host):
+                service_list.append('hypervkvpd')
 
         with host.sudo():
             for service in service_list:
@@ -714,10 +723,13 @@ class TestsGeneric:
             required_pkgs.extend(['fence-agents-all', 'pacemaker', 'pcs'])
 
         if instance_data['cloud'] == 'azure':
-            required_pkgs.extend(['hypervkvpd', 'hyperv-daemons-license', 'hypervvssd'
-                                  'hyperv-daemons', 'WALinuxAgent', 'firewalld'])
-            if host.system_info.arch != 'aarch64':
-                required_pkgs.append('hypervfcopyd')
+            required_pkgs.extend(['WALinuxAgent', 'firewalld'])
+
+            if not test_lib.is_rhel_cvm(host):
+                required_pkgs.extend(['hypervkvpd', 'hyperv-daemons-license', 'hypervvssd'
+                                      'hyperv-daemons'])
+                if host.system_info.arch != 'aarch64':
+                    required_pkgs.append('hypervfcopyd')
 
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
@@ -1419,6 +1431,7 @@ class TestsKdump:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('check_kdump_fix_condition')
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_kdump_status(self, host):
         """
         Verify that kdump is enabled

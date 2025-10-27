@@ -9,6 +9,7 @@ def is_rhel_cvm(host):
     # Confidential RHEL on Azure cloud
     with host.sudo():
         bootctl_output = str(host.run('bootctl | grep Stub').stdout)
+        print(f'bootctl_output: {bootctl_output}')
     return re.search('Stub: systemd-stub', bootctl_output)
 
 

@@ -143,6 +143,7 @@ class TestsAzure:
 
     # @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_grub_params(self, host):
         """
         Verify /etc/default/grub params excluding GRUB_CMDLINE_LINUX line,
@@ -243,6 +244,7 @@ class TestsAzure:
 
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_cvm_skip')
     def test_osdisk_size(self, host):
         """
         Verify os disk size is 63G/62.9G
@@ -414,3 +416,21 @@ class TestsAzure:
 
         assert not host.package(pkg_rhccc_cdn).is_installed, \
             f"BYOS system must NOT have '{pkg_rhccc_cdn}' installed."
+
+    def test_boot_efi_size_on_cvm(self, host):
+        """
+        Verify the existence and size of the /boot/efi partition.
+        The expected minimum size is 512 MiB.
+        """
+        if not test_lib.is_rhel_cvm(host):
+            pytest.skip("Not applicable to the VM RHEL flavor.")
+
+        assert host.mount_point("/boot/efi").exists, "/boot/efi mount is missing"
+
+        result = host.run("df --block-size=1 /boot/efi | tail -1")
+        parts = result.stdout.split()
+        total_bytes = int(parts[1])
+        min_size_mib = 512
+        required_size = min_size_mib * 1024 * 1024
+        assert total_bytes >= required_size, \
+            f'/boot/efi partition is too small: {total_bytes} bytes. Required: {min_size_mib} MiB)'
