@@ -390,3 +390,27 @@ class TestsAzure:
             assert result.succeeded, \
                 'The certificate will expire within 10 weeks.' \
                 'It should be valid for at least 10 weeks from now.'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_redhat_cloud_client_packages_config(self, host, instance_data_azure_web):
+        """
+        If offer/vm_name contains 'byos', then:
+        1. redhat-cloud-client-configuration must be installed
+        2. redhat-cloud-client-configuration-cdn must NOT be installed
+        CLOUDX-1533
+        """
+        # Get offer from Azure metadata with fallback to VM name
+        source_value, source_type = get_offer_or_vm_name(instance_data_azure_web)
+
+        # Check if it's a BYOS image (case-insensitive)
+        if not source_value or 'byos' not in source_value.lower():
+            pytest.skip(f"Test skipped: {source_type} '{source_value}' does not contain 'byos'.")
+
+        pkg_rhccc_generic = 'redhat-cloud-client-configuration'
+        pkg_rhccc_cdn = 'redhat-cloud-client-configuration-cdn'
+
+        assert host.package(pkg_rhccc_generic).is_installed, \
+            f"BYOS system must have '{pkg_rhccc_generic}' installed."
+
+        assert not host.package(pkg_rhccc_cdn).is_installed, \
+            f"BYOS system must NOT have '{pkg_rhccc_cdn}' installed."
