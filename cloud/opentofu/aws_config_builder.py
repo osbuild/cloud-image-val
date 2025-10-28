@@ -230,13 +230,24 @@ class AWSConfigBuilder(BaseConfigBuilder):
             ]
         }
 
+        # START AWS API change workaround
+        # if 'aws_subnet' in instance:
+        #     declared_subnet_id = 'data.aws_subnet.{}.id'.format(instance['aws_subnet'])
+        #     new_spot_instance['subnet_id'] = f'${{{declared_subnet_id}}}'
+        #
+        # if 'aws_security_group' in instance:
+        #     declared_security_group_id = 'data.aws_security_group.{}.id'.format(instance['aws_security_group'])
+        #     new_spot_instance['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
+
+        # FIX: attach networking to the launch_specification so each launch spec has subnet and SGs
         if 'aws_subnet' in instance:
             declared_subnet_id = 'data.aws_subnet.{}.id'.format(instance['aws_subnet'])
-            new_spot_instance['subnet_id'] = f'${{{declared_subnet_id}}}'
+            new_spot_instance['launch_specification']['subnet_id'] = f'${{{declared_subnet_id}}}'
 
         if 'aws_security_group' in instance:
             declared_security_group_id = 'data.aws_security_group.{}.id'.format(instance['aws_security_group'])
-            new_spot_instance['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
+            new_spot_instance['launch_specification']['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
+        # END
 
         self.add_tags(self.config, new_spot_instance)
 
