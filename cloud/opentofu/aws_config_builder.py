@@ -195,6 +195,25 @@ class AWSConfigBuilder(BaseConfigBuilder):
 
         declared_iam_fleet_role_arn = 'data.aws_iam_role.{}.arn'.format(instance['aws_iam_role'])
 
+        # Build launch specification with conditional subnet and security group
+        launch_spec = {
+            'instance_type': instance['instance_type'],
+            'ami': instance['ami'],
+            'key_name': instance['aws_key_pair'],
+            'root_block_device': {'volume_size': 20},
+            'tags': {'name': name_tag_value},
+        }
+
+        if 'aws_subnet' in instance:
+            declared_subnet_id = 'data.aws_subnet.{}.id'.format(instance['aws_subnet'])
+            launch_spec['subnet_id'] = f'${{{declared_subnet_id}}}'
+        else:
+            launch_spec['availability_zone'] = f'{instance["region"]}a'
+
+        if 'aws_security_group' in instance:
+            declared_security_group_id = 'data.aws_security_group.{}.id'.format(instance['aws_security_group'])
+            launch_spec['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
+
         new_spot_instance = {
             'provider': f'aws.{instance["region"]}',
             'allocation_strategy': 'priceCapacityOptimized',
@@ -203,13 +222,7 @@ class AWSConfigBuilder(BaseConfigBuilder):
             'wait_for_fulfillment': True,
             'terminate_instances_with_expiration': True,
             'iam_fleet_role': f'${{{declared_iam_fleet_role_arn}}}',
-            'launch_specification': {
-                'instance_type': instance['instance_type'],
-                'ami': instance['ami'],
-                'key_name': instance['aws_key_pair'],
-                'root_block_device': {'volume_size': 20},
-                'tags': {'name': name_tag_value},
-            },
+            'launch_specification': launch_spec,
             'depends_on': [
                 'aws_key_pair.{}'.format(instance['aws_key_pair'])
             ]
@@ -229,14 +242,6 @@ class AWSConfigBuilder(BaseConfigBuilder):
                 'aws_spot_fleet_request.{}'.format(fleet_request_name)
             ]
         }
-
-        if 'aws_subnet' in instance:
-            declared_subnet_id = 'data.aws_subnet.{}.id'.format(instance['aws_subnet'])
-            new_spot_instance['subnet_id'] = f'${{{declared_subnet_id}}}'
-
-        if 'aws_security_group' in instance:
-            declared_security_group_id = 'data.aws_security_group.{}.id'.format(instance['aws_security_group'])
-            new_spot_instance['vpc_security_group_ids'] = [f'${{{declared_security_group_id}}}']
 
         self.add_tags(self.config, new_spot_instance)
 
