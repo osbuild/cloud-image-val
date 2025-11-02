@@ -555,42 +555,6 @@ class TestsGeneric:
                 assert md5 in host.check_output(
                     f'md5sum {path}'), f'Unexpected checksum for {path}'
 
-    @pytest.mark.run_on(['rhel'])
-    @pytest.mark.usefixtures('rhel_aws_marketplace_only')
-    def test_ha_specific_script(self, host, instance_data):
-        """
-        Verify HA functionality on RHEL HA and RHEL SAP HA and US images
-        Skip AWS 3p amis since they don't have billing codes and
-        and therefore no RHUI access in stage.
-        """
-        # Run on HA or SAP+HA images only
-        is_ha = test_lib.is_rhel_high_availability(host)
-        is_sap_ha = test_lib.is_rhel_saphaus(host)
-        if not (is_ha or is_sap_ha):
-            pytest.skip("Not a HA or SAP+HA image.")
-
-        release_major = version.parse(host.system_info.release).major
-        if instance_data['cloud'] == 'azure' and release_major == 8:
-            pytest.skip("Skip due to no azure-cli on RHEL8 Azure")
-
-        cloud = instance_data['cloud'].lower()
-        local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
-        expected_success_message = "HA check passed successfully."
-
-        result = None
-        try:
-            result = test_lib.run_local_script_in_host(host, local_file_path)
-        finally:
-            if result and result.rc != 0:
-                print(f"Script stdout:\n{result.stdout}")
-                print(f"Script stderr:\n{result.stderr}")
-
-        assert result is not None, "HA check script did not return a result."
-        assert result.rc == 0, \
-            f"HA check script for cloud '{cloud}' failed with rc={result.rc}"
-        assert expected_success_message in result.stdout, \
-            "There is no the expected success message in the script stdout."
-
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
     def test_pkg_signature_and_gpg_keys(self, host):
@@ -1648,3 +1612,42 @@ class TestSAP:
         missing_pkgs = [pkg for pkg in required_pkgs if not host.package(pkg).is_installed]
 
         assert len(missing_pkgs) == 0, f'Missing packages required by RHEL-SAP: {", ".join(missing_pkgs)}'
+
+
+@pytest.mark.order(4)
+class TestsHA:
+    @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('rhel_aws_marketplace_only')
+    def test_ha_specific_script(self, host, instance_data):
+        """
+        Verify HA functionality on RHEL HA and RHEL SAP HA and US images
+        Skip AWS 3p amis since they don't have billing codes and
+        and therefore no RHUI access in stage.
+        """
+        # Run on HA or SAP+HA images only
+        is_ha = test_lib.is_rhel_high_availability(host)
+        is_sap_ha = test_lib.is_rhel_saphaus(host)
+        if not (is_ha or is_sap_ha):
+            pytest.skip("Not a HA or SAP+HA image.")
+
+        release_major = version.parse(host.system_info.release).major
+        if instance_data['cloud'] == 'azure' and release_major == 8:
+            pytest.skip("Skip due to no azure-cli on RHEL8 Azure")
+
+        cloud = instance_data['cloud'].lower()
+        local_file_path = f'scripts/rhel-ha-{cloud}-check.sh'
+        expected_success_message = "HA check passed successfully."
+
+        result = None
+        try:
+            result = test_lib.run_local_script_in_host(host, local_file_path)
+        finally:
+            if result and result.rc != 0:
+                print(f"Script stdout:\n{result.stdout}")
+                print(f"Script stderr:\n{result.stderr}")
+
+        assert result is not None, "HA check script did not return a result."
+        assert result.rc == 0, \
+            f"HA check script for cloud '{cloud}' failed with rc={result.rc}"
+        assert expected_success_message in result.stdout, \
+            "There is no the expected success message in the script stdout."
