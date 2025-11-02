@@ -184,7 +184,19 @@ def apply_architecture_specific_grub_terminal(lines, architecture):
     elif architecture == 'aarch64':
         expected_line = 'GRUB_TERMINAL="console"'
 
+    # Define serial lines to be removed specifically for aarch64
+    grub_lines_to_remove_aarch64 = [
+        'GRUB_TERMINAL_INPUT="serial"',
+        'GRUB_TERMINAL_OUTPUT="serial"',
+    ]
+
     for line in lines:
+        line_stripped = line.strip()
+
+        # Check and remove the serial-specific lines for aarch64
+        if architecture == 'aarch64' and line_stripped in grub_lines_to_remove_aarch64:
+            continue
+
         if line.startswith('GRUB_TERMINAL='):
             found_grub_terminal_count += 1
             updated_lines.append(expected_line)
