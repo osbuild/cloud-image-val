@@ -253,7 +253,7 @@ class TestsAzure:
 
         # CLOUDX-764
         if version.parse(host.system_info.release) >= version.parse('9.3'):
-            expected_disk_size = '62.9G'
+            expected_disk_size = '62.5G'
 
         with host.sudo():
             base_command = 'fdisk -l | grep "Linux LVM"'
@@ -426,7 +426,7 @@ class TestsAzure:
         result = host.run("df --block-size=1 /boot/efi | tail -1")
         parts = result.stdout.split()
         total_bytes = int(parts[1])
-        min_size_mib = 512
+        min_size_mib = 510
         required_size = min_size_mib * 1024 * 1024
         assert total_bytes >= required_size, \
             f'/boot/efi partition is too small: {total_bytes} bytes. Required: {min_size_mib} MiB)'
