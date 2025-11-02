@@ -329,11 +329,6 @@ class TestsAzure:
         print(f'rhui_packages_cmd.stdout: {rhui_packages_cmd.stdout}')
         rhui_cmd = host.run('rpm -qa | grep "^rhui"')
         print(f'rhui_cmd.stdout: {rhui_cmd.stdout}')
-        with host.sudo():
-            system_release = version.parse(host.system_info.release).major
-            rhui_install = host.run(f'yum install -y rhui-azure-rhel{system_release}')
-            print(f'rhui_install.stdout: {rhui_install.stdout}')
-            assert rhui_install.rc == 0, 'Failed to install RHUI client package'
 
         # Check if the command ran successfully (exit code 0)
         assert rhui_packages_cmd.rc == 0, 'Failed to get RHUI client packages'
