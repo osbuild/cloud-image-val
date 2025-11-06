@@ -208,11 +208,30 @@ class TestsGeneric:
 
         with host.sudo():
             host.run_test(f'rpm -q {rpm_to_check}')
+            cert_output = host.check_output('rct cat-cert /etc/pki/product-default/*.pem')
 
-            cert_version = host.check_output('rct cat-cert /etc/pki/product-default/*.pem | grep Version')
+            in_product_section = False
 
-            assert f'Version: {system_release}' in cert_version, \
+            for line in cert_output.splitlines():
+                trimmed_line = line.strip()
+
+                # 1. Look for the start of the Product section
+                if trimmed_line == 'Product:':
+                    in_product_section = True
+                    continue
+
+                # 2. If we are in the Product section, look for 'Version:'
+                if in_product_section and trimmed_line.startswith('Version:'):
+                    product_version = trimmed_line.split(':', 1)[1].strip()
+
+            assert str(system_release) == product_version, \
                 'Inconsistent version in pki certificate'
+
+            sub_man_installed = host.check_output('subscription-manager list --installed | grep Version')
+            sub_man_version = sub_man_installed.split(':', 1)[1].strip()
+
+            assert str(system_release) == sub_man_version, \
+                'Inconsistent version in RHSM list --installed'
 
     @pytest.mark.run_on(['all'])
     def test_inittab_and_systemd(self, host):
