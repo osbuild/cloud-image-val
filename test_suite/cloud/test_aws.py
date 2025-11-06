@@ -78,7 +78,8 @@ class TestsAWS:
         Verify the major-minor release version is present in the AMI name.
         """
         ami_name = instance_data['name']
-        system_release = float(host.system_info.release)
+        system_release = version.parse(host.system_info.release)
+        print(repr(host.system_info.release))
 
         assert str(system_release).replace('.', '-') in ami_name, \
             'System release not found in AMI name'
