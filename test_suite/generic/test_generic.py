@@ -268,7 +268,9 @@ class TestsGeneric:
 
         with host.sudo():
             command_to_run = "rpm -q --qf '%{VERSION}' --whatprovides " + release_file
-            package_release = version.parse(host.check_output(command_to_run))
+            raw_package_version = host.check_output(command_to_run)
+            print(f"DEBUG: Raw RPM output for package version: '{raw_package_version}'")
+            package_release = version.parse(raw_package_version)
 
         assert system_release == package_release, \
             f'Product version ({system_release}) does not match package release version'
