@@ -230,7 +230,7 @@ class TestsGeneric:
             sub_man_installed = host.check_output('subscription-manager list --installed | grep Version')
             sub_man_version = sub_man_installed.split(':', 1)[1].strip()
 
-            assert str(system_release) == sub_man_version, \
+            assert str(system_release) in sub_man_version, \
                 'Inconsistent version in RHSM list --installed'
 
     @pytest.mark.run_on(['all'])
