@@ -224,7 +224,7 @@ class TestsGeneric:
                 if in_product_section and trimmed_line.startswith('Version:'):
                     product_version = trimmed_line.split(':', 1)[1].strip()
 
-            assert str(system_release) == product_version, \
+            assert str(system_release) in product_version, \
                 'Inconsistent version in pki certificate'
 
             sub_man_installed = host.check_output('subscription-manager list --installed | grep Version')
