@@ -6,9 +6,9 @@ from cloud.opentofu.base_config_builder import BaseConfigBuilder
 class AzureConfigBuilderV2(BaseConfigBuilder):
     cloud_name = 'azure'
 
-    # Latest v3.x release. If we plan to update, we need to migrate to v4.x.
+    # Latest v4.x release.
     # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/4.0-upgrade-guide
-    provider_version = '3.117.0'
+    provider_version = '4.52.0'
     cloud_provider_definition = {
         "azurerm": {"source": "hashicorp/azurerm", "version": f"~> {provider_version}"}
     }
@@ -51,6 +51,12 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         self.resources_tf['resource']['azurerm_public_ip'] = {}
         self.resources_tf['resource']['azurerm_network_interface'] = {}
         self.resources_tf['resource']['azurerm_linux_virtual_machine'] = {}
+
+        # NSG and Rule resources
+        self.resources_tf['resource']['azurerm_network_security_group'] = {}
+        self.resources_tf['resource']['azurerm_network_security_rule'] = {}
+
+        self.resources_tf['resource']['azurerm_network_interface_security_group_association'] = {}
         # Only applicable if vhd_uri is provided in resources.json
         self.resources_tf['resource']['azurerm_shared_image_gallery'] = {}
         self.resources_tf['resource']['azurerm_shared_image'] = {}
@@ -76,6 +82,9 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             self.__new_azure_virtual_network(instance)
             self.__new_azure_subnet(instance)
 
+            self.__new_azure_nsg(instance)
+            self.__new_azure_nsg_rule(instance)
+
             if 'vhd_uri' in instance:
                 required_data = ['arch', 'storage_account']
                 for key in required_data:
@@ -88,6 +97,7 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
             self.__new_azure_public_ip(instance)
             self.__new_azure_nic(instance)
+            self.__new_azure_nic_nsg_association(instance)
             self.__new_azure_vm(instance)
 
         if not self.resources_tf['resource']['azurerm_shared_image_gallery']:
@@ -169,13 +179,13 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         new_image = {
             'name': '0.0.1',
-            'blob_uri': instance['vhd_uri'],
-            'storage_account_id': self.__get_azure_storage_account_uri(instance['storage_account']),
-            'image_name': instance['azurerm_shared_image'],
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'gallery_name': instance['azurerm_shared_image_gallery'],
+            'image_name': instance['azurerm_shared_image'],
             'target_region': target_region,
+            'blob_uri': instance['vhd_uri'],
+            'storage_account_id': self.__get_azure_storage_account_uri(instance['storage_account']),
             'tags': {
                 'vhd_uri': instance['vhd_uri']
             },
@@ -218,6 +228,62 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
 
         self.resources_tf['resource']['azurerm_subnet'][name] = new_subnet
 
+    def __new_azure_nsg(self, instance):
+        name = self.create_resource_name([instance['hostname'], 'nsg'])
+        instance['azurerm_network_security_group'] = name
+
+        new_nsg = {
+            'name': name,
+            'location': instance['location'],
+            'resource_group_name': self.resource_group,
+        }
+        self.add_tags(self.config, new_nsg)
+        self.resources_tf['resource']['azurerm_network_security_group'][name] = new_nsg
+
+    def __new_azure_nsg_rule(self, instance):
+        name = self.create_resource_name([instance['hostname'], 'ssh-rule'])
+        # The NSG rule resource name needs the name of the NSG resource it belongs to
+        nsg_resource_name = instance['azurerm_network_security_group']
+
+        new_rule = {
+            'name': 'AllowSSH',
+            'priority': 100,  # A low number ensures high priority
+            'direction': 'Inbound',
+            'access': 'Allow',
+            'protocol': 'Tcp',
+            'source_port_range': '*',
+            'destination_port_range': '22',
+            'source_address_prefix': '*',
+            'destination_address_prefix': '*',
+            'resource_group_name': self.resource_group,
+            'network_security_group_name': nsg_resource_name,
+            'depends_on': [
+                f'azurerm_network_security_group.{nsg_resource_name}',
+            ]
+        }
+        self.resources_tf['resource']['azurerm_network_security_rule'][name] = new_rule
+
+    def __new_azure_nic_nsg_association(self, instance):
+        # Name the association resource
+        name = self.create_resource_name([instance['hostname'], 'nic-nsg-assoc'])
+
+        new_association = {
+            'network_interface_id': self.__get_azure_network_resource_uri(
+                tf_resource_type='azurerm_network_interface',
+                azure_resource_name=instance['azurerm_network_interface']),
+
+            'network_security_group_id': self.__get_azure_network_resource_uri(
+                tf_resource_type='azurerm_network_security_group',
+                azure_resource_name=instance['azurerm_network_security_group']),
+
+            'depends_on': [
+                'azurerm_network_interface.{}'.format(instance['azurerm_network_interface']),
+                'azurerm_network_security_group.{}'.format(instance['azurerm_network_security_group']),
+            ]
+        }
+
+        self.resources_tf['resource']['azurerm_network_interface_security_group_association'][name] = new_association
+
     def __new_azure_public_ip(self, instance):
         name = self.create_resource_name([instance['hostname'], 'public-ip'])
         instance['azurerm_public_ip'] = name
@@ -254,10 +320,12 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'location': instance['location'],
             'resource_group_name': self.resource_group,
             'ip_configuration': ip_configuration,
+
             'depends_on': [
                 'azurerm_virtual_network.{}'.format(instance['azurerm_virtual_network']),
                 'azurerm_subnet.{}'.format(instance['azurerm_subnet']),
                 'azurerm_public_ip.{}'.format(instance['azurerm_public_ip']),
+                # Add NSG dependency
             ]
         }
         self.add_tags(self.config, new_nic)
@@ -325,8 +393,11 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
         elif 'vhd_uri' in instance:
             new_instance['depends_on'].append(
                 'azurerm_shared_image_version.{}'.format(instance['azurerm_shared_image_version']))
-            new_instance['source_image_id'] = self.__get_azure_image_uri(instance['azurerm_shared_image_gallery'],
-                                                                         instance['azurerm_shared_image'])
+            new_instance['source_image_id'] = self.__get_azure_image_version_uri(
+                instance['azurerm_shared_image_gallery'],
+                instance['azurerm_shared_image'],
+                '0.0.1'
+            )
 
         self.resources_tf['resource']['azurerm_linux_virtual_machine'][instance_hostname] = new_instance
 
@@ -349,6 +420,19 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
                                                                     azure_image_gallery_name,
                                                                     azure_image_name)
 
+    def __get_azure_image_version_uri(self, azure_image_gallery_name, azure_image_name, version_number):
+        """
+        Returns a composed string URI that belongs to a specific Azure shared image version.
+        :param azure_image_gallery_name: The name of the Shared Image Gallery in Azure
+        :param azure_image_name: The name of the Shared Image Definition in Azure
+        :param version_number: The version number of the image (e.g. '0.0.1')
+        :return: String
+        """
+        return '{}/Microsoft.Compute/galleries/{}/images/{}/versions/{}'.format(self.azure_resource_id_base,
+                                                                                azure_image_gallery_name,
+                                                                                azure_image_name,
+                                                                                version_number)
+
     def __get_azure_network_resource_uri(self,
                                          tf_resource_type,
                                          azure_resource_name,
@@ -367,6 +451,8 @@ class AzureConfigBuilderV2(BaseConfigBuilder):
             'azurerm_subnet': f'{self.azure_resource_id_base}/{resource}/virtualNetworks/{azure_virtual_network_name}/subnets/{azure_resource_name}',
             'azurerm_public_ip': f'{self.azure_resource_id_base}/{resource}/publicIPAddresses/{azure_resource_name}',
             'azurerm_network_interface': f'{self.azure_resource_id_base}/{resource}/networkInterfaces/{azure_resource_name}',
+            # Add Network Security Group
+            'azurerm_network_security_group': f'{self.azure_resource_id_base}/{resource}/networkSecurityGroups/{azure_resource_name}',
         }
 
         if tf_resource_type not in tf_azure_resource_types:
