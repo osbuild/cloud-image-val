@@ -20,7 +20,6 @@ def check_avc_denials(host, relevant_keywords=None):
       - SAP HANA (is_rhel_saphaus) → SELinux must be permissive → check AVCs
       - Non-SAP → SELinux must be enforcing → no AVC checks
     """
-    
     with host.sudo():
         is_sap = test_lib.is_rhel_saphaus(host)
         selinux_mode = host.run("getenforce").stdout.strip().lower()
