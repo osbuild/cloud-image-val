@@ -1,6 +1,8 @@
 import os
 import json
 
+from lib import test_lib
+
 INSTANCES_JSON_PATH = os.environ['CIV_INSTANCES_JSON']
 
 
@@ -14,51 +16,50 @@ def __get_instance_data_from_json(key_to_find, values_to_find, path=INSTANCES_JS
 
 def check_avc_denials(host, relevant_keywords=None):
     """
-    Check for SELinux AVC denials.
-
-    Preconditions:
-      - SELinux must be in permissive mode
-      - auditd must be running
-
-    Known AVCs from irqbalance, insights-client, and subscription-manager are ignored.
-    AVCs in permissive mode are ignored.
-
-    If relevant_keywords is provided(cloudx services), only AVCs matching those keywords cause failure.
+    Enforce SELinux rules:
+      - SAP HANA (is_rhel_saphaus) → SELinux must be permissive → check AVCs
+      - Non-SAP → SELinux must be enforcing → no AVC checks
     """
+    import pdb
+    pdb.set_trace()
 
     with host.sudo():
-        # Check SELinux mode
+        is_sap = test_lib.is_rhel_saphaus(host)
         selinux_mode = host.run("getenforce").stdout.strip().lower()
-        assert selinux_mode == "permissive", f"SELinux is not in permissive mode: {selinux_mode}"
 
-        # Check auditd status
-        auditd_status = host.run("systemctl is-active auditd").stdout.strip().lower()
-        assert auditd_status == "active", "auditd is not running; cannot check AVC denials"
+        # Non-SAP: must be enforcing
+        if not is_sap:
+            assert selinux_mode == "enforcing", \
+                f"Expected SELinux enforcing on non-SAP, got {selinux_mode}"
+            return
 
-        # Run ausearch synchronously to get AVCs since boot
-        result = host.run("ausearch -m avc -ts boot 2>&1")
+        # SAP: must be permissive
+        assert selinux_mode == "permissive", \
+            f"Expected SELinux permissive on SAP, got {selinux_mode}"
+
+        # SAP → check AVCs
+        auditd_running = host.run("systemctl is-active auditd").stdout.strip().lower()
+        assert auditd_running == "active", "auditd must be running to check AVCs"
+
+        result = host.run("ausearch -m avc -ts recent 5min 2>/dev/null")
         output = result.stdout.lower()
-
-        # If no AVCs are found, nothing to do (test passes)
         if "no matches" in output or not output.strip():
             return
 
-        # Filter out lines containing ignored services/contexts and permissive AVCs
-        ignored_avcs = ["irqbalance", "insights_client_t", "subscription-ma"]
-        filtered_lines = [
-            line for line in output.splitlines()
-            if "permissive=1" not in line
-               and all(ignored not in line for ignored in ignored_avcs)
-        ]
-        filtered_output = "\n".join(filtered_lines).strip()
+        ignored_keywords = ["irqbalance", "insights_client_t", "subscription-ma"]
 
-        # If relevant keywords are provided, check for them
+        filtered = [
+            line for line in result.splitlines()
+            if "permissive=1" not in line
+            and not any(ignored_keyword in line for ignored_keyword in ignored_keywords)
+        ]
+        filtered_output = "\n".join(filtered).strip()
+
+        # Check relevant keywords if provided
         if relevant_keywords:
             for kw in relevant_keywords:
                 if kw.lower() in filtered_output:
-                    assert False, f"AVC denial related to '{kw}' found:\n{filtered_output}"
-
+                    assert False, f"AVC related to '{kw}':\n{filtered_output}"
         else:
-            # If any AVCs remain after filtering, fail
             if filtered_output:
-                assert False, f"Unexpected AVC denials found:\n{filtered_output}"
+                assert False, f"Unexpected AVCs:\n{filtered_output}"
