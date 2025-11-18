@@ -9,15 +9,15 @@ variables:
       - "false"
     description: "Specify whether the pipeline run is about CloudX packages testing or not."
   RUN_ON:
-    value: "aws/rhel-10.1-nightly-x86_64" # Just a defult value, needs to be updated regularly. See comments below.
+    value: "aws/rhel-10.2-nightly-x86_64" # Just a defult value, needs to be updated regularly. See comments below.
     options:
       # This list needs to be updated regularly, when new runners are introduced by osbuild-composer.
       # When a new RHEL version does GA, its nightly runner will become a "normal" runner (that is, without the "-nightly" suffix).
       # See ci/.gitlab-ci-image-builder.yaml (check "RUNNERS BLOCK").
-      - "aws/rhel-9.7-nightly-x86_64"
-      - "aws/rhel-9.7-nightly-aarch64"
-      - "aws/rhel-10.1-nightly-x86_64"
-      - "aws/rhel-10.1-nightly-aarch64"
+      - "aws/rhel-9.8-nightly-x86_64"
+      - "aws/rhel-9.8-nightly-aarch64"
+      - "aws/rhel-10.2-nightly-x86_64"
+      - "aws/rhel-10.2-nightly-aarch64"
     description: "Specify which runner to use (for now it only supports one runner at a time)."
   PACKAGES_TESTING_AWS:
     value: "true"
