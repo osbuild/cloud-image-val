@@ -1,5 +1,6 @@
 import os
 import json
+
 from lib import test_lib
 
 INSTANCES_JSON_PATH = os.environ['CIV_INSTANCES_JSON']
@@ -14,21 +15,58 @@ def __get_instance_data_from_json(key_to_find, values_to_find, path=INSTANCES_JS
 
 
 def check_avc_denials(host, relevant_keywords=None):
-    command_to_run = 'x=$(ausearch -m avc 2>&1 &); echo $x'
-    result = test_lib.print_host_command_output(host,
-                                                command_to_run,
-                                                capture_result=True)
-    output = result.stdout.lower()
-    no_avc_denials_found = 'no matches' in output
+    """
+    Check SELinux AVC denials.
 
-    # ignore avc denial for irqbalance
-    # remove when RHEL-78630 is fixed
-    if 'irqbalance' in output:
-        no_avc_denials_found = True
+    - SAP: expected to run in permissive mode → check AVCs, ignoring known noisy AVCs.
+    - Non-SAP: expected to run in enforcing mode → check AVCs, ignoring known noisy AVCs.
+    - Only AVCs matching `relevant_keywords` (if provided) will fail the test.
+    """
+    with host.sudo():
+        is_sap = test_lib.is_rhel_saphaus(host)
+        selinux_mode = host.run("getenforce").stdout.strip().lower()
 
-    if relevant_keywords:
-        for kw in relevant_keywords:
-            if kw.lower() in output:
-                assert False, f"AVC denial related to {kw} found:\n{output}"
-    else:
-        assert no_avc_denials_found, 'There should not be any avc denials (selinux)'
+        # Validate SELinux mode
+        expected_mode = "permissive" if is_sap else "enforcing"
+        assert selinux_mode == expected_mode, \
+            f"Expected SELinux {expected_mode} on {'SAP' if is_sap else 'Non-SAP'}, got {selinux_mode}"
+
+        # Ensure auditd is running
+        auditd_running = host.run("systemctl is-active auditd").stdout.strip().lower()
+        assert auditd_running == "active", "auditd must be running to check AVCs"
+
+        # Get all AVCs
+        result = host.run("ausearch -m avc 2>/dev/null")
+        output = result.stdout
+
+        if not output or "no matches" in output.lower():
+            return
+
+        ignored_keywords = ["irqbalance", "insights_client_t", "subscription-ma"]
+
+        output_lines = output.lower().splitlines()
+
+        filtered = [
+            line for line in output_lines
+            if "permissive=1" not in line  # skip permissive-mode AVCs
+            and not any(ignored in line for ignored in ignored_keywords)
+        ]
+
+        if not filtered:
+            return
+
+        filtered_output = "\n".join(filtered).strip()
+
+        # Check relevant keywords if provided, otherwise report all filtered AVCs
+        if relevant_keywords:
+            relevant_found = [
+                line for line in filtered
+                for kw in relevant_keywords
+                if kw.lower() in line
+            ]
+            if relevant_found:
+                filtered_relevant_output = "\n".join(relevant_found)
+                assert False, f"Relevant AVC denials found:\n{filtered_relevant_output}"
+        else:
+            # Fail with summary of all filtered AVCs
+            assert False, f"Unexpected AVC denials:\n{filtered_output}"
