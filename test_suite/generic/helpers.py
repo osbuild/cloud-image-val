@@ -46,7 +46,6 @@ def check_avc_denials(host, relevant_keywords=None):
 
         ignored_keywords = ["irqbalance", "insights_client_t", "subscription-ma"]
 
-        # Normalize to lowercase for consistent comparisons
         output_lines = output.lower().splitlines()
 
         filtered = [
