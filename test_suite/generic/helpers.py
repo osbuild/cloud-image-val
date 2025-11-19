@@ -20,17 +20,19 @@ def check_avc_denials(host, relevant_keywords=None):
       - SAP HANA (is_rhel_saphaus) → SELinux must be permissive → check AVCs
       - Non-SAP → SELinux must be enforcing → no AVC checks
     """
+    import pdb
+    pdb.set_trace()
     with host.sudo():
         is_sap = test_lib.is_rhel_saphaus(host)
         selinux_mode = host.run("getenforce").stdout.strip().lower()
 
-        # Non-SAP: must be enforcing
+        # Non-SAP → SELinux must be enforcing and we skip AVC checks
         if not is_sap:
             assert selinux_mode == "enforcing", \
                 f"Expected SELinux enforcing on non-SAP, got {selinux_mode}"
             return
 
-        # SAP: must be permissive
+        # SAP → must be permissive
         assert selinux_mode == "permissive", \
             f"Expected SELinux permissive on SAP, got {selinux_mode}"
 
@@ -39,24 +41,30 @@ def check_avc_denials(host, relevant_keywords=None):
         assert auditd_running == "active", "auditd must be running to check AVCs"
 
         result = host.run("ausearch -m avc -ts recent 5min 2>/dev/null")
-        output = result.stdout.lower()
-        if "no matches" in output or not output.strip():
+        output = result.stdout
+
+        if not output or "no matches" in output.lower():
             return
 
         ignored_keywords = ["irqbalance", "insights_client_t", "subscription-ma"]
 
+        # Normalize to lowercase for consistent comparisons
+        output_lines = output.lower().splitlines()
+
         filtered = [
-            line for line in result.splitlines()
+            line for line in output_lines
             if "permissive=1" not in line
-            and not any(ignored_keyword in line for ignored_keyword in ignored_keywords)
+            and not any(ignored in line for ignored in ignored_keywords)
         ]
+
+        if not filtered:
+            return
+
         filtered_output = "\n".join(filtered).strip()
 
-        # Check relevant keywords if provided
         if relevant_keywords:
             for kw in relevant_keywords:
                 if kw.lower() in filtered_output:
                     assert False, f"AVC related to '{kw}':\n{filtered_output}"
         else:
-            if filtered_output:
-                assert False, f"Unexpected AVCs:\n{filtered_output}"
+            assert False, f"Unexpected AVCs:\n{filtered_output}"
