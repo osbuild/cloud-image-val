@@ -3,13 +3,17 @@ import re
 import time
 
 from lib import ssh_lib, console_lib
+from packaging import version
 
 
 def is_rhel_cvm(host):
     # Confidential RHEL on Azure cloud
     with host.sudo():
-        bootctl_output = str(host.run('bootctl | grep Stub').stdout)
-    return re.search('Stub: systemd-stub', bootctl_output)
+        if version.parse(host.system_info.release).major >= 10:
+            bootctl_output = str(host.run('bootctl | grep Product').stdout)
+        else:
+            bootctl_output = str(host.run('bootctl | grep Stub').stdout)
+    return re.search('systemd-stub', bootctl_output)
 
 
 def is_rhel_saphaus(host):
