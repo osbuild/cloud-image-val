@@ -403,8 +403,12 @@ class TestsAWSNetworking:
         if 'Not Found' in registered_ipv6:
             pytest.skip('No IPv6 enabled in this Subnet')
 
-        assert registered_ipv6 in host.interface('eth0', 'inet6').addresses, \
-            f'Expected IPv6 {registered_ipv6} is not being used by eth0 network adapter'
+        iface = host.check_output(
+            "ip route show default | awk '/default/ {print $5}'"
+        ).strip()
+
+        assert registered_ipv6 in host.interface(iface, 'inet6').addresses, \
+            f'Expected IPv6 {registered_ipv6} is not being used by {iface} network adapter'
 
     @pytest.mark.run_on(['rhel'])
     def test_redhat_cds_hostnames(self, host, instance_data_aws_web):
