@@ -42,7 +42,7 @@ def check_avc_denials(host, relevant_keywords=None):
         if not output or "no matches" in output.lower():
             return
 
-        ignored_keywords = ["irqbalance", "insights_client_t", "subscription-ma"]
+        ignored_keywords = ["insights_client_t", "subscription-ma"]
 
         output_lines = output.lower().splitlines()
 
