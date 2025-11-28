@@ -36,15 +36,19 @@ def check_avc_denials(host, relevant_keywords=None):
         assert auditd_running == "active", "auditd must be running to check AVCs"
 
         # Get all AVCs
-        result = host.run("timeout 10 ausearch -m avc 2>&1")
-        output = result.stdout
+        grep_command = 'grep -h "type=AVC" /var/log/audit/audit.log* 2>/dev/null'
+        result = host.run(grep_command)
 
-        if not output or "no matches" in output.lower():
+        output = result.stdout.lower()
+
+        if result.rc == 1:
+            # grep found no matches (or output was empty), so we return PASS
             return
 
+        # If result.rc == 0 (Matches found), proceed with filtering...
         ignored_keywords = ["insights_client_t", "subscription-ma"]
 
-        output_lines = output.lower().splitlines()
+        output_lines = output.splitlines()
 
         filtered = [
             line for line in output_lines
