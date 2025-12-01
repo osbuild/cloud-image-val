@@ -36,7 +36,7 @@ def check_avc_denials(host, relevant_keywords=None):
         assert auditd_running == "active", "auditd must be running to check AVCs"
 
         # Get all AVCs
-        result = host.run("ausearch -m avc 2>/dev/null")
+        result = host.run("timeout 10 ausearch -m avc 2>&1")
         output = result.stdout
 
         if not output or "no matches" in output.lower():
