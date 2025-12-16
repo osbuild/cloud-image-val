@@ -183,6 +183,20 @@ def html_report_links(extra, host, instance_data):
     extra.append(extras.json(vars(host.system_info)['sysinfo'], name=link_name))
 
 
+@pytest.fixture(scope="module", autouse=True)
+def ensure_rpm_usable_before_tests(host):
+    """
+    Workaround for broken rpm-sequoia / openssl-libs combination.
+    Ensures rpm is usable before any tests in this module execute.
+    """
+    with host.sudo():
+        fix = host.run("yum -y update rpm-sequoia openssl-libs")
+        assert fix.succeeded, f"Failed workaround: {fix.stderr}"
+
+        recheck = host.run("rpm -qa")
+        assert recheck.succeeded, f"rpm still broken after workaround: {recheck.stderr}"
+
+
 def pytest_configure(config):
     pytest.markers_used = config.getoption('-m')
 
