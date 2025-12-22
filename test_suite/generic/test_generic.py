@@ -1331,7 +1331,6 @@ class TestsAuthConfig:
         """
         authselect_profile = host.run('authselect current').stdout
 
-        # optimized: using self.major_version
         if self.major_version >= 10:
             expected_profile = 'Profile ID: local'
         elif self.cloud == 'aws':
@@ -1345,7 +1344,6 @@ class TestsAuthConfig:
     def test_authselect_conf_files(self, host):
         authselect_dir = '/etc/authselect/'
 
-        # optimized: using self.major_version
         if self.major_version >= 10:
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
