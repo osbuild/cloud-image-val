@@ -1319,9 +1319,9 @@ class TestsSecurity:
 @pytest.mark.run_on(['rhel'])
 class TestsAuthConfig:
     @pytest.fixture(autouse=True)
-    def skip_on_aws(self, host, instance_data):
-        if instance_data['cloud'] == 'aws':
-            pytest.skip("Auth test cases don't apply to AWS.")
+    def setup_class_env(self, instance_data, host):
+        self.cloud = instance_data['cloud']
+        self.major_version = version.parse(host.system_info.release).major
 
     def test_authselect_has_no_config(self, host):
         """
@@ -1330,35 +1330,47 @@ class TestsAuthConfig:
         RHELBU-2336 local profile is default for RHEL10 and later
         """
         authselect_profile = host.run('authselect current').stdout
-        if version.parse(host.system_info.release).major >= 10:
-            expected_profile = 'Profile ID: local\nEnabled features: None\n'
+
+        # optimized: using self.major_version
+        if self.major_version >= 10:
+            expected_profile = 'Profile ID: local'
+        elif self.cloud == 'aws':
+            expected_profile = 'Profile ID: sssd'
         else:
             expected_profile = "No existing configuration detected."
 
         assert expected_profile in authselect_profile, \
-            f'authselect is expected to have {expected_profile} configuration'
+            f'authselect is expected to have "{expected_profile}" configuration, but got:\n{authselect_profile}'
 
     def test_authselect_conf_files(self, host):
         authselect_dir = '/etc/authselect/'
-        if version.parse(host.system_info.release).major < 10:
-            expected_config_files = ['custom', 'user-nsswitch.conf', ]
-        else:
+
+        # optimized: using self.major_version
+        if self.major_version >= 10:
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
                 'postlogin', 'smartcard-auth', 'system-auth'
             ]
-        current_files = host.file(authselect_dir).listdir()
+        elif self.cloud == 'aws':
+            expected_config_files = [
+                'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
+                'fingerprint-auth', 'nsswitch.conf', 'password-auth',
+                'postlogin', 'smartcard-auth', 'system-auth',
+                'user-nsswitch.conf'
+            ]
+        else:
+            expected_config_files = ['custom', 'user-nsswitch.conf']
 
-        print(current_files)
+        current_files = sorted(host.file(authselect_dir).listdir())
+        expected_config_files = sorted(expected_config_files)
 
         assert current_files == expected_config_files, \
             f'Unexpected result when listing files under {authselect_dir}'
 
         authselect_custom_dir = '/etc/authselect/custom/'
         assert len(host.file(authselect_custom_dir).listdir()) == 0, \
-            f'Unexpected files found under {authselect_custom_dir}.' \
-            f'This directory should be empty'
+            f'Unexpected files found under {authselect_custom_dir}. Directory should be empty'
 
     @pytest.mark.exclude_on(['>=rhel10.0'])
     def test_fingerprint_auth(self, host):
@@ -1403,8 +1415,10 @@ class TestsAuthConfig:
         self.__check_pam_d_file_content(host, 'system-auth')
 
     def __check_pam_d_file_content(self, host, file_name):
-        system_release_major_version = version.parse(host.system_info.release).major
-        local_file = f'data/generic/{file_name}_rhel{system_release_major_version}'
+        profile_dir = 'sssd' if self.cloud == 'aws' else 'generic'
+
+        local_file = f'data/{profile_dir}/{file_name}_rhel{self.major_version}'
+
         file_to_check = f'/etc/pam.d/{file_name}'
 
         assert test_lib.compare_local_and_remote_file(host, local_file, file_to_check), \
