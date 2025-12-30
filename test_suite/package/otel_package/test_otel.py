@@ -34,7 +34,9 @@ class TestOtel:
         setup_conf.__name__,
         install_packages.__name__,
         modify_iam_role.__name__,
-        start_service.__name__
+        start_service.__name__,
+        "verify_fips_fix"
+
     )
     def test_otel(self, host):
         """

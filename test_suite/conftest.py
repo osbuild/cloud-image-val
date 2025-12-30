@@ -197,6 +197,26 @@ def ensure_rpm_usable_before_tests(host):
         assert recheck.succeeded, f"rpm still broken after workaround: {recheck.stderr}"
 
 
+@pytest.fixture(scope="class")
+def verify_fips_fix(host):
+    """
+    Verify FIPS compliance for RHEL 9.7 and RHEL 10 releases.
+    """
+    sys_ver = version.parse(host.system_info.release)
+    with host.sudo():
+        is_fips = host.sysctl("crypto.fips_enabled") == 1
+
+        if is_fips:
+            pkg = host.package("python3-awscrt")
+
+            if sys_ver == version.parse("9.7"):
+                assert "1.el9" not in pkg.release, f"Update {pkg.name} to release 2.el9+"
+
+            elif sys_ver >= version.parse("10"):
+                assert version.parse(pkg.version) >= version.parse("0.27.2"), \
+                    f"Update {pkg.name} to version 0.27.2+"
+
+
 def pytest_configure(config):
     pytest.markers_used = config.getoption('-m')
 

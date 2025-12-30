@@ -7,6 +7,7 @@ from packaging import version
 
 @pytest.mark.package
 @pytest.mark.run_on(['>=rhel9.5'])
+@pytest.mark.usefixtures("verify_fips_fix")
 class TestsAwsCli2:
     @pytest.fixture(scope='module', autouse=True)
     def import_aws_credentials(self, host):
