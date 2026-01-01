@@ -14,8 +14,10 @@ class TestsAwsCli2:
         token_duration = 900  # This is the minimum accepted value in seconds
         # Generate temporary credentials for this test.
 
-        fips_flag = "--use-fips-endpoint" if fips_setup else ""
-        civ_local_command_to_run = f'aws sts get-session-token {fips_flag} --duration-seconds {token_duration} --output json'
+        fips_env = "AWS_USE_FIPS_ENDPOINT=true " if fips_setup else ""
+
+        civ_local_command_to_run = (f'{fips_env}aws sts get-session-token '
+                                    f'--duration-seconds {token_duration} --output json')
 
         result = host.backend.run_local(civ_local_command_to_run)
         assert result.succeeded, \
