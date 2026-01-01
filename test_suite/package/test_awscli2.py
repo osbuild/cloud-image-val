@@ -7,13 +7,15 @@ from packaging import version
 
 @pytest.mark.package
 @pytest.mark.run_on(['>=rhel9.5'])
-@pytest.mark.usefixtures("verify_fips_fix")
+@pytest.mark.usefixtures("fips_setup")
 class TestsAwsCli2:
     @pytest.fixture(scope='module', autouse=True)
-    def import_aws_credentials(self, host):
+    def import_aws_credentials(self, host, fips_setup):
         token_duration = 900  # This is the minimum accepted value in seconds
         # Generate temporary credentials for this test.
-        civ_local_command_to_run = f'aws sts get-session-token --duration-seconds {token_duration} --output json'
+
+        fips_flag = "--use-fips-endpoint" if fips_setup else ""
+        civ_local_command_to_run = f'aws sts get-session-token {fips_flag} --duration-seconds {token_duration} --output json'
 
         result = host.backend.run_local(civ_local_command_to_run)
         assert result.succeeded, \
