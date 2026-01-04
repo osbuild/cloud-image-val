@@ -200,7 +200,6 @@ def ensure_rpm_usable_before_tests(host):
 
 @pytest.fixture(params=[False, True], ids=["FIPS-OFF", "FIPS-ON"], scope="module")
 def fips_setup(request, host):
-    # Only reboot when request.param is True
     if request.param:
         host.run("sudo fips-mode-setup --enable")
         test_lib.reboot_host(host)
