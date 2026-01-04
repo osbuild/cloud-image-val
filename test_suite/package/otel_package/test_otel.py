@@ -36,7 +36,6 @@ class TestOtel:
         install_packages.__name__,
         modify_iam_role.__name__,
         start_service.__name__
-
     )
     def test_otel(self, host):
         """
