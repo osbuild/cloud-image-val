@@ -201,13 +201,17 @@ def ensure_rpm_usable_before_tests(host):
 @pytest.fixture(params=[False, True], ids=["FIPS-OFF", "FIPS-ON"], scope="module")
 def fips_setup(request, host):
     is_on = host.run("cat /proc/sys/crypto/fips_enabled").stdout.strip() == "1"
-    print(f"fips mode set to {is_on} by default ")
 
     if request.param != is_on:
-        action = "enable" if request.param else "disable"
+        if host.system_info.release.startswith("10"):
+            cmd = f"update-crypto-policies --set {'FIPS' if request.param else 'DEFAULT'}"
+        else:
+            cmd = f"fips-mode-setup --{'enable' if request.param else 'disable'}"
+
         with host.sudo():
-            result = host.run(f"fips-mode-setup --{action}")
-            assert result.succeeded, f'failed to {action} fips: {result.stderr}'
+            print(f"\n[FIPS] Changing state: {cmd}")
+            result = host.run(cmd)
+            assert result.succeeded, f"Command failed: {result.stderr}"
             test_lib.reboot_host(host)
 
     return request.param
