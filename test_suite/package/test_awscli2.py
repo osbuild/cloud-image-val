@@ -10,15 +10,6 @@ from packaging import version
 @pytest.mark.usefixtures("fips_setup",
                          "log_fips_status")
 class TestsAwsCli2:
-    @pytest.fixture(autouse=True)
-    def log_fips_status(self, host, fips_setup):
-        status = "ON" if fips_setup else "OFF"
-        print(f"\n--- Starting test with FIPS: {status} ---")
-        test_lib.print_host_command_output(host,
-                                           command='cat /proc/sys/crypto/fips_enabled',
-                                           capture_result=True,
-                                           use_sudo=True)
-
     @pytest.fixture(scope='module', autouse=True)
     def import_aws_credentials(self, host, fips_setup):
         token_duration = 900  # This is the minimum accepted value in seconds
