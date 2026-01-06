@@ -203,15 +203,22 @@ def fips_setup(request, host):
     is_on = host.run("cat /proc/sys/crypto/fips_enabled").stdout.strip() == "1"
 
     if request.param != is_on:
-        if host.system_info.release.startswith("10"):
-            cmd = f"update-crypto-policies --set {'FIPS' if request.param else 'DEFAULT'}"
-        else:
-            cmd = f"fips-mode-setup --{'enable' if request.param else 'disable'}"
-
         with host.sudo():
-            print(f"\n[FIPS] Changing state: {cmd}")
-            result = host.run(cmd)
-            assert result.succeeded, f"Command failed: {result.stderr}"
+            if host.system_info.release.startswith("10"):
+                if request.param:
+                    print("[FIPS] RHEL 10: Setting policy to FIPS and adding fips=1 to kernel...")
+                    host.run("update-crypto-policies --set FIPS")
+                    host.run("grubby --update-kernel=ALL --args='fips=1'")
+                else:
+                    print("[FIPS] RHEL 10: Setting policy to DEFAULT and removing fips=1...")
+                    host.run("update-crypto-policies --set DEFAULT")
+                    host.run("grubby --update-kernel=ALL --remove-args='fips=1'")
+            else:
+                # --- RHEL 9 and below ---
+                action = "enable" if request.param else "disable"
+                host.run(f"fips-mode-setup --{action}")
+
+            print("Rebooting to apply kernel changes...")
             test_lib.reboot_host(host)
 
     return request.param
