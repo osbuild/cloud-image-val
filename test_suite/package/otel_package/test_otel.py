@@ -13,7 +13,8 @@ from test_suite.package.otel_package.fixtures import (
 @pytest.mark.run_on(['>=rhel9.5'])
 @pytest.mark.usefixtures(
     initialize_variables.__name__,
-    "fips_setup"
+    "fips_setup",
+    "log_fips_status"
 )
 class TestOtel:
     package_name = 'redhat-opentelemetry-collector-main'
