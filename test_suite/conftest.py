@@ -229,7 +229,7 @@ def log_fips_status(host, fips_setup):
         host,
         command='cat /proc/sys/crypto/fips_enabled',
         capture_result=True,
-        use_sudo=True
+        use_sudo=False
     )
 
 
