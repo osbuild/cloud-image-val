@@ -7,7 +7,8 @@ from packaging import version
 
 @pytest.mark.package
 @pytest.mark.run_on(['>=rhel9.5'])
-@pytest.mark.usefixtures("fips_setup")
+@pytest.mark.usefixtures("fips_setup",
+                         "log_fips_status")
 class TestsAwsCli2:
     @pytest.fixture(autouse=True)
     def log_fips_status(self, host, fips_setup):
