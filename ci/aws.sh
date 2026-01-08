@@ -62,16 +62,18 @@ if ! hash aws; then
     echo "Using 'awscli' from a container"
     sudo "${CONTAINER_RUNTIME}" pull ${CONTAINER_IMAGE_CLOUD_TOOLS}
 
-    # Escaped dollar signs prevent Jenkins from leaking secrets into the command string
+    # Escaped dollar signs prevent Jenkins interpolation warnings
+    # Added AWS_STS_REGIONAL_ENDPOINTS=regional for EUSC compatibility
     AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
         -e AWS_ACCESS_KEY_ID=\$V2_AWS_ACCESS_KEY_ID \
         -e AWS_SECRET_ACCESS_KEY=\$V2_AWS_SECRET_ACCESS_KEY \
+        -e AWS_STS_REGIONAL_ENDPOINTS=regional \
         -v ${TEMPDIR}:${TEMPDIR}:Z \
         ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region \$AWS_REGION --output json --color on"
 else
     echo "Using pre-installed 'aws' from the system"
-    # Using \$ ensures the shell evaluates the variable at runtime
-    AWS_CMD="aws --region \$AWS_REGION --output json --color on"
+    # Prefix command with regional STS setting and escaped region variable
+    AWS_CMD="AWS_STS_REGIONAL_ENDPOINTS=regional aws --region \$AWS_REGION --output json --color on"
 fi
 $AWS_CMD --version
 
@@ -102,7 +104,7 @@ get_compose_metadata () {
 }
 
 # Write an AWS TOML file
-# Variables are escaped to prevent Groovy from interpolating them into the file content
+# Escaped variables ensure secrets are not baked into the file by Groovy
 tee "$AWS_CONFIG" > /dev/null << EOF
 provider = "aws"
 
@@ -289,12 +291,13 @@ fi
 
 cp "${CIV_CONFIG_FILE}" "${TEMPDIR}/civ_config.yml"
 
-# Using single quotes for environment variable passing is the most secure method in Jenkins
+# Added regional STS setting and escaped secret variables for CIV container
 sudo "${CONTAINER_RUNTIME}" run \
     -a stdout -a stderr \
     -e AWS_ACCESS_KEY_ID='\$CLOUDX_AWS_ACCESS_KEY_ID' \
     -e AWS_SECRET_ACCESS_KEY='\$CLOUDX_AWS_SECRET_ACCESS_KEY' \
     -e AWS_REGION='\$AWS_REGION' \
+    -e AWS_STS_REGIONAL_ENDPOINTS='regional' \
     -e JIRA_PAT='\$JIRA_PAT' \
     -v "${TEMPDIR}":/tmp:Z \
     "${CONTAINER_CLOUD_IMAGE_VAL}" \
