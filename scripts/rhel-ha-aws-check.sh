@@ -362,7 +362,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Remove stonith id "clusterfence" from configuration
-pcs stonith delete clusterfence
+pcs stonith delete --force clusterfence
 if [ $? -ne 0 ]; then
     echo "Cannot delete stonith resource."
     exit 1
