@@ -184,7 +184,7 @@ def html_report_links(extra, host, instance_data):
     extra.append(extras.json(vars(host.system_info)['sysinfo'], name=link_name))
 
 
-@pytest.fixture(scope="module", autouse=False)
+@pytest.fixture(scope="module", autouse=True)
 def ensure_rpm_usable_before_tests(host):
     """
     Workaround for broken rpm-sequoia / openssl-libs combination.
