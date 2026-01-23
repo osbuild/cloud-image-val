@@ -60,7 +60,7 @@ function get_last_passed_commit {
     # Using 'internal' instead of 'true' so it's easier to see the pipelines in the Gitlab page
     if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
         project_id="34771166"
-        base_curl="curl --header PRIVATE-TOKEN:${GITLAB_API_TOKEN}"
+        base_curl="curl --header \"PRIVATE-TOKEN:${GITLAB_API_TOKEN}\" -s"
 
         # To get the schedule id use the ../pipeline_schedule endpoint
         if [[ ${VERSION_ID%.*} == "9" ]]; then
@@ -75,13 +75,29 @@ function get_last_passed_commit {
         fi
 
         # Last executed pipeline ID
-        pipeline_id=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}" | jq '.last_pipeline.id')
+        schedule_info=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}")
+        pipeline_id=$(echo "$schedule_info" | jq -r '.last_pipeline.id // empty')
+
+        # Check if pipeline_id is empty or null
+        if [[ -z "$pipeline_id" || "$pipeline_id" == "null" ]]; then
+            echo "Error: Could not find the last pipeline ID for schedule ${schedule_id}."
+            echo "API Response: $schedule_info"
+            exit 1
+        fi
 
         number_of_days=7
         warning_date=$(date -d "- $number_of_days days" +%s)
-        created_at=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.started_at')
+
+        pipeline_info=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}")
+        created_at=$(echo "$pipeline_info" | jq -r '.started_at // empty')
+
+        if [[ -z "$created_at" || "$created_at" == "null" ]]; then
+            echo "Error: Could not determine start time for pipeline ${pipeline_id}."
+            exit 1
+        fi
+
         if [[ $(date -d "${created_at}" +%s) -lt "${warning_date}" ]]; then
-            echo "We are using an old scheduled pipeline id (more than $number_of_days days ago). Please update it"
+            echo "We are using an old scheduled pipeline id (started at $created_at, more than $number_of_days days ago). Please update it"
             exit 1
         fi
 
@@ -93,7 +109,7 @@ function get_last_passed_commit {
             fi 
         done
 
-        commit=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.sha')
+        commit=$(echo "$pipeline_info" | jq -r '.sha')
         echo "$commit"
 
     else
