@@ -94,19 +94,40 @@ function get_last_passed_commit {
         done
 
         commit=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.sha')
-        echo $commit
+        echo "$commit"
 
     else
-        commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100  | jq -cr '.[].sha')
+        # Capture response to check for API errors
+        response=$(curl -u "${API_USER}:${API_PAT}" -s -w "%{http_code}" "https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100")
+        http_code="${response: -3}"
+        body="${response::-3}"
 
-        for commit in ${commit_list}; do
-            gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
+        if [ "$http_code" != "200" ]; then
+            echo "Error: GitHub API returned status $http_code"
+            echo "Response body: $body"
+            exit 1
+        fi
+
+        commit_list=$(echo "$body" | jq -cr '.[].sha')
+
+        # Initialize commit variable to prevent unbound variable error
+        final_commit=""
+
+        for commit_sha in ${commit_list}; do
+            gitlab_status=$(curl -u "${API_USER}:${API_PAT}" -s "https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit_sha}/status" \
                           | jq -cr '.statuses[] | select(.context == "Schutzbot on GitLab") | .state')
             if [[ ${gitlab_status} == "success" ]]; then
+                final_commit=$commit_sha
                 break
             fi
         done
-        echo $commit
+
+        if [[ -z "$final_commit" ]]; then
+            echo "Error: No successful commits found in the last 100 entries."
+            exit 1
+        fi
+
+        echo "$final_commit"
     fi
 }
 
