@@ -60,7 +60,6 @@ function get_last_passed_commit {
     # Using 'internal' instead of 'true' so it's easier to see the pipelines in the Gitlab page
     if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
         project_id="34771166"
-        base_curl="curl --header PRIVATE-TOKEN:${GITLAB_API_TOKEN}"
 
         # To get the schedule id use the ../pipeline_schedule endpoint
         if [[ ${VERSION_ID%.*} == "9" ]]; then
@@ -75,17 +74,39 @@ function get_last_passed_commit {
         fi
 
         # Last executed pipeline ID
-        pipeline_id=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}" | jq '.last_pipeline.id')
+        schedule_info=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}")
+
+        # Check if API returned an error (like 401 Unauthorized)
+        if echo "$schedule_info" | jq -e '.message' >/dev/null; then
+            echo "GitLab API Error: $(echo "$schedule_info" | jq -r .message)"
+            exit 1
+        fi
+
+        pipeline_id=$(echo "$schedule_info" | jq -r '.last_pipeline.id // empty')
+
+        # Ensure pipeline_id is not null or empty before proceeding
+        if [[ -z "$pipeline_id" || "$pipeline_id" == "null" ]]; then
+            echo "Error: Could not find the last pipeline ID for schedule ${schedule_id}."
+            exit 1
+        fi
 
         number_of_days=7
         warning_date=$(date -d "- $number_of_days days" +%s)
-        created_at=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.started_at')
+
+        pipeline_info=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}")
+        created_at=$(echo "$pipeline_info" | jq -r '.started_at // empty')
+
+        if [[ -z "$created_at" || "$created_at" == "null" ]]; then
+            echo "Error: Could not determine start time for pipeline ${pipeline_id}."
+            exit 1
+        fi
+
         if [[ $(date -d "${created_at}" +%s) -lt "${warning_date}" ]]; then
             echo "We are using an old scheduled pipeline id (more than $number_of_days days ago). Please update it"
             exit 1
         fi
 
-        statuses=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
+        statuses=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
         for status in ${statuses}; do 
             if [ "$status" == "failed" ]; then
                 echo "Last nightly pipeline ('rpmbuild' stage) failed in osbuild-composer CI. We will not run nightly-internal jobs in CIV."
@@ -93,20 +114,40 @@ function get_last_passed_commit {
             fi 
         done
 
-        commit=$(${base_curl} "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}" | jq -r '.sha')
-        echo $commit
+        commit=$(echo "$pipeline_info" | jq -r '.sha')
+        echo "$commit"
 
     else
-        commit_list=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100  | jq -cr '.[].sha')
+        # Capture response and HTTP code to handle GitHub API failures (e.g. 401, 403)
+        response=$(curl -u "${API_USER}:${API_PAT}" -s -w "%{http_code}" "https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100")
+        http_code="${response: -3}"
+        body="${response::-3}"
 
-        for commit in ${commit_list}; do
-            gitlab_status=$(curl -u ${API_USER}:${API_PAT} -s https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit}/status \
+        if [ "$http_code" != "200" ]; then
+            echo "GitHub API Error (HTTP $http_code): $body"
+            exit 1
+        fi
+
+        commit_list=$(echo "$body" | jq -cr '.[].sha')
+
+        # Initialize final_commit to prevent "unbound variable" error if no commit matches
+        final_commit=""
+
+        for commit_sha in ${commit_list}; do
+            gitlab_status=$(curl -u "${API_USER}:${API_PAT}" -s "https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit_sha}/status" \
                           | jq -cr '.statuses[] | select(.context == "Schutzbot on GitLab") | .state')
             if [[ ${gitlab_status} == "success" ]]; then
+                final_commit=$commit_sha
                 break
             fi
         done
-        echo $commit
+
+        if [[ -z "$final_commit" ]]; then
+            echo "Error: No successful commits found in the last 100 entries."
+            exit 1
+        fi
+
+        echo "$final_commit"
     fi
 }
 
@@ -212,7 +253,7 @@ if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
     fi
 fi
 
-if [ -n "${CI}" ]; then
+if [ -n "${CI:-}" ]; then
     # copy repo files b/c GitLab can't upload artifacts
     # which are outside the build directory
     cp /etc/yum.repos.d/*.repo "$(pwd)"

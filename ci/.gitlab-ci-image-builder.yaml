@@ -40,7 +40,7 @@
 
 .fedora_runners: &fedora_runners
   RUNNER:
-    - aws/fedora-41-x86_64
+    - aws/fedora-43-x86_64
   NIGHTLY: [ "false" ]
 
 ##################################
