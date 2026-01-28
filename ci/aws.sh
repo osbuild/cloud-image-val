@@ -34,6 +34,8 @@ function cleanup() {
     greenprint "== Script execution stopped or finished - Cleaning up =="
     sudo rm -rf "$TEMPDIR"
 }
+
+trap error_handler ERR
 trap cleanup EXIT
 
 # Generate a string, which can be used as a predictable resource name,
@@ -216,6 +218,29 @@ $AWS_CMD ec2 modify-image-attribute \
 $AWS_CMD ec2 create-tags \
     --resources "${SNAPSHOT_ID}" "${AMI_IMAGE_ID}" \
     --tags Key=gitlab-ci-test,Value=true
+
+
+
+
+# testing
+
+AMI_IMAGE_ID=$(jq -r '.Images[].ImageId' "$AMI_DATA")
+SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA")
+redprint "DEBUG: AMI_IMAGE_ID=$AMI_IMAGE_ID"
+redprint "DEBUG: SNAPSHOT_ID=$SNAPSHOT_ID"
+
+AMI_BOOT_MODE=$(jq -r '.Images[].BootMode // empty' "$AMI_DATA")
+redprint "DEBUG: AMI_BOOT_MODE=$AMI_BOOT_MODE"
+redprint "DEBUG: ARCH=$ARCH"
+
+nvr_result=1
+if nvrGreaterOrEqual "osbuild-composer" "83"; then
+    nvr_result=0
+fi
+redprint "DEBUG: nvrGreaterOrEqual(osbuild-composer, 83) result=$nvr_result"
+
+
+
 
 # Verify that the image has the correct boot mode set
 AMI_BOOT_MODE=$(jq -r '.Images[].BootMode // empty' "$AMI_DATA")
