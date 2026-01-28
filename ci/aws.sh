@@ -34,6 +34,8 @@ function cleanup() {
     greenprint "== Script execution stopped or finished - Cleaning up =="
     sudo rm -rf "$TEMPDIR"
 }
+
+trap error_handler ERR
 trap cleanup EXIT
 
 # Generate a string, which can be used as a predictable resource name,

@@ -39,3 +39,13 @@ function greenprint {
 function redprint {
     echo -e "\033[1;31m[$(date -Isecond)] ${1}\033[0m"
 }
+
+function error_handler() {
+    local exit_code=$?
+    if [[ $exit_code -ne 0 ]]; then
+        local line_no=${BASH_LINENO[0]}
+        local cmd="${BASH_COMMAND}"
+        redprint "❌ Pipeline failed with exit code $exit_code"
+        redprint "   at line $line_no: $cmd"
+    fi
+}
