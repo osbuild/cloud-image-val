@@ -5,20 +5,18 @@ function nvrGreaterOrEqual {
     local min_version=$2
 
     set +e
-
     rpm_version=$(rpm -q --qf "%{version}" "${rpm_name}")
     rpmdev-vercmp "${rpm_version}" "${min_version}" 1>&2
-    if [ "$?" != "12" ]; then
-        # 0 - rpm_version == min_version
-        # 11 - rpm_version > min_version
-        # 12 - rpm_version < min_version
-        echo "DEBUG: ${rpm_version} >= ${min_version}" 1>&2
-        set -e
-        return
-    fi
-
+    local result=$?
     set -e
-    false
+    
+    # 12 - rpm_version < min_version
+    if [ "$result" = "12" ]; then
+        return 1
+    else
+        echo "DEBUG: ${rpm_version} >= ${min_version}" 1>&2
+        return 0
+    fi
 }
 
 function get_build_info() {
