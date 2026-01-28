@@ -34,6 +34,7 @@ function cleanup() {
     greenprint "== Script execution stopped or finished - Cleaning up =="
     sudo rm -rf "$TEMPDIR"
 }
+
 trap cleanup EXIT
 
 # Generate a string, which can be used as a predictable resource name,
@@ -60,26 +61,24 @@ AMI_DATA=${TEMPDIR}/ami-data-${TEST_ID}.json
 # Dynamic endpoint selection based on region. 
 # EUSC uses .eu, while others use .com (standard)
 if [[ "$AWS_REGION" == eusc-* ]]; then
-    STS_ENDPOINT="https://sts.\$AWS_REGION.amazonaws.eu"
+    STS_ENDPOINT="https://sts.${AWS_REGION}.amazonaws.eu"
 else
-    STS_ENDPOINT="https://sts.\$AWS_REGION.amazonaws.com"
+    STS_ENDPOINT="https://sts.${AWS_REGION}.amazonaws.com"
 fi
 
 # We need awscli to talk to AWS.
 if ! hash aws; then
     echo "Using 'awscli' from a container"
     sudo "${CONTAINER_RUNTIME}" pull ${CONTAINER_IMAGE_CLOUD_TOOLS}
-
-    # Escape dollar signs prevent Jenkins interpolation warnings
     # Add specific endpoint-url for multi-region compatibility
     AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
-        -e AWS_ACCESS_KEY_ID=\$V2_AWS_ACCESS_KEY_ID \
-        -e AWS_SECRET_ACCESS_KEY=\$V2_AWS_SECRET_ACCESS_KEY \
+        -e AWS_ACCESS_KEY_ID=${V2_AWS_ACCESS_KEY_ID} \
+        -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
         -v ${TEMPDIR}:${TEMPDIR}:Z \
-        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region \$AWS_REGION --endpoint-url $STS_ENDPOINT --output json --color on"
+        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region ${AWS_REGION} --endpoint-url ${STS_ENDPOINT} --output json --color on"
 else
     echo "Using pre-installed 'aws' from the system"
-    AWS_CMD="aws --region \$AWS_REGION --endpoint-url $STS_ENDPOINT --output json --color on"
+    AWS_CMD="aws --region ${AWS_REGION} --endpoint-url ${STS_ENDPOINT} --output json --color on"
 fi
 $AWS_CMD --version
 
@@ -115,10 +114,10 @@ tee "$AWS_CONFIG" > /dev/null << EOF
 provider = "aws"
 
 [settings]
-accessKeyID = "\$V2_AWS_ACCESS_KEY_ID"
-secretAccessKey = "\$V2_AWS_SECRET_ACCESS_KEY"
+accessKeyID = "${V2_AWS_ACCESS_KEY_ID}"
+secretAccessKey = "${V2_AWS_SECRET_ACCESS_KEY}"
 bucket = "${AWS_BUCKET}"
-region = "\$AWS_REGION"
+region = "${AWS_REGION}"
 key = "${TEST_ID}"
 EOF
 
@@ -203,6 +202,7 @@ $AWS_CMD ec2 describe-images \
     --owners self \
     --filters Name=name,Values="${TEST_ID}" \
     | tee "$AMI_DATA" > /dev/null
+
 
 AMI_IMAGE_ID=$(jq -r '.Images[].ImageId' "$AMI_DATA")
 SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA")
@@ -297,13 +297,12 @@ fi
 
 cp "${CIV_CONFIG_FILE}" "${TEMPDIR}/civ_config.yml"
 
-# Escaped variables ensure security and multi-region endpoint resolution
 sudo "${CONTAINER_RUNTIME}" run \
     -a stdout -a stderr \
-    -e AWS_ACCESS_KEY_ID='\$CLOUDX_AWS_ACCESS_KEY_ID' \
-    -e AWS_SECRET_ACCESS_KEY='\$CLOUDX_AWS_SECRET_ACCESS_KEY' \
-    -e AWS_REGION='\$AWS_REGION' \
-    -e AWS_ENDPOINT_URL_STS="$STS_ENDPOINT" \
+    -e AWS_ACCESS_KEY_ID="${CLOUDX_AWS_ACCESS_KEY_ID}" \
+    -e AWS_SECRET_ACCESS_KEY="${CLOUDX_AWS_SECRET_ACCESS_KEY}" \
+    -e AWS_REGION="${AWS_REGION}" \
+    -e AWS_ENDPOINT_URL_STS="${STS_ENDPOINT}" \
     -v "${TEMPDIR}":/tmp:Z \
     "${CONTAINER_CLOUD_IMAGE_VAL}" \
     python cloud-image-val.py \
