@@ -219,6 +219,31 @@ $AWS_CMD ec2 create-tags \
     --resources "${SNAPSHOT_ID}" "${AMI_IMAGE_ID}" \
     --tags Key=gitlab-ci-test,Value=true
 
+
+
+
+# testing
+echo "DEBUG: AMI_DATA contents:"
+cat "$AMI_DATA"
+
+AMI_IMAGE_ID=$(jq -r '.Images[].ImageId' "$AMI_DATA")
+SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA")
+echo "DEBUG: AMI_IMAGE_ID=$AMI_IMAGE_ID"
+echo "DEBUG: SNAPSHOT_ID=$SNAPSHOT_ID"
+
+AMI_BOOT_MODE=$(jq -r '.Images[].BootMode // empty' "$AMI_DATA")
+echo "DEBUG: AMI_BOOT_MODE=$AMI_BOOT_MODE"
+echo "DEBUG: ARCH=$ARCH"
+
+nvr_result=1
+if nvrGreaterOrEqual "osbuild-composer" "83"; then
+    nvr_result=0
+fi
+echo "DEBUG: nvrGreaterOrEqual(osbuild-composer, 83) result=$nvr_result"
+
+
+
+
 # Verify that the image has the correct boot mode set
 AMI_BOOT_MODE=$(jq -r '.Images[].BootMode // empty' "$AMI_DATA")
 if nvrGreaterOrEqual "osbuild-composer" "83"; then

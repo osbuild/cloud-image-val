@@ -14,6 +14,19 @@ function nvrGreaterOrEqual {
     if [ "$result" = "12" ]; then
         return 1
     else
+        # 11 - rpm_version > min_version
+        if [ "$result" = "11" ]; then
+            echo "DEBUG: ${rpm_version} >= ${min_version}" 1>&2
+            return 0
+        # 0 - rpm_version == min_version
+        elif [ "$result" = "0" ]; then
+            echo "DEBUG: ${rpm_version} == ${min_version}" 1>&2
+            return 0
+        # Any other result is unexpected
+        else
+            echo "DEBUG: Unexpected rpmdev-vercmp result: $result" 1>&2
+            return 2
+        fi
         echo "DEBUG: ${rpm_version} >= ${min_version}" 1>&2
         return 0
     fi
