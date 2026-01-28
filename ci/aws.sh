@@ -223,25 +223,22 @@ $AWS_CMD ec2 create-tags \
 
 
 # testing
-set -x
-echo "DEBUG: AMI_DATA contents:"
-cat "$AMI_DATA"
 
 AMI_IMAGE_ID=$(jq -r '.Images[].ImageId' "$AMI_DATA")
 SNAPSHOT_ID=$(jq -r '.Images[].BlockDeviceMappings[].Ebs.SnapshotId' "$AMI_DATA")
-echo "DEBUG: AMI_IMAGE_ID=$AMI_IMAGE_ID"
-echo "DEBUG: SNAPSHOT_ID=$SNAPSHOT_ID"
+redprint "DEBUG: AMI_IMAGE_ID=$AMI_IMAGE_ID"
+redprint "DEBUG: SNAPSHOT_ID=$SNAPSHOT_ID"
 
 AMI_BOOT_MODE=$(jq -r '.Images[].BootMode // empty' "$AMI_DATA")
-echo "DEBUG: AMI_BOOT_MODE=$AMI_BOOT_MODE"
-echo "DEBUG: ARCH=$ARCH"
+redprint "DEBUG: AMI_BOOT_MODE=$AMI_BOOT_MODE"
+redprint "DEBUG: ARCH=$ARCH"
 
 nvr_result=1
 if nvrGreaterOrEqual "osbuild-composer" "83"; then
     nvr_result=0
 fi
-echo "DEBUG: nvrGreaterOrEqual(osbuild-composer, 83) result=$nvr_result"
-set +x
+redprint "DEBUG: nvrGreaterOrEqual(osbuild-composer, 83) result=$nvr_result"
+
 
 
 
