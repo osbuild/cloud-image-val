@@ -223,6 +223,7 @@ $AWS_CMD ec2 create-tags \
 
 
 # testing
+set -x
 echo "DEBUG: AMI_DATA contents:"
 cat "$AMI_DATA"
 
@@ -240,7 +241,7 @@ if nvrGreaterOrEqual "osbuild-composer" "83"; then
     nvr_result=0
 fi
 echo "DEBUG: nvrGreaterOrEqual(osbuild-composer, 83) result=$nvr_result"
-
+set +x
 
 
 
