@@ -162,6 +162,10 @@ WORKER_JOURNAL_PID=$!
 # Stop watching the worker journal when exiting.
 trap 'sudo pkill -P ${WORKER_JOURNAL_PID}' EXIT
 
+# Debugging
+greenprint "🔍 Inspecting AWS Config (Masking Credentials)"
+cat "$AWS_CONFIG" | grep -vE "accessKeyID|secretAccessKey" 
+
 # Start the compose and upload to AWS.
 greenprint "🚀 Starting compose"
 sudo composer-cli --json compose start bash ami "$TEST_ID" "$AWS_CONFIG" | tee "$COMPOSE_START"
