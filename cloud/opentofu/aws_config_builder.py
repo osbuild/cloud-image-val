@@ -19,23 +19,11 @@ class AWSConfigBuilder(BaseConfigBuilder):
         return list(dict.fromkeys(instances_regions))
 
     def __new_aws_provider(self, region):
-        provider_config = {
+        return {
             'region': region,
             'alias': region,
             'skip_region_validation': True
         }
-
-        # Map .eu endpoints for EUSC regions to prevent DNS "no such host" errors
-        if region.startswith('eusc-'):
-            # These are the primary services used by this builder
-            services = ['ec2', 'sts', 'iam']
-            provider_config['endpoints'] = []
-            for service in services:
-                provider_config['endpoints'].append({
-                    service: f'https://{service}.{region}.amazonaws.eu'
-                })
-
-        return provider_config
 
     def build_resources(self):
         self.resources_tf['resource']['aws_key_pair'] = {}
