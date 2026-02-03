@@ -12,6 +12,10 @@ set -euo pipefail
 source ci/set-env-variables.sh
 source ci/shared_lib.sh
 
+greenprint "🧪 Debugging: Checking Shell Variables"
+echo "AWS_REGION is: ${AWS_REGION}"
+echo "AWS_BUCKET is: ${AWS_BUCKET}"
+echo "TEST_ID is: ${TEST_ID}"
 
 # Container image used for cloud provider CLI tools
 CONTAINER_IMAGE_CLOUD_TOOLS="quay.io/osbuild/cloud-tools:latest"
@@ -63,10 +67,17 @@ if ! hash aws; then
     sudo "${CONTAINER_RUNTIME}" pull ${CONTAINER_IMAGE_CLOUD_TOOLS}
 
     AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
-        -e AWS_ACCESS_KEY_ID=${V2_AWS_ACCESS_KEY_ID} \
-        -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
+        -e AWS_REGION=\"${AWS_REGION}\" \
+        -e AWS_ACCESS_KEY_ID=\"${V2_AWS_ACCESS_KEY_ID}\" \
+        -e AWS_SECRET_ACCESS_KEY=\"${V2_AWS_SECRET_ACCESS_KEY}\" \
         -v ${TEMPDIR}:${TEMPDIR}:Z \
-        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region $AWS_REGION --output json --color on"
+        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region ${AWS_REGION} --output json --color on"
+
+    # AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
+    #     -e AWS_ACCESS_KEY_ID=\"${V2_AWS_ACCESS_KEY_ID} \
+    #     -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
+    #     -v ${TEMPDIR}:${TEMPDIR}:Z \
+    #     ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region $AWS_REGION --output json --color on"
 else
     echo "Using pre-installed 'aws' from the system"
     AWS_CMD="aws --region $AWS_REGION --output json --color on"
@@ -100,7 +111,7 @@ get_compose_metadata () {
 }
 
 # Write an AWS TOML file
-tee "$AWS_CONFIG" > /dev/null << "EOF"
+tee "$AWS_CONFIG" > /dev/null << EOF
 provider = "aws"
 
 [settings]
@@ -110,6 +121,22 @@ bucket = "${AWS_BUCKET}"
 region = "${AWS_REGION}"
 key = "${TEST_ID}"
 EOF
+
+greenprint "🧪 Debugging: Verifying AWS Config Expansion"
+
+# Check if the literal strings like '${AWS_REGION}' still exist in the file
+if grep -q '\${' "$AWS_CONFIG"; then
+    echo "❌ ERROR: Late evaluation bug detected! Literal variables found in config."
+    # This safely shows which variables didn't expand without showing the keys
+    grep -o '\${[^}]*}' "$AWS_CONFIG" | sort -u
+else
+    echo "✅ SUCCESS: All variables appear to have expanded."
+fi
+
+# Safely verify that the keys are not empty strings
+if grep -E 'accessKeyID = ""|secretAccessKey = ""' "$AWS_CONFIG"; then
+    echo "⚠️ WARNING: Keys are present but appear to be empty strings."
+fi
 
 # Write a basic blueprint for our image.
 tee "$BLUEPRINT_FILE" > /dev/null << EOF
@@ -185,6 +212,9 @@ if [[ $COMPOSE_STATUS != FINISHED ]]; then
     redprint "Something went wrong with the compose. 😢"
     exit 1
 fi
+
+greenprint "🧪 Debugging: Testing Container Variable Injection"
+$AWS_CMD configure get region || echo "ERROR: Container cannot see the region!"
 
 # Find the image that we made in AWS.
 greenprint "🔍 Search for created AMI"
