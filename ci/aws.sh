@@ -303,7 +303,6 @@ sudo "${CONTAINER_RUNTIME}" run \
     -e AWS_ACCESS_KEY_ID='\$CLOUDX_AWS_ACCESS_KEY_ID' \
     -e AWS_SECRET_ACCESS_KEY='\$CLOUDX_AWS_SECRET_ACCESS_KEY' \
     -e AWS_REGION='\$AWS_REGION' \
-    -e AWS_ENDPOINT_URL_STS="$STS_ENDPOINT" \
     -v "${TEMPDIR}":/tmp:Z \
     "${CONTAINER_CLOUD_IMAGE_VAL}" \
     python cloud-image-val.py \
