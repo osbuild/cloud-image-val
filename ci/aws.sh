@@ -15,7 +15,6 @@ source ci/shared_lib.sh
 greenprint "🧪 Debugging: Checking Shell Variables"
 echo "AWS_REGION is: ${AWS_REGION}"
 echo "AWS_BUCKET is: ${AWS_BUCKET}"
-echo "TEST_ID is: ${TEST_ID}"
 
 # Container image used for cloud provider CLI tools
 CONTAINER_IMAGE_CLOUD_TOOLS="quay.io/osbuild/cloud-tools:latest"
