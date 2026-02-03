@@ -67,9 +67,9 @@ if ! hash aws; then
     sudo "${CONTAINER_RUNTIME}" pull ${CONTAINER_IMAGE_CLOUD_TOOLS}
 
     AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
-        -e AWS_REGION=\"${AWS_REGION}\" \
-        -e AWS_ACCESS_KEY_ID=\"${V2_AWS_ACCESS_KEY_ID}\" \
-        -e AWS_SECRET_ACCESS_KEY=\"${V2_AWS_SECRET_ACCESS_KEY}\" \
+        -e AWS_REGION=${AWS_REGION} \
+        -e AWS_ACCESS_KEY_ID=${V2_AWS_ACCESS_KEY_ID} \
+        -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
         -v ${TEMPDIR}:${TEMPDIR}:Z \
         ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region ${AWS_REGION} --output json --color on"
 
