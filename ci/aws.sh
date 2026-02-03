@@ -100,7 +100,7 @@ get_compose_metadata () {
 }
 
 # Write an AWS TOML file
-tee "$AWS_CONFIG" > /dev/null << EOF
+tee "$AWS_CONFIG" > /dev/null << "EOF"
 provider = "aws"
 
 [settings]
