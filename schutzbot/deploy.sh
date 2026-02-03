@@ -119,7 +119,7 @@ function get_last_passed_commit {
 
     else
         # Capture response and HTTP code to handle GitHub API failures (e.g. 401, 403)
-        response=$(curl -u "${API_USER}:${API_PAT}" -s -w "%{http_code}" "https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100")
+        response=$(curl -u "${API_USER}:${API_PAT}" -s -w "%{http_code}" "https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=10")
         http_code="${response: -3}"
         body="${response::-3}"
 
