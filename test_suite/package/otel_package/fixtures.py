@@ -19,6 +19,8 @@ def initialize_variables(request, host):
 
 @pytest.fixture(scope='function')
 def check_instance_status(request, host, timeout_seconds=300):
+    if hasattr(host.backend, 'control'):
+        host.backend.control.close()
     self = request.node.cls
     command_to_run = [
         'aws', 'ec2', 'describe-instance-status',
@@ -37,6 +39,7 @@ def check_instance_status(request, host, timeout_seconds=300):
         system_status = cmd_output["InstanceStatuses"][0]["SystemStatus"]["Status"]
 
         if instance_status == "ok" and system_status == "ok":
+            time.sleep(10)
             break
         else:
             print("Instance status is not 'passed' yet. Waiting...")
