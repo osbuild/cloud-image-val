@@ -13,7 +13,7 @@ Example: After upgrading from RHEL-9.6 to RHEL-10.0, make sure components work.
 
 @pytest.mark.cut
 class TestsComponentsUpgrade:
-    @pytest.mark.run_on(['rhel9.7', 'rhel10.1'])
+    @pytest.mark.run_on(['rhel9.8', 'rhel10.2'])
     def test_cut_rhel_90_to_rhel_100(self, host, instance_data):
         console_lib.print_divider('Testing components BEFORE major upgrade...')
         assert run_cloudx_components_testing.main()
@@ -83,7 +83,7 @@ gpgcheck=0
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.7 to RHEL-10.1 even after reboot.'
+            'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
