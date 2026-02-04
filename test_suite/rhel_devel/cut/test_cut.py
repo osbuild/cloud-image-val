@@ -43,7 +43,7 @@ class TestsComponentsUpgrade:
 
         # We will use the latest compose by defualt.
         # This can be manually changed in a CIV pull request for debugging purposes.
-        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.1"
+        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
 
         basearch = host.system_info.arch
 
