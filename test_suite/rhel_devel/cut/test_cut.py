@@ -4,6 +4,13 @@ from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
 from test_suite.rhel_devel import run_cloudx_components_testing
 
+"""
+CUT (Components Upgrade Testing) refers to the RHEL testing phase
+were we test if our components are upgradable across major versions.
+Example: After upgrading from RHEL-9.6 to RHEL-10.0, make sure components work.
+"""
+
+
 @pytest.mark.cut
 class TestsComponentsUpgrade:
     @pytest.mark.run_on(['rhel9.8', 'rhel10.2'])
