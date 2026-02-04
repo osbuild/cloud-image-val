@@ -36,33 +36,29 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
-        console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
-
-        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
-
-        # We will use the latest compose by defualt.
-        # This can be manually changed in a CIV pull request for debugging purposes.
-        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.1"
-
-        basearch = host.system_info.arch
-
+        # MOVED REPO BLOCK HERE (Before dnf install)
         console_lib.print_divider('Adding RHEL-10 repos...')
+        compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
+        basearch = host.system_info.arch
         repo_file_name = '/etc/yum.repos.d/rhel10.repo'
         rhel_10_repo_file = f"""
 [AppStream10]
 name=AppStream for RHEL-10
 baseurl={compose_url}/compose/AppStream/{basearch}/os/
-enabled=0
+enabled=1
 gpgcheck=0
 
 [BaseOS10]
 name=BaseOS for RHEL-10
 baseurl={compose_url}/compose/BaseOS/{basearch}/os/
-enabled=0
+enabled=1
 gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
+
+        console_lib.print_divider('Installing leapp package...')
+        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y --enablerepo=AppStream10', capture_result=True)
+        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
 
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
@@ -79,7 +75,6 @@ gpgcheck=0
             pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
 
         console_lib.print_divider('Rebooting host...')
-        # 15 minutes of timeout due to performing a major upgrade
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
