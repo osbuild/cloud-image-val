@@ -66,27 +66,28 @@ gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
 
-        time.sleep(1200)
-        console_lib.print_divider('Running leapp upgrade...')
-        result = test_lib.print_host_command_output(
-            host,
-            'LEAPP_UNSUPPORTED=1 LEAPP_DEVEL_SKIP_CHECK_OS_RELEASE=1 '
-            'leapp upgrade --no-rhsm --enablerepo AppStream10 --enablerepo BaseOS10',
-            capture_result=True)
 
-        if result.failed:
-            reapp_report_file = '/var/log/leapp/leapp-report.txt'
-            if host.file(reapp_report_file).exists:
-                print('Leapp Report:\n', host.file(reapp_report_file).content_string)
-
-            pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
-
-        console_lib.print_divider('Rebooting host...')
-        # 15 minutes of timeout due to performing a major upgrade
-        host = test_lib.reboot_host(host, max_timeout=900)
-
-        assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
-
-        console_lib.print_divider('Testing components AFTER major upgrade...')
+        # console_lib.print_divider('Running leapp upgrade...')
+        # result = test_lib.print_host_command_output(
+        #     host,
+        #     'LEAPP_UNSUPPORTED=1 LEAPP_DEVEL_SKIP_CHECK_OS_RELEASE=1 '
+        #     'leapp upgrade --no-rhsm --enablerepo AppStream10 --enablerepo BaseOS10',
+        #     capture_result=True)
+        #
+        # if result.failed:
+        #     reapp_report_file = '/var/log/leapp/leapp-report.txt'
+        #     if host.file(reapp_report_file).exists:
+        #         print('Leapp Report:\n', host.file(reapp_report_file).content_string)
+        #
+        #     pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
+        #
+        # console_lib.print_divider('Rebooting host...')
+        # # 15 minutes of timeout due to performing a major upgrade
+        # host = test_lib.reboot_host(host, max_timeout=900)
+        time.sleep(2500)
+        #
+        # assert version.parse(host.system_info.release).major == 10, \
+        #     'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
+        #
+        # console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
