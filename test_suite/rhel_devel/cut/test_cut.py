@@ -23,7 +23,7 @@ class TestsComponentsUpgrade:
 
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
-        console_lib.print_divider('Enabling RHEL 9 GA repositories...')
+        console_lib.print_divider('SWITCHING FROM BETA TO GA REPOS...')
         with host.sudo():
             host.run('subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms')
             host.run('dnf clean all')
@@ -36,7 +36,6 @@ class TestsComponentsUpgrade:
             )
 
         console_lib.print_divider('Installing leapp package...')
-        # Using wildcard to ensure we find the tool in the newly enabled GA repo
         result = test_lib.print_host_command_output(
             host,
             'dnf install leapp-upgrade-el9toel10* -y',
@@ -47,7 +46,7 @@ class TestsComponentsUpgrade:
             console_lib.print_divider('DEBUG: Analyzing repository availability...')
             test_lib.print_host_command_output(host, 'dnf repolist')
             test_lib.print_host_command_output(host, 'dnf list available "leapp*"')
-            assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10 from RHEL 9 GA repos'
+            assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
 
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
         basearch = host.system_info.arch
@@ -86,7 +85,7 @@ gpgcheck=0
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
+            'Failed to upgrade to RHEL-10.2'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
