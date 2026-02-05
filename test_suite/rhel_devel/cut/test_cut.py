@@ -66,7 +66,7 @@ gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
 
-        time.sleep(10800)
+        time.sleep(1200)
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
             host,
