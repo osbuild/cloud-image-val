@@ -1,8 +1,15 @@
 import pytest
+import time
 from packaging import version
 from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
 from test_suite.rhel_devel import run_cloudx_components_testing
+
+"""
+CUT (Components Upgrade Testing) refers to the RHEL testing phase
+were we test if our components are upgradable across major versions.
+Example: After upgrading from RHEL-9.6 to RHEL-10.0, make sure components work.
+"""
 
 
 @pytest.mark.cut
@@ -23,13 +30,6 @@ class TestsComponentsUpgrade:
 
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
-        console_lib.print_divider('SWITCHING FROM BETA TO GA REPOS...')
-        with host.sudo():
-            host.run('subscription-manager config --rhsm.manage_repos=0')
-            host.run('dnf config-manager --set-enabled rhel-9-appstream-rhui-rpms')
-            host.run('dnf config-manager --set-enabled rhel-9-baseos-rhui-rpms')
-            host.run('dnf clean all')
-
         console_lib.print_divider('Migrating legacy network configuration workaround')
         if host.file('/etc/sysconfig/network-scripts/ifcfg-eth0').exists:
             test_lib.print_host_command_output(
@@ -37,20 +37,17 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
+        time.sleep(10800)
+
         console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(
-            host,
-            'dnf install leapp-upgrade-el9toel10* -y',
-            capture_result=True
-        )
+        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
 
-        if result.failed:
-            console_lib.print_divider('DEBUG: Analyzing repository availability...')
-            test_lib.print_host_command_output(host, 'dnf repolist')
-            test_lib.print_host_command_output(host, 'dnf list available "leapp*"')
-            assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
+        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
 
+        # We will use the latest compose by defualt.
+        # This can be manually changed in a CIV pull request for debugging purposes.
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
+
         basearch = host.system_info.arch
 
         console_lib.print_divider('Adding RHEL-10 repos...')
@@ -78,16 +75,18 @@ gpgcheck=0
             capture_result=True)
 
         if result.failed:
-            leapp_report_file = '/var/log/leapp/leapp-report.txt'
-            if host.file(leapp_report_file).exists:
-                print('Leapp Report:\n', host.file(leapp_report_file).content_string)
-            pytest.fail('RHEL major upgrade failed. Check leapp-report.txt for details.')
+            reapp_report_file = '/var/log/leapp/leapp-report.txt'
+            if host.file(reapp_report_file).exists:
+                print('Leapp Report:\n', host.file(reapp_report_file).content_string)
+
+            pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
 
         console_lib.print_divider('Rebooting host...')
+        # 15 minutes of timeout due to performing a major upgrade
         host = test_lib.reboot_host(host, max_timeout=900)
 
         assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade to RHEL-10.2'
+            'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
