@@ -7,7 +7,7 @@ from test_suite.rhel_devel import run_cloudx_components_testing
 """
 CUT (Components Upgrade Testing) refers to the RHEL testing phase
 were we test if our components are upgradable across major versions.
-Example: After upgrading from RHEL-9.6 to RHEL-10.0, make sure components work.
+Example: After upgrading from RHEL-9.8 to RHEL-10.2, make sure components work.
 """
 
 
@@ -36,7 +36,6 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
-        # MOVED REPO BLOCK HERE (Before dnf install)
         console_lib.print_divider('Adding RHEL-10 repos...')
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
         basearch = host.system_info.arch
@@ -57,9 +56,8 @@ gpgcheck=0
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
 
         console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(host, 'dnf install leapp -y --enablerepo=AppStream10',
-                                                    capture_result=True)
-        assert result.succeeded, 'Failed to install leapp'
+        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade -y', capture_result=True)
+        assert result.succeeded, 'Failed to install leapp-upgrade'
 
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
