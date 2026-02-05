@@ -37,12 +37,11 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
-        time.sleep(10800)
+        # manual install leap package
+        # console_lib.print_divider('Installing leapp package...')
+        # result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
 
-        console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
-
-        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
+        # assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
 
         # We will use the latest compose by defualt.
         # This can be manually changed in a CIV pull request for debugging purposes.
@@ -67,6 +66,7 @@ gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
 
+        time.sleep(10800)
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
             host,
