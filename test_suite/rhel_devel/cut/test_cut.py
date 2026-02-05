@@ -1,6 +1,6 @@
 import pytest
 import time
-from packaging import version
+# from packaging import version
 from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
 from test_suite.rhel_devel import run_cloudx_components_testing
@@ -65,7 +65,6 @@ enabled=0
 gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
-
 
         # console_lib.print_divider('Running leapp upgrade...')
         # result = test_lib.print_host_command_output(
