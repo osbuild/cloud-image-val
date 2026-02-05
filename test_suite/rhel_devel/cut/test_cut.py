@@ -23,6 +23,11 @@ class TestsComponentsUpgrade:
 
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
+        console_lib.print_divider('Enabling RHEL 9 GA repositories...')
+        with host.sudo():
+            host.run('subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms')
+            host.run('dnf clean all')
+
         console_lib.print_divider('Migrating legacy network configuration workaround')
         if host.file('/etc/sysconfig/network-scripts/ifcfg-eth0').exists:
             test_lib.print_host_command_output(
@@ -31,10 +36,22 @@ class TestsComponentsUpgrade:
             )
 
         console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10* -y', capture_result=True)
-        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
+        # Using wildcard to ensure we find the tool in the newly enabled GA repo
+        result = test_lib.print_host_command_output(
+            host,
+            'dnf install leapp-upgrade-el9toel10* -y',
+            capture_result=True
+        )
+
+        if result.failed:
+            console_lib.print_divider('DEBUG: Analyzing repository availability...')
+            test_lib.print_host_command_output(host, 'dnf repolist')
+            test_lib.print_host_command_output(host, 'dnf list available "leapp*"')
+            assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10 from RHEL 9 GA repos'
+
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
         basearch = host.system_info.arch
+
         console_lib.print_divider('Adding RHEL-10 repos...')
         repo_file_name = '/etc/yum.repos.d/rhel10.repo'
         rhel_10_repo_file = f"""
@@ -63,8 +80,7 @@ gpgcheck=0
             leapp_report_file = '/var/log/leapp/leapp-report.txt'
             if host.file(leapp_report_file).exists:
                 print('Leapp Report:\n', host.file(leapp_report_file).content_string)
-
-            pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
+            pytest.fail('RHEL major upgrade failed. Check leapp-report.txt for details.')
 
         console_lib.print_divider('Rebooting host...')
         host = test_lib.reboot_host(host, max_timeout=900)
