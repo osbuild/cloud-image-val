@@ -25,10 +25,9 @@ class TestsComponentsUpgrade:
 
         console_lib.print_divider('SWITCHING FROM BETA TO GA REPOS...')
         with host.sudo():
-            host.run('subscription-manager release --unset')
-            host.run('subscription-manager repos --disable="*-beta-rpms"')
-            host.run('subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms')
-            host.run('subscription-manager repos --enable=rhel-9-for-x86_64-baseos-rpms')
+            host.run('subscription-manager config --rhsm.manage_repos=0')
+            host.run('dnf config-manager --set-enabled rhel-9-appstream-rhui-rpms')
+            host.run('dnf config-manager --set-enabled rhel-9-baseos-rhui-rpms')
             host.run('dnf clean all')
 
         console_lib.print_divider('Migrating legacy network configuration workaround')
