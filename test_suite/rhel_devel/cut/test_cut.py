@@ -21,7 +21,6 @@ class TestsComponentsUpgrade:
             with host.sudo():
                 host.run_test(f'subscription-manager config --{item}={value}')
 
-        # This line had a transient timeout hiccup; a rerun usually fixes it
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
         console_lib.print_divider('Migrating legacy network configuration workaround')
@@ -31,34 +30,27 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
-        # FIX: Move Repo Addition BEFORE Installation
-        console_lib.print_divider('Adding RHEL-10 repos...')
+        console_lib.print_divider('Installing leapp package...')
+        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10* -y', capture_result=True)
+        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
         basearch = host.system_info.arch
+        console_lib.print_divider('Adding RHEL-10 repos...')
         repo_file_name = '/etc/yum.repos.d/rhel10.repo'
         rhel_10_repo_file = f"""
 [AppStream10]
 name=AppStream for RHEL-10
 baseurl={compose_url}/compose/AppStream/{basearch}/os/
-enabled=1
+enabled=0
 gpgcheck=0
 
 [BaseOS10]
 name=BaseOS for RHEL-10
 baseurl={compose_url}/compose/BaseOS/{basearch}/os/
-enabled=1
+enabled=0
 gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
-
-        console_lib.print_divider('Installing leapp package...')
-        # We explicitly enable AppStream10 to find the package confirmed in your screenshot
-        result = test_lib.print_host_command_output(
-            host,
-            'dnf install leapp-upgrade-el9toel10 -y --enablerepo=AppStream10',
-            capture_result=True
-        )
-        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10'
 
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
@@ -68,9 +60,10 @@ gpgcheck=0
             capture_result=True)
 
         if result.failed:
-            reapp_report_file = '/var/log/leapp/leapp-report.txt'
-            if host.file(reapp_report_file).exists:
-                print('Leapp Report:\n', host.file(reapp_report_file).content_string)
+            leapp_report_file = '/var/log/leapp/leapp-report.txt'
+            if host.file(leapp_report_file).exists:
+                print('Leapp Report:\n', host.file(leapp_report_file).content_string)
+
             pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
 
         console_lib.print_divider('Rebooting host...')
