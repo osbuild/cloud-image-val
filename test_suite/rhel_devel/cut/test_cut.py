@@ -4,13 +4,6 @@ from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
 from test_suite.rhel_devel import run_cloudx_components_testing
 
-"""
-CUT (Components Upgrade Testing) refers to the RHEL testing phase
-were we test if our components are upgradable across major versions.
-Example: After upgrading from RHEL-9.8 to RHEL-10.2, make sure components work.
-"""
-
-
 @pytest.mark.cut
 class TestsComponentsUpgrade:
     @pytest.mark.run_on(['rhel9.8', 'rhel10.2'])
@@ -56,8 +49,13 @@ gpgcheck=0
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
 
         console_lib.print_divider('Installing leapp package...')
-        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade -y', capture_result=True)
-        assert result.succeeded, 'Failed to install leapp-upgrade'
+        # Attempt to install both the tool and the data package from the nightly AppStream
+        result = test_lib.print_host_command_output(
+            host,
+            'dnf install leapp leapp-upgrade-el9toel10 -y --enablerepo=AppStream10',
+            capture_result=True
+        )
+        assert result.succeeded, 'Failed to install leapp and upgrade data'
 
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
@@ -67,9 +65,9 @@ gpgcheck=0
             capture_result=True)
 
         if result.failed:
-            reapp_report_file = '/var/log/leapp/leapp-report.txt'
-            if host.file(reapp_report_file).exists:
-                print('Leapp Report:\n', host.file(reapp_report_file).content_string)
+            leapp_report_file = '/var/log/leapp/leapp-report.txt'
+            if host.file(leapp_report_file).exists:
+                print('Leapp Report:\n', host.file(leapp_report_file).content_string)
 
             pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
 
