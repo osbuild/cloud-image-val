@@ -4,6 +4,7 @@ from lib import test_lib, console_lib
 from test_suite.generic.test_generic import TestsSubscriptionManager as sub_man
 from test_suite.rhel_devel import run_cloudx_components_testing
 
+
 @pytest.mark.cut
 class TestsComponentsUpgrade:
     @pytest.mark.run_on(['rhel9.8', 'rhel10.2'])
@@ -12,14 +13,6 @@ class TestsComponentsUpgrade:
         assert run_cloudx_components_testing.main()
 
         console_lib.print_divider('Registering system with subscription-manager...')
-        sub_man_config = {
-            "rhsmcertd.auto_registration": 1,
-            "rhsm.manage_repos": 1,
-        }
-        for item, value in sub_man_config.items():
-            with host.sudo():
-                host.run_test(f'subscription-manager config --{item}={value}')
-
         sub_man.test_subscription_manager_auto(self, host, instance_data)
 
         console_lib.print_divider('Migrating legacy network configuration workaround')
@@ -29,6 +22,10 @@ class TestsComponentsUpgrade:
                 'nmcli connection migrate /etc/sysconfig/network-scripts/ifcfg-eth0'
             )
 
+        console_lib.print_divider('Installing leapp package from RHEL 9...')
+        result = test_lib.print_host_command_output(host, 'dnf install leapp-upgrade-el9toel10 -y', capture_result=True)
+        assert result.succeeded, 'Failed to install leapp-upgrade-el9toel10 from RHEL 9'
+
         console_lib.print_divider('Adding RHEL-10 repos...')
         compose_url = "http://download.devel.redhat.com/rhel-10/nightly/RHEL-10/latest-RHEL-10.2"
         basearch = host.system_info.arch
@@ -37,25 +34,16 @@ class TestsComponentsUpgrade:
 [AppStream10]
 name=AppStream for RHEL-10
 baseurl={compose_url}/compose/AppStream/{basearch}/os/
-enabled=1
+enabled=0
 gpgcheck=0
 
 [BaseOS10]
 name=BaseOS for RHEL-10
 baseurl={compose_url}/compose/BaseOS/{basearch}/os/
-enabled=1
+enabled=0
 gpgcheck=0
 """
         test_lib.print_host_command_output(host, f'echo "{rhel_10_repo_file}" > {repo_file_name}')
-
-        console_lib.print_divider('Installing leapp package...')
-        # Attempt to install both the tool and the data package from the nightly AppStream
-        result = test_lib.print_host_command_output(
-            host,
-            'dnf install leapp leapp-upgrade-el9toel10 -y --enablerepo=AppStream10',
-            capture_result=True
-        )
-        assert result.succeeded, 'Failed to install leapp and upgrade data'
 
         console_lib.print_divider('Running leapp upgrade...')
         result = test_lib.print_host_command_output(
@@ -68,14 +56,12 @@ gpgcheck=0
             leapp_report_file = '/var/log/leapp/leapp-report.txt'
             if host.file(leapp_report_file).exists:
                 print('Leapp Report:\n', host.file(leapp_report_file).content_string)
-
-            pytest.fail('RHEL major upgrade failed. Please check leapp-report.txt for more details.')
+            pytest.fail('RHEL major upgrade failed. Check leapp-report.txt.')
 
         console_lib.print_divider('Rebooting host...')
         host = test_lib.reboot_host(host, max_timeout=900)
 
-        assert version.parse(host.system_info.release).major == 10, \
-            'Failed to upgrade from RHEL-9.8 to RHEL-10.2 even after reboot.'
+        assert version.parse(host.system_info.release).major == 10, 'Failed to upgrade to RHEL-10.'
 
         console_lib.print_divider('Testing components AFTER major upgrade...')
         assert run_cloudx_components_testing.main()
