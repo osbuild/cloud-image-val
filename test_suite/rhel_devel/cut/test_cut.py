@@ -25,6 +25,8 @@ class TestsComponentsUpgrade:
 
         console_lib.print_divider('SWITCHING FROM BETA TO GA REPOS...')
         with host.sudo():
+            host.run('subscription-manager release --unset')
+            host.run('subscription-manager repos --disable=rhel-9-for-x86_64-appstream-beta-rpms')
             host.run('subscription-manager repos --enable=rhel-9-for-x86_64-appstream-rpms')
             host.run('dnf clean all')
 
