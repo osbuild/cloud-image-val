@@ -104,9 +104,11 @@ class TestsGeneric:
         if host.system_info.arch == 'x86_64' and instance_data['cloud'] == 'azure':
             expected_config.extend(['earlyprintk=ttyS0', 'rootdelay=300'])
 
-        # Add RHEL 9.6+ specific parameter
-        if version.parse(host.system_info.release) >= version.parse('9.6') and \
-                instance_data['cloud'] == 'azure':
+        # nvme_core.io_timeout was only set in 4 versions of RHEL
+        release = version.parse(host.system_info.release)
+        if instance_data['cloud'] == 'azure' and \
+                (version.parse('9.6') <= release < version.parse('9.8')
+                 or version.parse('10.0') <= release < version.parse('10.2')):
             expected_config.append('nvme_core.io_timeout=240')
 
         # CVM specific parameters
