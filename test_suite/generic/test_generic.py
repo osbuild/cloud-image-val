@@ -1,12 +1,11 @@
 import os
 import re
 import time
+
 import pytest
+from lib import console_lib, test_lib
 from packaging import version
 from test_suite.generic import helpers
-
-from lib import console_lib
-from lib import test_lib
 
 
 @pytest.fixture(scope='class')
