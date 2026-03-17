@@ -107,11 +107,11 @@ function get_last_passed_commit {
         fi
 
         statuses=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
-        for status in ${statuses}; do 
+        for status in ${statuses}; do
             if [ "$status" == "failed" ]; then
                 echo "Last nightly pipeline ('rpmbuild' stage) failed in osbuild-composer CI. We will not run nightly-internal jobs in CIV."
                 exit 1
-            fi 
+            fi
         done
 
         commit=$(echo "$pipeline_info" | jq -r '.sha')
