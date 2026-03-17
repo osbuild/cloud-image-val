@@ -1349,13 +1349,13 @@ class TestsAuthConfig:
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
-                'postlogin', 'smartcard-auth', 'system-auth'
+                'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
             ]
         elif self.cloud == 'aws':
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
-                'postlogin', 'smartcard-auth', 'system-auth',
+                'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
                 'user-nsswitch.conf'
             ]
         else:
