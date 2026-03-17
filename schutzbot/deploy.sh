@@ -188,10 +188,9 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 # TODO: include this in the jenkins runner (and split test/target machines out)
 sudo dnf -y install jq
 
-# Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(get_last_passed_commit)
-
-setup_repo osbuild-composer "${GIT_COMMIT}" 5
+# Get pinned commit for osbuild-composer to install RPMs
+COMPOSER_GIT_COMMIT=$(jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.composer.commit' Schutzfile)
+setup_repo osbuild-composer "${COMPOSER_GIT_COMMIT}" 5
 
 OSBUILD_GIT_COMMIT=$(cat Schutzfile | jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.osbuild.commit')
 if [[ "${OSBUILD_GIT_COMMIT}" != "null" ]]; then
