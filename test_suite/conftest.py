@@ -192,6 +192,11 @@ def ensure_rpm_usable_before_tests(host):
     """
     with host.sudo():
         fix = host.run("yum -y update rpm-sequoia openssl-libs")
+
+        if not fix.succeeded and ("403" in fix.stderr or "not registered" in fix.stdout):
+            print("\n[!] Entitlement issue (3P). Skipping RPM workaround.")
+            return
+
         assert fix.succeeded, f"Failed workaround: {fix.stderr}"
 
         recheck = host.run("rpm -qa")
