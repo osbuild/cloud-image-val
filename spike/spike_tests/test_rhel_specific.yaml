@@ -1,0 +1,18 @@
+---
+# Example test with platform-specific conditions
+test_id: "rhel_specific_test"
+name: "RHEL Specific Test"
+description: "This test only runs on RHEL systems"
+tags:
+  - rhel-specific
+
+conditions:
+  run_on: 
+    - rhel
+  exclude_on: []
+  wait_seconds: 0
+
+steps:
+  - action: run_command
+    name: "Check RHEL version"
+    command: "cat /etc/redhat-release"

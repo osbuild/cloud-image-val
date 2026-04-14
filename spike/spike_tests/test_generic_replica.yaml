@@ -1,0 +1,1103 @@
+---
+test_id: "generic_test_suite_replica"
+name: "Generic Test Suite Replica"
+description: >
+  Declarative YAML replica of test_suite/generic/test_generic.py.
+  Uses high-level semantic actions (check_service, check_package, check_user,
+  check_command_output, check_file, check_file_content, compare_file_with_local)
+  and per-step conditions to avoid raw bash where possible.
+tags:
+  - generic
+  - replica
+
+conditions:
+  run_on:
+    - all
+  exclude_on: []
+  wait_seconds: 0
+
+steps:
+
+  # ---------------------------------------------------------------------------
+  # class TestsGeneric
+  # ---------------------------------------------------------------------------
+
+  # test_no_avc_denials — shell required (ausearch not always present)
+  - action: assert_command_exit_code
+    name: "test_no_avc_denials"
+    command: |
+      if command -v ausearch >/dev/null 2>&1; then
+        ausearch -m avc,user_avc -ts boot 2>/dev/null | grep -q "AVC" && exit 1 || exit 0
+      fi
+    expected: 0
+
+  # test_bash_history_is_empty
+  - action: check_file_content
+    name: "test_bash_history_is_empty (root)"
+    path: /root/.bash_history
+    operator: empty
+
+
+  # test_username — check forbidden users do not exist
+  - action: check_user
+    name: "test_username (fedora user must not exist)"
+    user: fedora
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  - action: check_user
+    name: "test_username (cloud-user must not exist)"
+    user: cloud-user
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  # test_rhgb_quiet_not_present_in_cmdline
+  - action: check_file_content
+    name: "test_rhgb_quiet_not_present_in_cmdline (rhgb)"
+    path: /proc/cmdline
+    operator: not_contains
+    expected: "rhgb"
+
+  - action: check_file_content
+    name: "test_rhgb_quiet_not_present_in_cmdline (quiet)"
+    path: /proc/cmdline
+    operator: not_contains
+    expected: "quiet"
+
+  # test_cpu_flags_are_correct — shell needed for arch check
+  - action: assert_command_exit_code
+    name: "test_cpu_flags_are_correct"
+    command: |
+      [ "$(uname -m)" = "x86_64" ] || exit 0
+      grep -qw avx /proc/cpuinfo && grep -qw xsave /proc/cpuinfo
+    expected: 0
+
+  # test_numa_settings — shell required (dmesg parsing)
+  - action: assert_command_exit_code
+    name: "test_numa_settings"
+    command: "dmesg | grep -iq numa && lscpu | grep -iq 'NUMA node(s)'"
+    expected: 0
+
+  # test_inittab_and_systemd
+  - action: check_command_output
+    name: "test_inittab_and_systemd"
+    command: "readlink -f /etc/systemd/system/default.target 2>/dev/null"
+    operator: contains
+    expected: "multi-user.target"
+
+  # test_cert_product_version_is_correct — shell required (rct + subscription-manager)
+  - action: assert_command_exit_code
+    name: "test_cert_product_version_is_correct"
+    command: |
+      sys_ver=$(. /etc/os-release; echo "$VERSION_ID")
+      cert_ver=$(rct cat-cert /etc/pki/product-default/*.pem 2>/dev/null | awk '/^[[:space:]]*Version:/{print $2}')
+      [ "$cert_ver" = "$sys_ver" ] || exit 1
+      sub_ver=$(subscription-manager list --installed 2>/dev/null | awk '/^Version:/{print $2}')
+      [ "$sub_ver" = "$sys_ver" ]
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_root_is_locked — shell required (version-conditional passwd -S flag)
+  - action: assert_command_exit_code
+    name: "test_root_is_locked"
+    command: |
+      maj=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      if [ "$maj" -ge 10 ]; then
+        passwd -S root | grep -q " L "
+      else
+        passwd -S root | grep -q " LK "
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_bash_in_shell_config
+  - action: check_file_content
+    name: "test_bash_in_shell_config"
+    path: /etc/shells
+    operator: contains
+    expected: "/bin/bash"
+
+  # test_grub_config — shell required (EFI detection + version branch)
+  - action: assert_command_exit_code
+    name: "test_grub_config"
+    command: |
+      [ "$(uname -m)" = "x86_64" ] || exit 0
+      if [ -d /sys/firmware/efi ]; then
+        maj=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+        [ "$maj" -lt 8 ] && exp="/boot/efi/EFI/redhat/grubenv" || exp="/boot/grub2/grubenv"
+      else
+        exp="/boot/grub2/grubenv"
+      fi
+      [ "$(readlink -f /boot/grub2/grubenv)" = "$exp" ]
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_boot_mount_presence_min_size_if_present — shell required (conditional + size)
+  - action: assert_command_exit_code
+    name: "test_boot_mount_presence_min_size_if_present"
+    command: |
+      mountpoint -q /boot || exit 0
+      total=$(df --block-size=1 /boot | tail -1 | awk '{print $2}')
+      [ "$total" -ge 1006632960 ]
+    expected: 0
+
+  # test_net_ifnames_usage — RHEL10+ must not have net.ifnames=0
+  - action: check_file_content
+    name: "test_net_ifnames_usage (/proc/cmdline)"
+    path: /proc/cmdline
+    operator: not_contains
+    expected: "net.ifnames=0"
+    conditions:
+      run_on: [rhel>=10]
+
+  - action: check_file_content
+    name: "test_net_ifnames_usage (/etc/default/grub)"
+    path: /etc/default/grub
+    operator: not_contains
+    expected: "net.ifnames=0"
+    conditions:
+      run_on: [rhel>=10]
+
+  # test_tty0_config
+  - action: check_file
+    name: "test_tty0_config (ttyS0.conf must not exist)"
+    path: /etc/init/ttyS0.conf
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file
+    name: "test_tty0_config (ttyS0.bak must not exist)"
+    path: /etc/init/ttyS0.bak
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  # test_selinux_mode
+  - action: check_command_output
+    name: "test_selinux_mode (getenforce)"
+    command: "getenforce"
+    operator: contains
+    expected: "orcing"
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file_content
+    name: "test_selinux_mode (SELINUXTYPE=targeted)"
+    path: /etc/sysconfig/selinux
+    operator: contains
+    expected: "SELINUXTYPE=targeted"
+    conditions:
+      run_on: [rhel]
+
+  # test_rpm_v_unsatisfied_dependencies
+  - action: assert_command_exit_code
+    name: "test_rpm_v_unsatisfied_dependencies"
+    command: "! rpm -Va | grep -q 'Unsatisfied'"
+    expected: 0
+
+  # test_no_sshkeys_knownhosts
+  - action: check_file
+    name: "test_no_sshkeys_knownhosts (authorized_keys exists)"
+    path: /root/.ssh/authorized_keys
+    operator: exists
+
+  - action: assert_command_exit_code
+    name: "test_no_sshkeys_knownhosts (only one file in /root/.ssh/)"
+    command: "[ \"$(find /root/.ssh -mindepth 1 -maxdepth 1 | wc -l)\" -eq 1 ]"
+    expected: 0
+
+  # test_no_extra_public_keys
+  - action: check_command_output
+    name: "test_no_extra_public_keys"
+    command: "wc -l < /root/.ssh/authorized_keys"
+    operator: equals
+    expected: "1"
+
+  # test_dnf_conf
+  - action: compare_file_with_local
+    name: "test_dnf_conf"
+    path: /etc/dnf/dnf.conf
+    params:
+      local_path: data/generic/dnf.conf
+    conditions:
+      run_on: [rhel]
+
+  # test_langpacks_conf
+  - action: check_file
+    name: "test_langpacks_conf"
+    path: /etc/yum/pluginconf.d/langpacks.conf
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  # test_timezone_is_utc
+  - action: check_command_output
+    name: "test_timezone_is_utc"
+    command: "date +%Z"
+    operator: equals
+    expected: "UTC"
+
+  # test_bootc_installed
+  - action: check_package
+    name: "test_bootc_installed"
+    package: system-reinstall-bootc
+    operator: is_installed
+    conditions:
+      run_on: [rhel>=9.6]
+
+  # test_logging_cfg
+  - action: compare_file_with_local
+    name: "test_logging_cfg"
+    path: /etc/cloud/cloud.cfg.d/05_logging.cfg
+    params:
+      local_path: data/generic/05_logging.cfg
+    conditions:
+      run_on: [rhel]
+
+  # test_authconfig_file
+  - action: check_file
+    name: "test_authconfig_file"
+    path: /etc/sysconfig/authconfig
+    operator: not_exists
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # class TestsServices
+  # ---------------------------------------------------------------------------
+
+  - action: check_service
+    name: "test_services_running (cloud-init-local)"
+    service: cloud-init-local
+    operator: is_running
+    conditions:
+      exclude_on: [fedora]
+
+  - action: check_service
+    name: "test_services_running (cloud-init)"
+    service: cloud-init
+    operator: is_running
+    conditions:
+      exclude_on: [fedora]
+
+  - action: check_service
+    name: "test_services_running (cloud-config)"
+    service: cloud-config
+    operator: is_running
+    conditions:
+      exclude_on: [fedora]
+
+  - action: check_service
+    name: "test_services_running (cloud-final)"
+    service: cloud-final
+    operator: is_running
+    conditions:
+      exclude_on: [fedora]
+
+  - action: check_service
+    name: "test_services_running (sshd)"
+    service: sshd
+    operator: is_running
+    conditions:
+      exclude_on: [fedora]
+
+  # test_auditd
+  - action: check_service
+    name: "test_auditd (service is running)"
+    service: auditd
+    operator: is_running
+    conditions:
+      run_on: [rhel]
+
+  # test_sshd
+  - action: check_service
+    name: "test_sshd (sshd running)"
+    service: sshd
+    operator: is_running
+
+  - action: assert_command_exit_code
+    name: "test_sshd (PasswordAuthentication disabled)"
+    command: |
+      for f in /etc/ssh/sshd_config \
+                /etc/ssh/sshd_config.d/50-cloud-init.conf; do
+        [ -f "$f" ] && grep -Eq "^PasswordAuthentication[[:space:]]+no" "$f" && exit 0
+      done
+      f=/etc/ssh/sshd_config.d/50-redhat.conf
+      [ -f "$f" ] && grep -Eq "^ChallengeResponseAuthentication[[:space:]]+no" "$f" && exit 0
+      exit 1
+    expected: 0
+
+  # test_sysconfig_kernel
+  - action: check_file_content
+    name: "test_sysconfig_kernel (UPDATEDEFAULT=yes)"
+    path: /etc/sysconfig/kernel
+    operator: contains
+    expected: "UPDATEDEFAULT=yes"
+    conditions:
+      run_on: [rhel, centos]
+
+  - action: check_file_content
+    name: "test_sysconfig_kernel (DEFAULTKERNEL=kernel)"
+    path: /etc/sysconfig/kernel
+    operator: contains
+    expected: "DEFAULTKERNEL=kernel"
+    conditions:
+      run_on: [rhel, centos]
+
+  # test_no_fail_service
+  - action: assert_command_exit_code
+    name: "test_no_fail_service"
+    command: "! systemctl list-units --failed --no-legend | grep -q ."
+    expected: 0
+
+  # ---------------------------------------------------------------------------
+  # class TestsSubscriptionManager
+  # ---------------------------------------------------------------------------
+
+  - action: check_file_content
+    name: "test_subscription_manager_auto_config (auto_registration = 1)"
+    path: /etc/rhsm/rhsm.conf
+    operator: contains
+    expected: "auto_registration = 1"
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file_content
+    name: "test_subscription_manager_auto_config (manage_repos = 0)"
+    path: /etc/rhsm/rhsm.conf
+    operator: contains
+    expected: "manage_repos = 0"
+    conditions:
+      run_on: [rhel]
+
+  - action: check_service
+    name: "test_subscription_manager_auto_config (rhsmcertd enabled)"
+    service: rhsmcertd
+    operator: is_enabled
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # class TestsCloudInit
+  # ---------------------------------------------------------------------------
+
+  - action: check_file_content
+    name: "test_growpart_is_present_in_config"
+    path: /etc/cloud/cloud.cfg
+    operator: contains
+    expected: "- growpart"
+
+  - action: check_file_content
+    name: "test_wheel_group_not_set_to_default_user"
+    path: /etc/cloud/cloud.cfg
+    operator: not_contains
+    expected: "wheel"
+    conditions:
+      run_on: [rhel]
+
+  # test_cloud_configs — shell required (rpm -Vf)
+  - action: assert_command_exit_code
+    name: "test_cloud_configs"
+    command: "! rpm -Vf /etc/cloud/cloud.cfg | grep -q '^S.5.*/etc/cloud/cloud.cfg'"
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file_content
+    name: "test_cloud_cfg_netdev_rhel9"
+    path: /etc/cloud/cloud.cfg
+    operator: contains
+    expected: "_netdev"
+    conditions:
+      run_on: [rhel>=9]
+
+  # ---------------------------------------------------------------------------
+  # class TestsYum
+  # ---------------------------------------------------------------------------
+
+  - action: assert_command_exit_code
+    name: "test_yum_repoinfo"
+    command: |
+      command -v yum >/dev/null 2>&1 || exit 0
+      yum repoinfo >/dev/null
+      d=$(. /etc/os-release; echo "$ID")
+      [ "$d" = "fedora" ] && exit 0
+      ! yum repoinfo | grep -q "Repo-pkgs[[:space:]]*: 0"
+    expected: 0
+    conditions:
+      run_on: [rhel, fedora]
+
+  - action: assert_command_exit_code
+    name: "test_yum_package_install"
+    command: |
+      rpm -qa | grep -q rhui || exit 0
+      yum clean all -q
+      yum repolist -q
+      yum -y install zsh -q
+      rpm -q zsh >/dev/null
+      rpm -e zsh
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  - action: assert_command_exit_code
+    name: "test_yum_package_install_kernel_debug"
+    command: |
+      kver=$(uname -r)
+      yum -y install "kernel-debug-devel-${kver}" -q
+      yum -y install "kernel-debug-${kver}" -q
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # class TestsNetworking
+  # ---------------------------------------------------------------------------
+
+  - action: assert_command_exit_code
+    name: "test_dns_resolving_works"
+    command: "ping -c 5 google-public-dns-a.google.com >/dev/null"
+    expected: 0
+
+  - action: check_file_content
+    name: "test_ipv_localhost (IPv4)"
+    path: /etc/hosts
+    operator: contains
+    expected: "127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4"
+
+  - action: check_file_content
+    name: "test_ipv_localhost (IPv6)"
+    path: /etc/hosts
+    operator: contains
+    expected: "::1         localhost localhost.localdomain localhost6 localhost6.localdomain6"
+
+  - action: check_file_content
+    name: "test_eth0_network_adapter_setup (NETWORKING=yes)"
+    path: /etc/sysconfig/network
+    operator: contains
+    expected: "NETWORKING=yes"
+    conditions:
+      run_on: [rhel, centos]
+
+  - action: assert_command_exit_code
+    name: "test_eth0_network_adapter_setup (device config or keyfile)"
+    command: |
+      maj=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      if [ "$maj" -lt 10 ]; then
+        [ -f /etc/sysconfig/network-scripts/ifcfg-eth0 ]
+      else
+        ls /etc/NetworkManager/system-connections/*.nmconnection >/dev/null 2>&1
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel, centos]
+
+  - action: assert_command_exit_code
+    name: "test_network_manager_conf_plugins"
+    command: |
+      ci_ver=$(rpm -q --qf "%{VERSION}" cloud-init 2>/dev/null)
+      [ "$(printf '%s\n23.1.1' "$ci_ver" | sort -V | head -1)" = "23.1.1" ] && exit 0
+      grep -q "^plugins = ifcfg-rh,$" /etc/NetworkManager/NetworkManager.conf
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # class TestsSecurity
+  # ---------------------------------------------------------------------------
+
+  - action: check_service
+    name: "test_firewalld_is_enabled"
+    service: firewalld
+    operator: is_enabled
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file
+    name: "test_etc_machine_id_permissions"
+    path: /etc/machine-id
+    operator: mode
+    expected: "444"
+    conditions:
+      run_on: [rhel, fedora]
+
+  # ---------------------------------------------------------------------------
+  # class TestsAuthConfig
+  # ---------------------------------------------------------------------------
+
+  - action: check_command_output
+    name: "test_authselect_has_no_config (RHEL < 10)"
+    command: "authselect current 2>/dev/null"
+    operator: contains
+    expected: "No existing configuration detected."
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: check_command_output
+    name: "test_authselect_has_no_config (RHEL >= 10)"
+    command: "authselect current 2>/dev/null"
+    operator: contains
+    expected: "Profile ID: local"
+    conditions:
+      run_on: [rhel>=10]
+
+  - action: compare_file_with_local
+    name: "test_fingerprint_auth"
+    path: /etc/pam.d/fingerprint-auth
+    params:
+      local_path: data/generic/fingerprint-auth_rhel9
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: compare_file_with_local
+    name: "test_password_auth"
+    path: /etc/pam.d/password-auth
+    params:
+      local_path: data/generic/password-auth_rhel9
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: compare_file_with_local
+    name: "test_postlogin"
+    path: /etc/pam.d/postlogin
+    params:
+      local_path: data/generic/postlogin_rhel9
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: compare_file_with_local
+    name: "test_smartcard_auth"
+    path: /etc/pam.d/smartcard-auth
+    params:
+      local_path: data/generic/smartcard-auth_rhel9
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: compare_file_with_local
+    name: "test_system_auth"
+    path: /etc/pam.d/system-auth
+    params:
+      local_path: data/generic/system-auth_rhel9
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  # ---------------------------------------------------------------------------
+  # class TestsKdump
+  # ---------------------------------------------------------------------------
+
+  - action: check_command_output
+    name: "test_kdump_status"
+    command: "kdumpctl status 2>&1"
+    operator: contains
+    expected: "Kdump is operational"
+    conditions:
+      run_on: [rhel]
+
+  - action: assert_command_exit_code
+    name: "test_crashkernel_is_enabled_rhel"
+    command: |
+      maj=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      if [ "$maj" -lt 9 ]; then
+        grep -q "crashkernel=auto" /proc/cmdline
+      else
+        expected=$(kdumpctl showmem 2>&1 | grep -oP "[0-9]+" | head -1)
+        grep -q "$expected" /proc/cmdline
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # class TestsRhelEls
+  # ---------------------------------------------------------------------------
+
+  - action: check_command_output
+    name: "test_rhui_pkg_is_not_e4s"
+    command: "rpm -qa | grep -i rhui || true"
+    operator: not_contains
+    expected: "e4s"
+    conditions:
+      run_on: [rhel]
+
+  - action: assert_command_exit_code
+    name: "test_no_release_version_lock"
+    command: |
+      f=/etc/yum/vars/releasever
+      [ -f "$f" ] || exit 0
+      ver=$(. /etc/os-release; echo "$VERSION_ID")
+      ! grep -qF "releasever=$ver" "$f"
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  - action: assert_command_exit_code
+    name: "test_no_e4s_repo_definition"
+    command: "! grep -r 'e4s' /etc/yum.repos.d/ 2>/dev/null | grep -q ."
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # ---------------------------------------------------------------------------
+  # test_release_version + required packages
+  # ---------------------------------------------------------------------------
+
+  - action: assert_command_exit_code
+    name: "test_release_version"
+    command: |
+      d=$(. /etc/os-release; echo "$ID")
+      sys_ver=$(. /etc/os-release; echo "$VERSION_ID")
+      release_pkg="redhat-release"
+      [ "$d" = "fedora" ] && release_pkg="fedora-release"
+      pkg_ver=$(rpm -q --qf "%{VERSION}" --whatprovides "$release_pkg" 2>/dev/null)
+      [ "$pkg_ver" = "$sys_ver" ]
+    expected: 0
+    conditions:
+      run_on: [rhel, fedora]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (kernel)"
+    package: kernel
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (yum-utils)"
+    package: yum-utils
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (cloud-init)"
+    package: cloud-init
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (tar)"
+    package: tar
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (rsync)"
+    package: rsync
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (NetworkManager)"
+    package: NetworkManager
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (cloud-utils-growpart)"
+    package: cloud-utils-growpart
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (insights-client)"
+    package: insights-client
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (chrony)"
+    package: chrony
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (dracut-config-generic)"
+    package: dracut-config-generic
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (grub2-tools)"
+    package: grub2-tools
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (dhcp-client, pre-RHEL10)"
+    package: dhcp-client
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  - action: check_package
+    name: "test_required_packages_are_installed (gdisk, pre-RHEL10)"
+    package: gdisk
+    operator: is_installed
+    conditions:
+      run_on: [rhel]
+      exclude_on: [rhel>=10]
+
+  # test_pkg_signature_and_gpg_keys — shell required (complex rpm query)
+  - action: assert_command_exit_code
+    name: "test_pkg_signature_and_gpg_keys"
+    command: |
+      ! rpm -qa --qf '%{NAME} %{SIGPGP:pgpsig} %{RSAHEADER:pgpsig}\n' \
+        | grep -vE '^(gpg-pubkey|rhui)' \
+        | awk '{if ($2=="(none)" && $3=="(none)") print}' \
+        | grep -q .
+    expected: 0
+
+  # test_number_gpg_keys — shell required (version-conditional count)
+  - action: assert_command_exit_code
+    name: "test_number_gpg_keys"
+    command: |
+      d=$(. /etc/os-release; echo "$ID")
+      v=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      keys=$(rpm -q gpg-pubkey 2>/dev/null | wc -l)
+      if [ "$d" = "fedora" ]; then
+        [ "$keys" -eq 1 ]
+      elif [ "$d" = "rhel" ] && [ "$v" -ge 9 ]; then
+        [ "$keys" -eq 3 ]
+      else
+        [ "$keys" -eq 2 ]
+      fi
+    expected: 0
+
+  - action: check_file_content
+    name: "test_yum_plugins (product-id enabled)"
+    path: /etc/yum/pluginconf.d/product-id.conf
+    operator: contains
+    expected: "enabled=1"
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file_content
+    name: "test_yum_plugins (subscription-manager enabled)"
+    path: /etc/yum/pluginconf.d/subscription-manager.conf
+    operator: contains
+    expected: "enabled=1"
+    conditions:
+      run_on: [rhel]
+
+  - action: check_file
+    name: "test_hostkey_permissions (ssh_host_ecdsa_key)"
+    path: /etc/ssh/ssh_host_ecdsa_key
+    operator: mode
+    expected: "640"
+
+  - action: check_file
+    name: "test_hostkey_permissions (ssh_host_ed25519_key)"
+    path: /etc/ssh/ssh_host_ed25519_key
+    operator: mode
+    expected: "640"
+
+  - action: check_file
+    name: "test_hostkey_permissions (ssh_host_rsa_key)"
+    path: /etc/ssh/ssh_host_rsa_key
+    operator: mode
+    expected: "640"
+
+  # ---------------------------------------------------------------------------
+  # Missing test_generic.py coverage additions
+  # ---------------------------------------------------------------------------
+
+  # test_blocklist
+  - action: assert_command_exit_code
+    name: "test_blocklist"
+    command: |
+      modules="nouveau amdgpu"
+      if grep -qiE 'microsoft|azure' /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        modules="$modules acpi_cpufreq floppy intel_uncore intel_cstate skylake-edac"
+      fi
+      bad=""
+      for module in $modules; do
+        lsmod | grep -qw "$module" && bad="$bad $module"
+      done
+      [ -z "$bad" ]
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_cmdline_console_and_params
+  - action: assert_command_exit_code
+    name: "test_cmdline_console_and_params"
+    command: |
+      cmdline=$(cat /proc/cmdline)
+      is_azure=0
+      if [ -d /var/lib/waagent ] || [ -f /etc/waagent.conf ] || grep -qiE 'microsoft|azure' /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        is_azure=1
+      fi
+
+      if echo "$cmdline" | grep -q 'console=tty0'; then
+        echo "$cmdline" | grep -q 'console=ttyS0'
+      else
+        if [ "$(uname -m)" = "aarch64" ] && [ "$is_azure" -eq 1 ]; then
+          echo "$cmdline" | grep -q 'console=ttyAMA0'
+        else
+          echo "$cmdline" | grep -q 'console=ttyS0'
+        fi
+      fi
+
+      if [ "$(uname -m)" = "x86_64" ] && [ "$is_azure" -eq 1 ]; then
+        echo "$cmdline" | grep -q 'earlyprintk=ttyS0'
+        echo "$cmdline" | grep -q 'rootdelay=300'
+
+        v=$(. /etc/os-release; echo "$VERSION_ID")
+        case "$v" in
+          9.6|9.7|10.0|10.1)
+            echo "$cmdline" | grep -q 'nvme_core.io_timeout=240'
+            ;;
+        esac
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_boot_mount_presence
+  - action: assert_command_exit_code
+    name: "test_boot_mount_presence"
+    command: |
+      distro=$(. /etc/os-release; echo "$ID")
+      major=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      arch=$(uname -m)
+      is_azure=0
+      lvm_check=0
+
+      if [ -d /var/lib/waagent ] || [ -f /etc/waagent.conf ] || grep -qiE 'microsoft|azure' /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        is_azure=1
+      fi
+      lsblk -f 2>/dev/null | grep -q LVM && lvm_check=1 || true
+
+      if { [ "$major" = "8" ] && [ "$arch" = "aarch64" ]; } \
+         || [ "$major" = "9" ] \
+         || { [ "$major" -ge 10 ] && [ "$is_azure" -eq 1 ] && [ "$lvm_check" -eq 1 ]; } \
+         || [ "$distro" = "fedora" ]; then
+        mountpoint -q /boot || exit 1
+        total=$(df --block-size=1 /boot | tail -1 | awk '{print $2}')
+        [ "$total" -ge 1006632960 ]
+      else
+        ! mountpoint -q /boot
+      fi
+    expected: 0
+
+  # test_yum_group_install
+  - action: assert_command_exit_code
+    name: "test_yum_group_install"
+    command: |
+      pkgmgr=$(command -v yum || command -v dnf || true)
+      [ -n "$pkgmgr" ] || exit 0
+
+      rpm --verifydb
+      $pkgmgr -y groupinstall "Development Tools" >/dev/null 2>&1 \
+        || $pkgmgr -y groupinstall "Development tools" >/dev/null 2>&1
+
+      for package in gcc gcc-c++ glibc-devel make pkgconf; do
+        rpm -q "$package" >/dev/null
+      done
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_subscription_manager_auto
+  - action: assert_command_exit_code
+    name: "test_subscription_manager_auto"
+    command: |
+      command -v subscription-manager >/dev/null 2>&1 || exit 0
+      rpm -q rh-amazon-rhui-client >/dev/null 2>&1 || exit 0
+
+      systemctl is-enabled rhsmcertd >/dev/null
+      subscription-manager config --rhsmcertd.auto_registration_interval=1 >/dev/null 2>&1 || true
+      systemctl restart rhsmcertd >/dev/null 2>&1 || true
+
+      subscription-manager identity >/dev/null 2>&1
+      subscription-manager list --installed >/dev/null 2>&1
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_network_manager_cloud_setup
+  - action: assert_command_exit_code
+    name: "test_network_manager_cloud_setup"
+    command: |
+      command -v systemctl >/dev/null 2>&1 || exit 0
+      rpm -q NetworkManager-cloud-setup >/dev/null 2>&1 || exit 1
+      systemctl is-enabled nm-cloud-setup >/dev/null
+
+      aws_cfg='/usr/lib/systemd/system/nm-cloud-setup.service.d/10-rh-enable-for-ec2.conf'
+      azure_cfg='/usr/lib/systemd/system/nm-cloud-setup.service.d/10-rh-enable-for-azure.conf'
+
+      if [ -f "$aws_cfg" ]; then
+        grep -Eq 'Environment=("?NM_CLOUD_SETUP_EC2=yes"?)' "$aws_cfg"
+      elif [ -f "$azure_cfg" ]; then
+        grep -Eq 'Environment=("?NM_CLOUD_SETUP_AZURE=yes"?)' "$azure_cfg"
+      else
+        exit 0
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_authselect_conf_files
+  - action: assert_command_exit_code
+    name: "test_authselect_conf_files"
+    command: |
+      authselect_dir='/etc/authselect'
+      custom_dir='/etc/authselect/custom'
+      [ -d "$authselect_dir" ] || exit 1
+      [ -d "$custom_dir" ] || exit 1
+      [ -z "$(ls -A "$custom_dir")" ] || exit 1
+
+      major=$(. /etc/os-release; echo "${VERSION_ID%%.*}")
+      if [ "$major" -ge 10 ]; then
+        for f in authselect.conf custom dconf-db dconf-locks fingerprint-auth nsswitch.conf password-auth postlogin smartcard-auth switchable-auth system-auth; do
+          [ -e "$authselect_dir/$f" ] || exit 1
+        done
+      fi
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_sap_security_limits
+  - action: assert_command_exit_code
+    name: "test_sap_security_limits"
+    command: |
+      cfg='/etc/security/limits.d/99-sap.conf'
+      [ -f "$cfg" ] || exit 0
+      for item in \
+        '@sapsys hard nofile 1048576' \
+        '@sapsys soft nofile 1048576' \
+        '@dba hard nofile 1048576' \
+        '@dba soft nofile 1048576' \
+        '@sapsys hard nproc unlimited' \
+        '@sapsys soft nproc unlimited' \
+        '@dba hard nproc unlimited' \
+        '@dba soft nproc unlimited'; do
+        grep -Fq "$item" "$cfg" || exit 1
+      done
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_sap_sysctl_files
+  - action: assert_command_exit_code
+    name: "test_sap_sysctl_files"
+    command: |
+      found=0
+      for cfg in /usr/lib/sysctl.d/sap.conf /etc/sysctl.d/sap.conf; do
+        if [ -f "$cfg" ]; then
+          found=1
+          grep -Fq 'kernel.pid_max = 4194304' "$cfg" || exit 1
+          grep -Fq 'vm.max_map_count = 2147483647' "$cfg" || exit 1
+        fi
+      done
+      [ "$found" -eq 1 ] || exit 0
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_sap_tmp_files
+  - action: assert_command_exit_code
+    name: "test_sap_tmp_files"
+    command: |
+      found=0
+      for cfg in /usr/lib/tmpfiles.d/sap.conf /etc/tmpfiles.d/sap.conf; do
+        if [ -f "$cfg" ]; then
+          found=1
+          grep -Eq '^x /tmp/\.sap\*' "$cfg" || exit 1
+          grep -Eq '^x /tmp/\.hdb\*lock' "$cfg" || exit 1
+          grep -Eq '^x /tmp/\.trex\*lock' "$cfg" || exit 1
+        fi
+      done
+      [ "$found" -eq 1 ] || exit 0
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_sap_tuned
+  - action: assert_command_exit_code
+    name: "test_sap_tuned"
+    command: |
+      profile='/etc/tuned/active_profile'
+      [ -f "$profile" ] || exit 0
+      grep -q 'sap-hana' "$profile" || exit 1
+      tuned-adm active 2>/dev/null | grep -q 'sap-hana'
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_sap_required_packages_are_installed
+  - action: assert_command_exit_code
+    name: "test_sap_required_packages_are_installed"
+    command: |
+      rpm -q tuned-profiles-sap-hana >/dev/null 2>&1 || exit 0
+
+      v=$(. /etc/os-release; echo "$VERSION_ID")
+      major=${v%%.*}
+      minor=${v#*.}
+
+      pkgs='rhel-system-roles-sap bind-utils nfs-utils tcsh uuidd cairo expect graphviz gtk2 iptraf-ng krb5-workstation libaio libatomic libcanberra-gtk2 libicu libtool-ltdl lm_sensors net-tools numactl PackageKit-gtk3-module xorg-x11-xauth libnsl tuned-profiles-sap-hana'
+      if [ "$major" -ge 9 ] || { [ "$major" -eq 8 ] && [ "${minor:-0}" -ge 6 ]; }; then
+        pkgs="$pkgs ansible-core"
+      else
+        pkgs="$pkgs ansible"
+      fi
+      if [ "$major" -lt 9 ]; then
+        pkgs="$pkgs compat-sap-c++-9"
+      fi
+
+      for pkg in $pkgs; do
+        rpm -q "$pkg" >/dev/null || exit 1
+      done
+    expected: 0
+    conditions:
+      run_on: [rhel]
+
+  # test_ha_specific_script
+  - action: assert_command_exit_code
+    name: "test_ha_specific_script"
+    command: |
+      is_ha=0
+      rpm -q pacemaker >/dev/null 2>&1 && is_ha=1 || true
+      rpm -q resource-agents >/dev/null 2>&1 && is_ha=1 || true
+      [ "$is_ha" -eq 1 ] || exit 0
+
+      cloud=''
+      if [ -f /sys/hypervisor/uuid ] && grep -qi '^ec2' /sys/hypervisor/uuid; then
+        cloud='aws'
+      elif [ -d /var/lib/waagent ] || [ -f /etc/waagent.conf ] || grep -qiE 'microsoft|azure' /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+        cloud='azure'
+      fi
+
+      [ -n "$cloud" ] || exit 0
+      script="scripts/rhel-ha-${cloud}-check.sh"
+      [ -f "$script" ] || exit 0
+
+      out=$(bash "$script" 2>&1)
+      rc=$?
+      echo "$out"
+      [ "$rc" -eq 0 ] && echo "$out" | grep -q 'HA check passed successfully.'
+    expected: 0
+    conditions:
+      run_on: [rhel]

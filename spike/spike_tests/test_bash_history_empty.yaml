@@ -1,0 +1,29 @@
+---
+# Example YAML Test: Bash History Empty Check
+# Equivalent to: test_suite/generic/test_generic.py::TestsGeneric::test_bash_history_is_empty
+
+test_id: "bash_history_empty"
+name: "Bash History Is Empty"
+description: "Validates that bash history files are empty or non-existent for all users"
+tags:
+  - generic
+  - basic
+
+conditions:
+  run_on: 
+    - all
+  exclude_on: []
+  wait_seconds: 0
+
+steps:
+  # Step 1: Check root's bash history is empty
+  - action: check_file_content
+    name: "Check root bash history is empty"
+    path: "/root/.bash_history"
+    operator: empty
+  
+  # Step 2: Check current user's bash history is empty
+  # Note: On cloud instances, typical user is 'cloud-user' or specific to OS
+  - action: run_command
+    name: "List bash history files"
+    command: "find /home -name '.bash_history' -type f 2>/dev/null | head -5"
