@@ -1,0 +1,7 @@
+# Test dependencies for osbuild image definition tests
+# Pin cloud-image-val to specific version range for stability
+
+cloud-image-val>=1.0.0,<2.0.0
+
+# Optional: specify exact version if needed for reproducibility
+# cloud-image-val==1.0.0

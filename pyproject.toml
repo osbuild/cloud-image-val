@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloud-image-val"
+version = "1.0.0"
+description = "Cloud image validation test library and framework"
+readme = "README.md"
+authors = [
+    { name = "OSBuild Team", email = "osbuild@redhat.com" }
+]
+license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pytest>=7.0.0",
+    "pytest-testinfra>=9.0.0",
+    "packaging>=21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-xdist",
+    "pytest-html",
+    "pytest-json-report",
+    "pytest-rerunfailures",
+]
+full = [
+    "pytest-xdist",
+    "pytest-html",
+    "pytest-json-report",
+    "pytest-rerunfailures",
+    "paramiko",
+    "boto3",
+    "azure-identity",
+    "azure-mgmt-compute",
+    "google-cloud-compute",
+]
+
+[project.urls]
+Homepage = "https://github.com/osbuild/cloud-image-val"
+Repository = "https://github.com/osbuild/cloud-image-val"
+Issues = "https://github.com/osbuild/cloud-image-val/issues"
+
+[tool.setuptools]
+packages = ["cloud_image_val", "cloud_image_val.api"]
+
+[tool.setuptools.package-data]
+cloud_image_val = ["py.typed"]
