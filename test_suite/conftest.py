@@ -185,11 +185,15 @@ def html_report_links(extra, host, instance_data):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def ensure_rpm_usable_before_tests(host):
+def ensure_rpm_usable_before_tests(host, instance_data):
     """
     Workaround for broken rpm-sequoia / openssl-libs combination.
     Ensures rpm is usable before any tests in this module execute.
     """
+    if instance_data['cloud'] == 'oci':
+        print("\n[!] OCI instance: skipping RHUI RPM workaround.")
+        return
+
     with host.sudo():
         fix = host.run("yum -y update rpm-sequoia openssl-libs")
 

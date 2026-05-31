@@ -50,6 +50,8 @@ class OpenTofuController:
             instances_info = self.get_instances_azure(resources)
         elif self.cloud_name == 'gcloud':
             instances_info = self.get_instances_gcloud(resources)
+        elif self.cloud_name == 'oci':
+            instances_info = self.get_instances_oci(resources)
         else:
             raise Exception(f'Unsupported cloud provider: {self.cloud_name}')
 
@@ -161,6 +163,38 @@ class OpenTofuController:
             }
 
         return instances_info
+
+    def get_instances_oci(self, resources):
+        instances_info = {}
+
+        for resource in resources:
+            if resource['type'] != 'oci_core_instance':
+                continue
+
+            values = resource['values']
+
+            public_ip = values.get('public_ip') or \
+                        values.get('create_vnic_details', [{}])[0].get('public_ip')
+
+            instance_data = {
+                'cloud': 'oci',
+                'name': resource['name'],
+                'instance_id': values['id'],
+                'public_ip': public_ip,
+                'public_dns': public_ip,  # OCI has no public DNS, use IP
+                'private_ip': values.get('private_ip', ''),
+                'availability_domain': values['availability_domain'],
+                'shape': values['shape'],
+                'image': values['source_details'][0]['source_id'],
+                'username': self.tf_configurator.get_oci_username_by_instance_name(resource['name']),
+            }
+
+            self._set_instance_default_address(instance_data)
+
+            instances_info[resource['address']] = instance_data
+
+        return instances_info
+
 
     def _set_instance_default_address(self, instance_data):
         if instance_data['public_dns']:
