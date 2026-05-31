@@ -2,6 +2,7 @@ import os
 import json
 from pprint import pprint
 
+from cloud.opentofu.oci_config_builder import OCIConfigBuilder
 from cloud.opentofu.aws_config_builder import AWSConfigBuilder
 from cloud.opentofu.aws_config_builder_efs import AWSConfigBuilderEfs
 from cloud.opentofu.azure_config_builder_v2 import AzureConfigBuilderV2
@@ -10,7 +11,7 @@ from lib import console_lib
 
 
 class OpenTofuConfigurator:
-    supported_providers = ('aws', 'azure', 'gcloud')
+    supported_providers = ('aws', 'azure', 'gcloud', 'oci')
 
     main_tf = {'terraform': {'required_version': '>= 0.14.9'}}
     providers_tf = None
@@ -61,6 +62,8 @@ class OpenTofuConfigurator:
             return AzureConfigBuilderV2(self.resources_dict, self.ssh_key_path, self.config)
         elif cloud_name == 'gcloud':
             return GCloudConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
+        elif cloud_name == 'oci':
+            return OCIConfigBuilder(self.resources_dict, self.ssh_key_path, self.config)
         else:
             raise Exception(f'Could not find any suitable configurator for "{cloud_name}" cloud provider')
 
@@ -90,3 +93,10 @@ class OpenTofuConfigurator:
                 return instance['username']
 
         raise Exception(f'ERROR: No instance with name "{ami_name}" was found')
+
+    def get_oci_username_by_instance_name(self, tf_resource_name):
+        for instance in self.resources_dict['instances']:
+            sanitized = instance['name'].replace('.', '-')
+            if sanitized in tf_resource_name:
+                return instance['username']
+        raise Exception(f'ERROR: No OCI instance matching tf resource name "{tf_resource_name}" was found')

@@ -9,6 +9,7 @@ class BaseConfigBuilder:
         'aws': 'aws',
         'azure': 'azurerm',
         'gcloud': 'google',
+        'oci': 'oci',
     }
 
     resource_name_prefix = 'civ'
