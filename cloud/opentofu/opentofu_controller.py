@@ -173,8 +173,7 @@ class OpenTofuController:
 
             values = resource['values']
 
-            public_ip = values.get('public_ip') or \
-                        values.get('create_vnic_details', [{}])[0].get('public_ip')
+            public_ip = values.get('public_ip')
 
             instance_data = {
                 'cloud': 'oci',
@@ -194,7 +193,6 @@ class OpenTofuController:
             instances_info[resource['address']] = instance_data
 
         return instances_info
-
 
     def _set_instance_default_address(self, instance_data):
         if instance_data['public_dns']:
