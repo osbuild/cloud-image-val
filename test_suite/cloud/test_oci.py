@@ -2,8 +2,6 @@ import json
 
 import pytest
 
-from lib import test_lib
-
 
 @pytest.fixture
 def instance_data_oci_web(host):
@@ -32,11 +30,13 @@ class TestsOCI:
         """
         Verify the deployed instance metadata matches what CIV expects.
         """
-        assert instance_data_oci_web.get('region') == instance_data.get('availability_domain', '').split(':')[0].lower() \
-               or instance_data_oci_web.get('canonicalRegionName'), \
+        assert (instance_data_oci_web.get('region') ==
+                instance_data.get('availability_domain', '').split(':')[0].lower()
+                or instance_data_oci_web.get('canonicalRegionName')), \
             'Instance region from metadata does not match expected region'
 
-        assert instance_data_oci_web.get('shape') == instance_data.get('shape', 'VM.Standard.E4.Flex'), \
+        assert (instance_data_oci_web.get('shape') ==
+                instance_data.get('shape', 'VM.Standard.E4.Flex')), \
             f'Unexpected shape: {instance_data_oci_web.get("shape")}'
 
     @pytest.mark.run_on(['rhel'])
@@ -108,3 +108,52 @@ class TestsOCI:
         found_pkgs = []
         with host.sudo():
             for pkg in unwanted_pkgs:
+                if host.package(pkg).is_installed:
+                    found_pkgs.append(pkg)
+
+        assert len(found_pkgs) == 0, \
+            f'Found unexpected packages installed: {", ".join(found_pkgs)}'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_sshd_config(self, host):
+        """
+        Verify sshd is configured correctly for OCI — password auth off, pubkey on.
+        """
+        sshd_config = '/etc/ssh/sshd_config'
+        with host.sudo():
+            assert not host.file(sshd_config).contains('PasswordAuthentication yes'), \
+                'PasswordAuthentication must not be enabled in OCI images'
+            assert host.service('sshd').is_running, \
+                'sshd must be running'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_firewalld_is_not_running(self, host):
+        """
+        OCI uses security lists/NSGs at the VCN level; local firewalld can interfere.
+        """
+        with host.sudo():
+            if host.package('firewalld').is_installed:
+                assert not host.service('firewalld').is_running, \
+                    'firewalld should not be running in OCI instances'
+
+    @pytest.mark.run_on(['all'])
+    def test_chronyd_is_active(self, host):
+        """
+        Verify chrony is running. OCI provides time sync via 169.254.169.254.
+        """
+        with host.sudo():
+            assert host.service('chronyd').is_running, \
+                'chronyd must be running for time synchronization'
+
+    @pytest.mark.run_on(['rhel'])
+    def test_oci_timesync_is_configured(self, host):
+        """
+        OCI recommends using the local NTP source at 169.254.169.254.
+        """
+        timesync_ip = '169.254.169.254'
+
+        with host.sudo():
+            chrony_conf = host.file('/etc/chrony.conf').content_string
+
+        assert timesync_ip in chrony_conf, \
+            f'OCI time sync server {timesync_ip} not configured in /etc/chrony.conf'
