@@ -30,13 +30,10 @@ class TestsOCI:
         """
         Verify the deployed instance metadata matches what CIV expects.
         """
-        assert (instance_data_oci_web.get('region') ==
-                instance_data.get('availability_domain', '').split(':')[0].lower()
-                or instance_data_oci_web.get('canonicalRegionName')), \
-            'Instance region from metadata does not match expected region'
+        assert instance_data_oci_web.get('canonicalRegionName'), \
+            'Could not retrieve canonicalRegionName from OCI instance metadata'
 
-        assert (instance_data_oci_web.get('shape') ==
-                instance_data.get('shape', 'VM.Standard.E4.Flex')), \
+        assert instance_data_oci_web.get('shape') == instance_data['shape'], \
             f'Unexpected shape: {instance_data_oci_web.get("shape")}'
 
     @pytest.mark.run_on(['rhel'])
