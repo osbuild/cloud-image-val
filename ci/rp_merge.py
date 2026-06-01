@@ -6,14 +6,6 @@ Finds all launches sharing a CycleGroup attribute value and merges them
 into a single linear launch. Intended to be called from Jenkins after
 each regional upload, so that multi-region runs are consolidated.
 
-Usage:
-    python3 ci/rp_merge.py \
-        --rp-url https://reportportal-cloudx.apps.dno.ocp-hub.prod.psi.redhat.com \
-        --project cloudx \
-        --token $RP_TOKEN \
-        --group-token $CYCLE_GROUP \
-        --launch-name "RHEL-10.0" \
-        --region "AWS US-GOV"
 """
 
 import argparse
