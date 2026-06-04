@@ -3,7 +3,7 @@ from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
 class OCIConfigBuilder(BaseConfigBuilder):
     cloud_name = 'oci'
-    cloud_provider_definition = {'oci': {'source': 'oracle/oci', 'version': '~> 6.0'}}
+    cloud_provider_definition = {'oci': {'source': 'oracle/oci', 'version': '~> 8.0'}}
 
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
@@ -19,7 +19,7 @@ class OCIConfigBuilder(BaseConfigBuilder):
 
     def __new_oci_provider(self, region):
         return {
-            'config_file_profile': 'DEFAULT',
+            'config_file_profile': self.resources_dict.get('profile', 'DEFAULT'),
             'region': region,
             'alias': region,
         }
@@ -137,10 +137,6 @@ class OCIConfigBuilder(BaseConfigBuilder):
             'compartment_id': instance['compartment_id'],
             'display_name': name_value,
             'shape': instance.get('shape', 'VM.Standard.E4.Flex'),
-            'shape_config': {
-                'ocpus': instance.get('ocpus', 2),
-                'memory_in_gbs': instance.get('memory_in_gbs', 16),
-            },
             'source_details': {
                 'source_type': 'image',
                 'source_id': instance['image_id'],
@@ -154,6 +150,12 @@ class OCIConfigBuilder(BaseConfigBuilder):
             },
             'depends_on': [f'oci_core_subnet.{instance["subnet"]}'],
         }
+
+        if '.Flex' in new_instance['shape']:
+            new_instance['shape_config'] = {
+                'ocpus': instance.get('ocpus', 2),
+                'memory_in_gbs': instance.get('memory_in_gbs', 16),
+            }
 
         self.add_tags(self.config, new_instance)
 
