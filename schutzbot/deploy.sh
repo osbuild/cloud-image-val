@@ -56,101 +56,6 @@ priority=${priority}
 EOF
 }
 
-function get_last_passed_commit {
-    # Using 'internal' instead of 'true' so it's easier to see the pipelines in the Gitlab page
-    if [ "${INTERNAL_NIGHTLY:=false}" == "internal" ]; then
-        project_id="34771166"
-
-        # To get the schedule id use the ../pipeline_schedule endpoint
-        if [[ ${VERSION_ID%.*} == "9" ]]; then
-            # RHEL 9 scheduled pipeline id
-            schedule_id="233736"
-        elif [[ ${VERSION_ID%.*} == "10" ]]; then
-            # RHEL 10 scheduled pipeline id (FYI - it was used for RHEL 8 before)
-            schedule_id="233735"
-        else
-            echo "No scheduled pipeline defined for RHEL $VERSION_ID"
-            exit 1
-        fi
-
-        # Last executed pipeline ID
-        schedule_info=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipeline_schedules/${schedule_id}")
-
-        # Check if API returned an error (like 401 Unauthorized)
-        if echo "$schedule_info" | jq -e '.message' >/dev/null; then
-            echo "GitLab API Error: $(echo "$schedule_info" | jq -r .message)"
-            exit 1
-        fi
-
-        pipeline_id=$(echo "$schedule_info" | jq -r '.last_pipeline.id // empty')
-
-        # Ensure pipeline_id is not null or empty before proceeding
-        if [[ -z "$pipeline_id" || "$pipeline_id" == "null" ]]; then
-            echo "Error: Could not find the last pipeline ID for schedule ${schedule_id}."
-            exit 1
-        fi
-
-        number_of_days=7
-        warning_date=$(date -d "- $number_of_days days" +%s)
-
-        pipeline_info=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}")
-        created_at=$(echo "$pipeline_info" | jq -r '.started_at // empty')
-
-        if [[ -z "$created_at" || "$created_at" == "null" ]]; then
-            echo "Error: Could not determine start time for pipeline ${pipeline_id}."
-            exit 1
-        fi
-
-        if [[ $(date -d "${created_at}" +%s) -lt "${warning_date}" ]]; then
-            echo "We are using an old scheduled pipeline id (more than $number_of_days days ago). Please update it"
-            exit 1
-        fi
-
-        statuses=$(curl -s --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" "https://gitlab.com/api/v4/projects/${project_id}/pipelines/${pipeline_id}/jobs?per_page=100" | jq -cr '.[] | select(.stage=="rpmbuild") | .status')
-        for status in ${statuses}; do 
-            if [ "$status" == "failed" ]; then
-                echo "Last nightly pipeline ('rpmbuild' stage) failed in osbuild-composer CI. We will not run nightly-internal jobs in CIV."
-                exit 1
-            fi 
-        done
-
-        commit=$(echo "$pipeline_info" | jq -r '.sha')
-        echo "$commit"
-
-    else
-        # Capture response and HTTP code to handle GitHub API failures (e.g. 401, 403)
-        response=$(curl -u "${API_USER}:${API_PAT}" -s -w "%{http_code}" "https://api.github.com/repos/osbuild/osbuild-composer/commits?per_page=100")
-        http_code="${response: -3}"
-        body="${response::-3}"
-
-        if [ "$http_code" != "200" ]; then
-            echo "GitHub API Error (HTTP $http_code): $body"
-            exit 1
-        fi
-
-        commit_list=$(echo "$body" | jq -cr '.[].sha')
-
-        # Initialize final_commit to prevent "unbound variable" error if no commit matches
-        final_commit=""
-
-        for commit_sha in ${commit_list}; do
-            gitlab_status=$(curl -u "${API_USER}:${API_PAT}" -s "https://api.github.com/repos/osbuild/osbuild-composer/commits/${commit_sha}/status" \
-                          | jq -cr '.statuses[] | select(.context == "Schutzbot on GitLab") | .state')
-            if [[ ${gitlab_status} == "success" ]]; then
-                final_commit=$commit_sha
-                break
-            fi
-        done
-
-        if [[ -z "$final_commit" ]]; then
-            echo "Error: No successful commits found in the last 100 entries."
-            exit 1
-        fi
-
-        echo "$final_commit"
-    fi
-}
-
 # Get OS details.
 source ci/set-env-variables.sh
 
@@ -188,10 +93,9 @@ echo -e "fastestmirror=1" | sudo tee -a /etc/dnf/dnf.conf
 # TODO: include this in the jenkins runner (and split test/target machines out)
 sudo dnf -y install jq
 
-# Get latest commit from osbuild-composer main branch
-GIT_COMMIT=$(get_last_passed_commit)
-
-setup_repo osbuild-composer "${GIT_COMMIT}" 5
+# Get pinned commit for osbuild-composer to install RPMs
+COMPOSER_GIT_COMMIT=$(jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.composer.commit' Schutzfile)
+setup_repo osbuild-composer "${COMPOSER_GIT_COMMIT}" 5
 
 OSBUILD_GIT_COMMIT=$(cat Schutzfile | jq -r '.["'"${ID}-${VERSION_ID}"'"].dependencies.osbuild.commit')
 if [[ "${OSBUILD_GIT_COMMIT}" != "null" ]]; then
