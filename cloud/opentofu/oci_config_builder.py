@@ -3,7 +3,7 @@ from cloud.opentofu.base_config_builder import BaseConfigBuilder
 
 class OCIConfigBuilder(BaseConfigBuilder):
     cloud_name = 'oci'
-    cloud_provider_definition = {'oci': {'source': 'oracle/oci', 'version': '~> 8.0'}}
+    cloud_provider_definition = {'oci': {'source': 'oracle/oci', 'version': '~> 8.16'}}
 
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
