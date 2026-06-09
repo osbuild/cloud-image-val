@@ -24,16 +24,16 @@
 
 .rhel_runners_x86_64_internal_nightlies: &rhel_runners_x86_64_internal_nightlies
   RUNNER:
-    - aws/rhel-9.8-nightly-x86_64
-    - aws/rhel-10.2-nightly-x86_64
+    - aws/rhel-9.9-nightly-x86_64
+    - aws/rhel-10.3-nightly-x86_64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
 
 .rhel_runners_aarch64_internal_nightlies: &rhel_runners_aarch64_internal_nightlies
   RUNNER:
-    - aws/rhel-9.8-nightly-aarch64
-    - aws/rhel-10.2-nightly-aarch64
+    - aws/rhel-9.9-nightly-aarch64
+    - aws/rhel-10.3-nightly-aarch64
   INTERNAL_NIGHTLY: [ "internal" ]
   INTERNAL_NETWORK: [ "true" ]
   NIGHTLY: [ "true" ]
