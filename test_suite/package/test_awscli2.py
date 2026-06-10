@@ -38,8 +38,8 @@ class TestsAwsCli2:
                 f'Could not configure temporary AWS credentials. Error: {result.stderr}'
 
     def test_awscli2_version(self, host):
-        expected_version_rhel_9 = '2.15.31'
-        expected_version_rhel_10 = '2.27.0'
+        expected_version_rhel_9 = '2.33.0'
+        expected_version_rhel_10 = '2.33.0'
 
         if version.parse(host.system_info.release).major == 10:
             expected_version = expected_version_rhel_10
