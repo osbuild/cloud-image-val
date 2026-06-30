@@ -1329,12 +1329,13 @@ class TestsSecurity:
     def test_firewalld_is_enabled(self, host, instance_data):
         """
         firewalld needs to be enabled in most clouds.
+        Oracle recommends firewalld for defense-in-depth alongside Security Lists/NSGs.
         """
-        if instance_data['cloud'] in ['aws', 'oci']:
-            pytest.skip('Test not applicable to AWS and OCI images')
+        if instance_data['cloud'] == 'aws':
+            pytest.skip('Test not applicable to AWS images')
 
         assert host.service('firewalld').is_enabled, \
-            'firewalld should be enabled in most RHEL cloud images (except AWS and OCI)'
+            'firewalld should be enabled in most RHEL cloud images (except AWS)'
 
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_etc_machine_id_permissions(self, host, instance_data):
