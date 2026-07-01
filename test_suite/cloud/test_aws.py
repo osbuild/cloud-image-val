@@ -89,16 +89,29 @@ class TestsAWS:
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
         BugZilla 1836058
+        CLOUDX-1517: iommu.strict=0 NOT required on RHEL 9/10 ARM
+        (CONFIG_IOMMU_DEFAULT_DMA_STRICT not set in RHEL 9/10 kernel)
+        Still required in RHEL 8 ARM (CONFIG_IOMMU_DEFAULT_DMA_STRICT='y')
+        See also RHEL-115405 for investigation details
         """
         option = 'iommu.strict=0'
+        release_major = version.parse(host.system_info.release).major
 
         with host.sudo():
             iommu_option_present = host.file('/proc/cmdline').contains(option)
 
             if host.system_info.arch == 'x86_64':
+                # x86_64: Should never have iommu.strict=0
                 assert not iommu_option_present, f'{option} must not be present in x86_64 AMIs'
+            elif release_major >= 9:
+                # RHEL 9/10 ARM: CONFIG_IOMMU_DEFAULT_DMA_STRICT not set, parameter not required
+                # See CLOUDX-1517 and RHEL-115405
+                assert not iommu_option_present, \
+                    f'{option} must not be present in RHEL {release_major} ARM AMIs (CLOUDX-1517)'
             else:
-                assert iommu_option_present, f'{option} must be present in ARM AMIs'
+                # RHEL 8 ARM: CONFIG_IOMMU_DEFAULT_DMA_STRICT='y', parameter still required
+                assert iommu_option_present, \
+                    f'{option} must be present in RHEL {release_major} ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):

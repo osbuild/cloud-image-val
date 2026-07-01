@@ -784,7 +784,7 @@ class TestsGeneric:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('rhel_aws_marketplace_only')
-    def test_yum_group_install(self, host, instance_data):
+    def test_yum_group_install(self, host, instance_data, request):
         """
         Test that the "Development tools" package group can be successfully installed.
 
@@ -801,10 +801,23 @@ class TestsGeneric:
         - RHUI content availability issues
         - Subscription management issues
         - Package dependency conflicts
+
+        NOTE: This test installs packages and cleans them up afterwards to avoid
+        affecting other tests (e.g., test_unwanted_packages_are_not_present).
         """
         # Image-builder builds don't include RHUI (only brew/pungi builds do)
         if instance_data['cloud'] == 'oci':
             pytest.skip('OCI image-builder builds do not include RHUI configuration')
+
+        # Register finalizer to clean up installed packages
+        def cleanup_dev_tools():
+            with host.sudo():
+                print('Cleaning up Development tools packages...')
+                cleanup_result = host.run('yum -y groupremove "Development tools"')
+                if cleanup_result.failed:
+                    print(f'Warning: Failed to clean up Development tools: {cleanup_result.stderr}')
+
+        request.addfinalizer(cleanup_dev_tools)
 
         with host.sudo():
             # Assert RPM database health before attempting installation
@@ -1048,7 +1061,7 @@ class TestsSubscriptionManager:
                 'systemctl restart rhsmcertd'), 'Error while restarting rhsmcertd service'
 
             start_time = time.time()
-            timeout = 360
+            timeout = 360  # 6 minutes - sufficient for auto-registration to complete
             interval = 30
 
             while True:
@@ -1060,8 +1073,11 @@ class TestsSubscriptionManager:
                 subscription_status = host.run(
                     'subscription-manager status').stdout
 
+                # Check for successful registration
+                # RHEL 10+ shows "Overall Status: Registered" instead of product name
                 if 'Red Hat Enterprise Linux' in subscription_status or \
-                        'Simple Content Access' in subscription_status:
+                        'Simple Content Access' in subscription_status or \
+                        'Overall Status: Registered' in subscription_status:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
@@ -1382,10 +1398,11 @@ class TestsAuthConfig:
                 'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
             ]
         elif self.cloud == 'aws':
+            # AWS RHEL 9.8 does not have switchable-auth (introduced in authselect 1.7.0+)
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
-                'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
+                'postlogin', 'smartcard-auth', 'system-auth',
                 'user-nsswitch.conf'
             ]
         else:
