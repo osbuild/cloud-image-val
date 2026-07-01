@@ -89,16 +89,22 @@ class TestsAWS:
         """
         Use "iommu.strict=0" in ARM AMIs to get better performance.
         BugZilla 1836058
+        CLOUDX-1517, RHEL-115405
         """
         option = 'iommu.strict=0'
+        release_major = version.parse(host.system_info.release).major
 
         with host.sudo():
             iommu_option_present = host.file('/proc/cmdline').contains(option)
 
             if host.system_info.arch == 'x86_64':
                 assert not iommu_option_present, f'{option} must not be present in x86_64 AMIs'
+            elif release_major >= 9:
+                assert not iommu_option_present, \
+                    f'{option} must not be present in RHEL {release_major} ARM AMIs (CLOUDX-1517)'
             else:
-                assert iommu_option_present, f'{option} must be present in ARM AMIs'
+                assert iommu_option_present, \
+                    f'{option} must be present in RHEL {release_major} ARM AMIs'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
