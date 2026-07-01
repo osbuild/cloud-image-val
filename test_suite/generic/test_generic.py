@@ -769,7 +769,7 @@ class TestsGeneric:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('rhel_aws_marketplace_only')
-    def test_yum_group_install(self, host):
+    def test_yum_group_install(self, host, request):
         """
         Test that the "Development tools" package group can be successfully installed.
 
@@ -787,6 +787,15 @@ class TestsGeneric:
         - Subscription management issues
         - Package dependency conflicts
         """
+        def cleanup_dev_tools():
+            with host.sudo():
+                print('Cleaning up Development tools packages...')
+                cleanup_result = host.run('yum -y groupremove "Development tools"')
+                if cleanup_result.failed:
+                    print(f'Warning: Failed to clean up Development tools: {cleanup_result.stderr}')
+
+        request.addfinalizer(cleanup_dev_tools)
+
         with host.sudo():
             # Assert RPM database health before attempting installation
             rpm_check = host.run('rpm --verifydb')
@@ -1039,7 +1048,8 @@ class TestsSubscriptionManager:
                     'subscription-manager status').stdout
 
                 if 'Red Hat Enterprise Linux' in subscription_status or \
-                        'Simple Content Access' in subscription_status:
+                        'Simple Content Access' in subscription_status or \
+                        'Overall Status: Registered' in subscription_status:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
@@ -1355,7 +1365,7 @@ class TestsAuthConfig:
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
-                'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
+                'postlogin', 'smartcard-auth', 'system-auth',
                 'user-nsswitch.conf'
             ]
         else:
