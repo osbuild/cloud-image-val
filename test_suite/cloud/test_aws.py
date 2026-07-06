@@ -87,24 +87,30 @@ class TestsAWS:
     @pytest.mark.run_on(['rhel'])
     def test_iommu_strict_mode(self, host):
         """
-        Use "iommu.strict=0" in ARM AMIs to get better performance.
-        BugZilla 1836058
-        CLOUDX-1517, RHEL-115405
+        Checks the status of the "iommu.strict=0" kernel option on RHEL AMIs.
+        The option should be:
+        - Not present on x86_64 images (all versions)
+        - Present on RHEL 8 ARM images (BugZilla 1836058)
+        - Not present on RHEL 9+ ARM images (CLOUDX-1517, RHEL-115405)
         """
         option = 'iommu.strict=0'
         release_major = version.parse(host.system_info.release).major
+        arch = host.system_info.arch
 
         with host.sudo():
             iommu_option_present = host.file('/proc/cmdline').contains(option)
 
-            if host.system_info.arch == 'x86_64':
+            if arch == 'x86_64':
                 assert not iommu_option_present, f'{option} must not be present in x86_64 AMIs'
-            elif release_major >= 9:
-                assert not iommu_option_present, \
-                    f'{option} must not be present in RHEL {release_major} ARM AMIs (CLOUDX-1517)'
+            elif arch == 'aarch64':
+                if release_major >= 9:
+                    assert not iommu_option_present, \
+                        f'{option} must not be present in RHEL {release_major} ARM AMIs (CLOUDX-1517)'
+                else:
+                    assert iommu_option_present, \
+                        f'{option} must be present in RHEL {release_major} ARM AMIs (BugZilla 1836058)'
             else:
-                assert iommu_option_present, \
-                    f'{option} must be present in RHEL {release_major} ARM AMIs'
+                pytest.fail(f'Unexpected architecture: {arch}. This test only supports x86_64 and aarch64.')
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
