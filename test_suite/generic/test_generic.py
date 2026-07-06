@@ -1069,9 +1069,9 @@ class TestsSubscriptionManager:
                     'subscription-manager status').stdout
 
                 is_registered = (
-                    'Red Hat Enterprise Linux' in subscription_status or
-                    'Simple Content Access' in subscription_status or
-                    'Overall Status: Registered' in subscription_status
+                    'Red Hat Enterprise Linux' in subscription_status
+                    or 'Simple Content Access' in subscription_status
+                    or 'Overall Status: Registered' in subscription_status
                 )
 
                 if is_registered:
