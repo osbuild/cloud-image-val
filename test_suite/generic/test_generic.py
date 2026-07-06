@@ -809,9 +809,8 @@ class TestsGeneric:
         def cleanup_dev_tools():
             with host.sudo():
                 print('Cleaning up Development tools packages...')
-                cleanup_result = host.run('yum -y groupremove "Development tools"')
-                if cleanup_result.failed:
-                    print(f'Warning: Failed to clean up Development tools: {cleanup_result.stderr}')
+                assert host.run_test('dnf -y history undo last'), \
+                    'Failed to cleanup Development tools packages'
 
         request.addfinalizer(cleanup_dev_tools)
 
@@ -822,7 +821,7 @@ class TestsGeneric:
                 f'RPM database is corrupted or inaccessible. Error: {rpm_check.stderr}. ' \
                 'This is a system-level issue that must be resolved.'
 
-            dev_tools_install_command = 'yum -y groupinstall "Development tools"'
+            dev_tools_install_command = 'dnf -y groupinstall "Development tools"'
             result = host.run(dev_tools_install_command)
 
             if result.failed:
@@ -1069,9 +1068,13 @@ class TestsSubscriptionManager:
                 subscription_status = host.run(
                     'subscription-manager status').stdout
 
-                if 'Red Hat Enterprise Linux' in subscription_status or \
-                        'Simple Content Access' in subscription_status or \
-                        'Overall Status: Registered' in subscription_status:
+                is_registered = (
+                    'Red Hat Enterprise Linux' in subscription_status or
+                    'Simple Content Access' in subscription_status or
+                    'Overall Status: Registered' in subscription_status
+                )
+
+                if is_registered:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
@@ -1081,6 +1084,8 @@ class TestsSubscriptionManager:
 
                 end_time = time.time()
                 if end_time - start_time > timeout:
+                    assert is_registered, \
+                        f'Unexpected subscription-manager status output: {subscription_status!r}'
                     assert host.run_test('insights-client --register'), \
                         'insights-client could not register successfully'
                     pytest.fail(
