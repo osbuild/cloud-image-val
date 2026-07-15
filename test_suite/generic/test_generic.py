@@ -78,7 +78,10 @@ class TestsGeneric:
     # TODO: Confirm if this test should be run in non-RHEL images
     @pytest.mark.run_on(['rhel'])
     def test_username(self, host, instance_data):
-        for user in ['fedora', 'cloud-user']:
+        # OCI and GCP use 'cloud-user' as the default username for RHEL
+        unexpected_users = ['fedora', 'cloud-user'] if instance_data['cloud'] not in ['oci', 'gcloud'] else ['fedora']
+
+        for user in unexpected_users:
             with host.sudo():
                 assert not host.user(user).exists, 'Unexpected username in instance'
 
@@ -473,12 +476,24 @@ class TestsGeneric:
                 f'{file_to_check} should not exist in RHEL-8 and above'
 
     @pytest.mark.run_on(['all'])
-    def test_timezone_is_utc(self, host):
+    def test_timezone_is_utc(self, host, instance_data):
         """
-        Check that the default timezone is set to UTC.
+        Check that the default timezone is set correctly.
         BugZilla 1187669
+        OCI: RHEL 9 uses America/New_York for historical reasons, RHEL 10+ uses UTC
         """
         timezone = host.check_output('date +%Z').strip()
+
+        # OCI RHEL 9 intentionally uses America/New_York (inherited from guest-image)
+        # This was unified to UTC in RHEL 10+
+        if instance_data['cloud'] == 'oci':
+            release_major = version.parse(host.system_info.release).major
+            if release_major < 10:
+                assert timezone in ['EST', 'EDT'], \
+                    f'OCI RHEL 9 expected America/New_York timezone, got: {timezone}'
+                return
+
+        # All other clouds and OCI RHEL 10+ expect UTC
         assert timezone == 'UTC', f'Unexpected timezone: {timezone}. Expected to be UTC'
 
     @pytest.mark.run_on(['>=rhel9.6', 'rhel10'])
@@ -628,7 +643,7 @@ class TestsGeneric:
 
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
-    def test_number_gpg_keys(self, host):
+    def test_number_gpg_keys(self, host, instance_data):
         """
         Check that the number of GPGs is correct
         """
@@ -769,7 +784,7 @@ class TestsGeneric:
     @pytest.mark.pub
     @pytest.mark.run_on(['rhel'])
     @pytest.mark.usefixtures('rhel_aws_marketplace_only')
-    def test_yum_group_install(self, host):
+    def test_yum_group_install(self, host, instance_data, request):
         """
         Test that the "Development tools" package group can be successfully installed.
 
@@ -787,6 +802,18 @@ class TestsGeneric:
         - Subscription management issues
         - Package dependency conflicts
         """
+        # Image-builder builds don't include RHUI (only brew/pungi builds do)
+        if instance_data['cloud'] == 'oci':
+            pytest.skip('OCI image-builder builds do not include RHUI configuration')
+
+        def cleanup_dev_tools():
+            with host.sudo():
+                print('Cleaning up Development tools packages...')
+                assert host.run_test('dnf -y history undo last'), \
+                    'Failed to cleanup Development tools packages'
+
+        request.addfinalizer(cleanup_dev_tools)
+
         with host.sudo():
             # Assert RPM database health before attempting installation
             rpm_check = host.run('rpm --verifydb')
@@ -794,7 +821,7 @@ class TestsGeneric:
                 f'RPM database is corrupted or inaccessible. Error: {rpm_check.stderr}. ' \
                 'This is a system-level issue that must be resolved.'
 
-            dev_tools_install_command = 'yum -y groupinstall "Development tools"'
+            dev_tools_install_command = 'dnf -y groupinstall "Development tools"'
             result = host.run(dev_tools_install_command)
 
             if result.failed:
@@ -996,6 +1023,9 @@ class TestsSubscriptionManager:
         BugZilla 7.9: 2077086, 2077085
         """
 
+        if instance_data['cloud'] == 'oci':
+            pytest.skip('Subscription manager auto-registration not applicable to OCI')
+
         if instance_data['cloud'] == 'aws':
             region = instance_data['availability_zone'][:-1]
 
@@ -1038,8 +1068,13 @@ class TestsSubscriptionManager:
                 subscription_status = host.run(
                     'subscription-manager status').stdout
 
-                if 'Red Hat Enterprise Linux' in subscription_status or \
-                        'Simple Content Access' in subscription_status:
+                is_registered = (
+                    'Red Hat Enterprise Linux' in subscription_status
+                    or 'Simple Content Access' in subscription_status
+                    or 'Overall Status: Registered' in subscription_status
+                )
+
+                if is_registered:
                     print('Subscription auto-registration completed successfully')
 
                     if not host.run_test('insights-client --register'):
@@ -1049,6 +1084,8 @@ class TestsSubscriptionManager:
 
                 end_time = time.time()
                 if end_time - start_time > timeout:
+                    assert is_registered, \
+                        f'Unexpected subscription-manager status output: {subscription_status!r}'
                     assert host.run_test('insights-client --register'), \
                         'insights-client could not register successfully'
                     pytest.fail(
@@ -1057,11 +1094,14 @@ class TestsSubscriptionManager:
                 print(f'Waiting {interval}s for auto-registration to succeed...')
                 time.sleep(interval)
 
-    def test_subscription_manager_auto_config(self, host):
+    def test_subscription_manager_auto_config(self, host, instance_data):
         """
         BugZilla: 1932802, 1905398
         Verify that auto_registration is enabled in the image
         """
+        if instance_data['cloud'] == 'oci':
+            pytest.skip('Subscription manager auto-registration not applicable to OCI')
+
         expected_config = [
             'auto_registration = 1',
             'manage_repos = 0'
@@ -1230,6 +1270,10 @@ class TestsNetworking:
         BugZilla 1822853
         >=8.5: check NetworkManager-cloud-setup is installed and nm-cloud-setup.timer is setup for Azure and enabled
         """
+        # NetworkManager-cloud-setup is only used by AWS and Azure
+        if instance_data['cloud'] in ['oci', 'gcloud']:
+            pytest.skip('NetworkManager-cloud-setup not used by OCI or GCP')
+
         cloud_setup_base_path = '/usr/lib/systemd/system/nm-cloud-setup.service.d/'
         files_and_configs_by_cloud = {
             'aws': {
@@ -1300,12 +1344,13 @@ class TestsSecurity:
     def test_firewalld_is_enabled(self, host, instance_data):
         """
         firewalld needs to be enabled in most clouds.
+        Oracle recommends firewalld for defense-in-depth alongside Security Lists/NSGs.
         """
         if instance_data['cloud'] == 'aws':
             pytest.skip('Test not applicable to AWS images')
 
         assert host.service('firewalld').is_enabled, \
-            'firewalld should be enabled in most RHEL cloud images (except AWS AMIs)'
+            'firewalld should be enabled in most RHEL cloud images (except AWS)'
 
     @pytest.mark.run_on(['rhel', 'fedora'])
     def test_etc_machine_id_permissions(self, host, instance_data):
@@ -1355,7 +1400,7 @@ class TestsAuthConfig:
             expected_config_files = [
                 'authselect.conf', 'custom', 'dconf-db', 'dconf-locks',
                 'fingerprint-auth', 'nsswitch.conf', 'password-auth',
-                'postlogin', 'smartcard-auth', 'switchable-auth', 'system-auth',
+                'postlogin', 'smartcard-auth', 'system-auth',
                 'user-nsswitch.conf'
             ]
         else:
