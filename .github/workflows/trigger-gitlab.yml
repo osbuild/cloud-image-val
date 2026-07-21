@@ -35,8 +35,11 @@ jobs:
           per_page: 100
 
       - name: Checkout branch
+        id: checkout_branch
         env:
           BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          UPSTREAM_REPO: ${{ github.repository }}
         run: |
           PR_DATA=$(mktemp)
           # use uuid as a file terminator to avoid conflicts with data content
@@ -46,11 +49,15 @@ jobs:
           PR=$(jq -rc '.[] | select(.head.sha | contains("${{ github.event.workflow_run.head_sha }}")) | select(.state | contains("open"))' "$PR_DATA" | jq -r .number)
           if [ ! -z "$PR" ]; then
             git checkout -b PR-$PR
-          else
+          elif [ "$HEAD_REPO" = "$UPSTREAM_REPO" ]; then
             git checkout "${BRANCH}" --
+          else
+            echo "::notice::Skipping: branch '${BRANCH}' is from fork '${HEAD_REPO}', not upstream repo"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Push to GitLab
+        if: steps.checkout_branch.outputs.skip != 'true'
         run: |
           mkdir -p ~/.ssh
           echo "${IMAGEBUILDER_BOT_GITLAB_SSH_KEY}" > ~/.ssh/id_rsa
