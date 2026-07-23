@@ -101,6 +101,8 @@ class SuiteRunner:
             test_suites_to_run.append('cloud/test_aws.py')
         elif self.cloud_provider == 'azure':
             test_suites_to_run.append('cloud/test_azure.py')
+        elif self.cloud_provider == 'oci':
+            test_suites_to_run.append('cloud/test_oci.py')
 
         return [os.path.join(os.path.dirname(__file__), p) for p in test_suites_to_run]
 
