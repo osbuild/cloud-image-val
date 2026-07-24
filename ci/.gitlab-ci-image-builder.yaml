@@ -134,6 +134,16 @@ image-builder-azure-nightly-compose:
     matrix:
       - *rhel_runners_x86_64_internal_nightlies
 
+promote-container-to-staging:
+  extends: .deps
+  stage: finish
+  rules:
+    - if: $CI_COMMIT_REF_SLUG == "refactor-civ-core" && $CLOUDX_PKG_TESTING == "false"
+  script:
+    - sudo dnf install skopeo -y
+    - skopeo login quay.io/cloudexperience --password ${QUAY_PASSWORD} --username ${QUAY_USERNAME}
+    - skopeo copy --all docker://"${QUAY_IO_CONTAINER_URL}":"${CI_COMMIT_REF_SLUG}" docker://"${QUAY_IO_CONTAINER_URL}":staging
+
 promote-container-to-main:
   extends: .deps
   stage: finish
