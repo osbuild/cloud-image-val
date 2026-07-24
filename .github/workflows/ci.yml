@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - main
+      - refactor/civ-core
   pull_request:
     branches:
       - main
+      - refactor/civ-core
 
 jobs:
   build:
