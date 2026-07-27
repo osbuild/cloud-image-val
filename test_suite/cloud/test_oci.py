@@ -117,7 +117,7 @@ class TestsOCI:
         """
         sshd_config = '/etc/ssh/sshd_config'
         with host.sudo():
-            assert not host.file(sshd_config).contains('^PasswordAuthentication yes'), \
+            assert not host.file(sshd_config).contains(r'^\s*PasswordAuthentication\s+yes\b'), \
                 'PasswordAuthentication must not be enabled in OCI images'
             assert host.service('sshd').is_running, \
                 'sshd must be running'
