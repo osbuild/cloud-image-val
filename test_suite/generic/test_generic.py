@@ -325,6 +325,7 @@ class TestsGeneric:
             * 8.y and aarch64
             * 9.y
             * 10.y and Azure and LVM
+            * 10.y and OCI and LVM
             * Fedora
         In all other cases the /boot mount doesn't exist on a system.
         If /boot exists it should be at least 960Mib (lower threshold of 1024MiB)
