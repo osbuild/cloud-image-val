@@ -80,8 +80,7 @@ class TestsOCI:
         """
         with host.sudo():
             nic_driver = host.check_output(
-                "find /sys/class/net -maxdepth 2 -name 'uevent' "
-                "| xargs grep -h DRIVER 2>/dev/null | head -1"
+                "grep -h DRIVER /sys/class/net/*/device/uevent"
             )
 
         assert 'virtio' in nic_driver, \
@@ -118,7 +117,7 @@ class TestsOCI:
         """
         sshd_config = '/etc/ssh/sshd_config'
         with host.sudo():
-            assert not host.file(sshd_config).contains('PasswordAuthentication yes'), \
+            assert not host.file(sshd_config).contains(r'^\s*PasswordAuthentication\s+yes\b'), \
                 'PasswordAuthentication must not be enabled in OCI images'
             assert host.service('sshd').is_running, \
                 'sshd must be running'
