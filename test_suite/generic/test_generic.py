@@ -335,6 +335,7 @@ class TestsGeneric:
         release_major = version.parse(host.system_info.release).major
         is_aarch64 = host.system_info.arch == 'aarch64'
         is_azure = instance_data['cloud'] == 'azure'
+        is_oci = instance_data['cloud'] == 'oci'
         lvm_check = host.run("lsblk -f | grep LVM").rc == 0
         is_fedora = host.system_info.distribution == 'fedora'
 
@@ -343,6 +344,7 @@ class TestsGeneric:
            or (release_major == 9)
            or (release_major >= 10 and is_azure and lvm_check)
            or is_fedora
+           or is_oci
            ):
             assert host.mount_point("/boot").exists, "/boot mount is missing"
 
