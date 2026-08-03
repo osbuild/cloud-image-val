@@ -808,12 +808,19 @@ class TestsGeneric:
         if instance_data['cloud'] == 'oci':
             pytest.skip('OCI image-builder builds do not include RHUI configuration')
 
+        with host.sudo():
+            pkgs_before = set(host.check_output('rpm -qa --qf "%{NAME}\\n"').splitlines())
+
         def cleanup_dev_tools():
             with host.sudo():
                 print('Cleaning up Development tools packages...')
                 assert host.run_test('dnf -y history undo last'), \
                     'Failed to cleanup Development tools packages'
-                host.run('dnf -y autoremove')
+                pkgs_after = set(host.check_output('rpm -qa --qf "%{NAME}\\n"').splitlines())
+                leftover = pkgs_after - pkgs_before
+                if leftover:
+                    print(f'Removing leftover packages: {leftover}')
+                    host.run(f'dnf -y remove {" ".join(leftover)}')
 
         request.addfinalizer(cleanup_dev_tools)
 
