@@ -1046,6 +1046,7 @@ class TestsSubscriptionManager:
                 'ap-southeast-4',
                 'eu-south-2',
                 'eu-central-2',
+                'eusc-de-east-1',
                 'us-gov-east-1',
                 'us-gov-west-1',
                 'cn-northwest-1',
