@@ -17,8 +17,11 @@ def is_rhel_cvm(host):
 
 
 def is_rhel_saphaus(host):
-    # RHEL for SAP HA and US with sap-solutions and sap-netweaver repositories
-    return __test_keyword_in_repositories(host, 'sap-solutions')
+    # RHEL for SAP with sap-solutions and sap-netweaver repositories.
+    # Uses RPM-based detection (like is_rhel_high_availability) instead of
+    # yum repolist, which fails on 3p/stratosphere images without RHUI access.
+    rhui_pkg = str(host.run('rpm -qa | grep rhui').stdout)
+    return re.search(r'rhui.*sap', rhui_pkg)
 
 
 def is_rhel_high_availability(host):

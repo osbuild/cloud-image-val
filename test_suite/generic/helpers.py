@@ -52,7 +52,8 @@ def check_avc_denials(host, relevant_keywords=None):
 
         filtered = [
             line for line in output_lines
-            if "permissive=1" not in line  # skip permissive-mode AVCs
+            if line.strip()
+            and "permissive=1" not in line  # skip permissive-mode AVCs
             and not any(ignored in line for ignored in ignored_keywords)
         ]
 

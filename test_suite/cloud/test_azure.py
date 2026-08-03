@@ -48,6 +48,7 @@ def get_expected_rhui_rpm_name(host, source_string):
         # Dictionary mapping keywords in the source string to the expected RHUI suffix
         source_suffixes = {
             'sap-ha': '-sap-ha',
+            'sap-apps': '-sapapps',
             'sapapps': '-sapapps',
             'arm64': '-arm64',
         }

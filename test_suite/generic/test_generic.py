@@ -813,6 +813,7 @@ class TestsGeneric:
                 print('Cleaning up Development tools packages...')
                 assert host.run_test('dnf -y history undo last'), \
                     'Failed to cleanup Development tools packages'
+                host.run('dnf -y autoremove')
 
         request.addfinalizer(cleanup_dev_tools)
 
