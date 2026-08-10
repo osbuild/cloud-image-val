@@ -1,32 +1,42 @@
-# inspired by rhinstaller/anaconda
-
+# This workflow runs on success of the Basic Tests workflow.
+# If we run it on PR or merge_group, then we can't use secrets.
+---
 name: Trigger GitLab CI
 
-on:
+on:  # yamllint disable-line rule:truthy
   workflow_run:
     workflows: ["Basic Tests"]
     types: [completed]
 
 jobs:
   trigger-gitlab:
+    # this should never fail, but check it anyway in case we ever change it
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       IMAGEBUILDER_BOT_GITLAB_SSH_KEY: ${{ secrets.IMAGEBUILDER_BOT_GITLAB_SSH_KEY }}
     steps:
       - name: Report status
         uses: haya14busa/action-workflow_run-status@v1
 
+      - name: Apt update
+        run: sudo apt update
+
       - name: Install Dependencies
         run: |
           sudo apt install -y jq
+
       - name: Clone repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
+          allow-unsafe-pr-checkout: true
 
-      - uses: octokit/request-action@v2.x
+      - name: Get open PRs
+        # Since this workflow doesn't run on a PR trigger, we need to find the
+        # PR number by querying the GH API and selecting on the commit ID
+        uses: octokit/request-action@v2.x
         id: fetch_pulls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
