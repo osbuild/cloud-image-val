@@ -1,7 +1,7 @@
 import json
 import os
-import subprocess
 
+import jsonschema
 import pytest
 
 
@@ -12,32 +12,6 @@ SCHEMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'schemas', 'civ-inst
 def schema():
     with open(SCHEMA_PATH) as f:
         return json.load(f)
-
-
-def validate(document, schema):
-    """Validate a document against the schema using python -m jsonschema if available, else basic checks."""
-    doc_json = json.dumps(document)
-    schema_json = json.dumps(schema)
-
-    script = (
-        "import json, sys; "
-        "doc = json.loads(sys.argv[1]); "
-        "schema = json.loads(sys.argv[2]); "
-        "from jsonschema import validate, ValidationError; "
-        "validate(doc, schema)"
-    )
-    result = subprocess.run(
-        ['python3', '-c', script, doc_json, schema_json],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        raise ValueError(result.stderr)
-
-
-def validate_expect_failure(document, schema, match):
-    """Assert that validation fails with an error matching the given string."""
-    with pytest.raises(ValueError, match=match):
-        validate(document, schema)
 
 
 class TestCivInstancesSchema:
@@ -96,11 +70,8 @@ class TestCivInstancesSchema:
         }
     }
 
-    def test_schema_is_valid_json(self, schema):
-        assert schema.get('$schema') is not None
-        assert schema.get('type') == 'object'
-        assert '$defs' in schema
-        assert 'instance' in schema['$defs']
+    def test_schema_is_valid_json_schema(self, schema):
+        jsonschema.Draft202012Validator.check_schema(schema)
 
     def test_schema_required_fields(self, schema):
         instance_def = schema['$defs']['instance']
@@ -117,16 +88,16 @@ class TestCivInstancesSchema:
             assert 'description' in field_def, f"Field '{field_name}' missing description"
 
     def test_valid_minimal_document(self, schema):
-        validate(self.valid_minimal_document, schema)
+        jsonschema.validate(self.valid_minimal_document, schema)
 
     def test_valid_full_document(self, schema):
-        validate(self.valid_full_document, schema)
+        jsonschema.validate(self.valid_full_document, schema)
 
     def test_valid_multi_instance(self, schema):
-        validate(self.valid_multi_instance_document, schema)
+        jsonschema.validate(self.valid_multi_instance_document, schema)
 
     def test_valid_empty_document(self, schema):
-        validate({}, schema)
+        jsonschema.validate({}, schema)
 
     def test_valid_azure_image_as_object(self, schema):
         doc = {
@@ -138,7 +109,7 @@ class TestCivInstancesSchema:
                 "image": {"publisher": "RedHat", "offer": "RHEL", "sku": "9", "version": "latest"}
             }
         }
-        validate(doc, schema)
+        jsonschema.validate(doc, schema)
 
     def test_invalid_missing_required_field(self, schema):
         doc = {
@@ -149,7 +120,8 @@ class TestCivInstancesSchema:
                 "image": "RHEL-9.5"
             }
         }
-        validate_expect_failure(doc, schema, "required property")
+        with pytest.raises(jsonschema.ValidationError, match="'name' is a required property"):
+            jsonschema.validate(doc, schema)
 
     def test_invalid_cloud_value(self, schema):
         doc = {
@@ -161,7 +133,8 @@ class TestCivInstancesSchema:
                 "image": "RHEL-9.5"
             }
         }
-        validate_expect_failure(doc, schema, "is not one of")
+        with pytest.raises(jsonschema.ValidationError, match="'digitalocean' is not one of"):
+            jsonschema.validate(doc, schema)
 
     def test_invalid_name_type(self, schema):
         doc = {
@@ -173,7 +146,9 @@ class TestCivInstancesSchema:
                 "image": "RHEL-9.5"
             }
         }
-        validate_expect_failure(doc, schema, "is not of type")
+        with pytest.raises(jsonschema.ValidationError, match="is not of type 'string'"):
+            jsonschema.validate(doc, schema)
 
     def test_invalid_top_level_not_object(self, schema):
-        validate_expect_failure(["not", "an", "object"], schema, "is not of type")
+        with pytest.raises(jsonschema.ValidationError, match="is not of type 'object'"):
+            jsonschema.validate(["not", "an", "object"], schema)
