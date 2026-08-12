@@ -52,7 +52,8 @@
                 },
                 "arch": {
                     "type": "string",
-                    "description": "CPU architecture (e.g. 'x86_64', 'aarch64')."
+                    "description": "CPU architecture.",
+                    "enum": ["x86_64", "aarch64"]
                 },
                 "image_id": {
                     "type": "string",
