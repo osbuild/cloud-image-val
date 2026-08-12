@@ -1,0 +1,69 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "CIV Instance Metadata Contract",
+    "description": "Defines the integration contract between CIV provisioner and downstream test suites. The top-level object is a map of instance identifiers (e.g. OpenTofu resource addresses) to instance metadata objects.",
+    "type": "object",
+    "additionalProperties": {
+        "$ref": "#/$defs/instance"
+    },
+    "$defs": {
+        "instance": {
+            "type": "object",
+            "description": "Metadata for a single provisioned cloud instance.",
+            "required": [
+                "name",
+                "address",
+                "username",
+                "cloud",
+                "image"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Human-readable instance name, typically derived from the OpenTofu resource name."
+                },
+                "address": {
+                    "type": "string",
+                    "description": "Network address used for SSH connections. Resolved from public_dns, public_ip, or private_ip in order of preference."
+                },
+                "username": {
+                    "type": "string",
+                    "description": "SSH login username for the instance (e.g. 'ec2-user', 'cloud-user')."
+                },
+                "cloud": {
+                    "type": "string",
+                    "description": "Cloud provider identifier.",
+                    "enum": ["aws", "azure", "gcloud", "oci"]
+                },
+                "image": {
+                    "description": "Cloud image reference used to launch the instance. String on most clouds; may be an object on Azure (source_image_reference)."
+                },
+                "region": {
+                    "type": "string",
+                    "description": "Cloud region where the instance is running (e.g. 'us-east-1')."
+                },
+                "distro": {
+                    "type": "string",
+                    "description": "Linux distribution identifier (e.g. 'rhel', 'fedora')."
+                },
+                "version": {
+                    "type": "string",
+                    "description": "Distribution version (e.g. '9.3')."
+                },
+                "arch": {
+                    "type": "string",
+                    "description": "CPU architecture (e.g. 'x86_64', 'aarch64')."
+                },
+                "image_id": {
+                    "type": "string",
+                    "description": "Cloud-specific image identifier (e.g. AMI ID, image URN)."
+                },
+                "instance_type": {
+                    "type": "string",
+                    "description": "Cloud-specific instance/VM size (e.g. 't3.medium', 'Standard_D2s_v3')."
+                }
+            },
+            "additionalProperties": true
+        }
+    }
+}
