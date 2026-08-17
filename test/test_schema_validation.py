@@ -74,6 +74,27 @@ MALFORMED_MISSING_TESTCASE_NAME = """\
 </testsuites>
 """
 
+MALFORMED_EXTRA_ELEMENT_IN_TESTCASE = """\
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="suite" errors="0" failures="0" tests="1" time="0.001">
+        <testcase classname="test_x" name="test_a" time="0.001">
+            <bogus>unexpected element</bogus>
+        </testcase>
+    </testsuite>
+</testsuites>
+"""
+
+MALFORMED_EXTRA_ELEMENT_IN_TESTSUITE = """\
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+    <testsuite name="suite" errors="0" failures="0" tests="1" time="0.001">
+        <unknown-element />
+        <testcase classname="test_x" name="test_a" time="0.001" />
+    </testsuite>
+</testsuites>
+"""
+
 MALFORMED_NOT_XML = "this is not xml at all"
 
 
@@ -100,6 +121,14 @@ class TestJunitXsd:
 
     def test_invalid_missing_testcase_name(self, xsd_schema):
         doc = etree.fromstring(MALFORMED_MISSING_TESTCASE_NAME.encode())
+        assert not xsd_schema.validate(doc)
+
+    def test_invalid_extra_element_in_testcase(self, xsd_schema):
+        doc = etree.fromstring(MALFORMED_EXTRA_ELEMENT_IN_TESTCASE.encode())
+        assert not xsd_schema.validate(doc)
+
+    def test_invalid_extra_element_in_testsuite(self, xsd_schema):
+        doc = etree.fromstring(MALFORMED_EXTRA_ELEMENT_IN_TESTSUITE.encode())
         assert not xsd_schema.validate(doc)
 
     def test_invalid_not_xml(self):
