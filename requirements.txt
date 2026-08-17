@@ -16,3 +16,4 @@ paramiko==3.4.1
 requests==2.32.3
 packaging==24.1
 jsonschema==4.23.0
+lxml==5.3.1

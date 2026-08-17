@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JUnit XML Schema Definition for CIV result validation.
+
+  Based on the widely-used Windyroad JUnit Schema
+  (https://github.com/windyroad/JUnit-Schema) with relaxed constraints
+  to accept output from pytest - -junit-xml, which omits some elements
+  and attributes that the strict schema requires.
+
+  Copyright (c) 2011, Windy Road Technology Pty. Limited
+  Licensed under the Apache License Version 2.0
+-->
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+    <xs:element name="testsuites">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Contains an aggregation of testsuite results</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="testsuite" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="optional"/>
+            <xs:attribute name="tests" type="xs:int" use="optional"/>
+            <xs:attribute name="failures" type="xs:int" use="optional"/>
+            <xs:attribute name="errors" type="xs:int" use="optional"/>
+            <xs:attribute name="skipped" type="xs:int" use="optional"/>
+            <xs:attribute name="time" type="xs:decimal" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="testsuite">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Contains the results of executing a testsuite</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="properties" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Properties set during test execution</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="property" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                    <xs:attribute name="value" type="xs:string" use="required"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="testcase" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="skipped" minOccurs="0" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">Indicates that the test was skipped</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType mixed="true">
+                                    <xs:attribute name="message" type="xs:string" use="optional"/>
+                                    <xs:attribute name="type" type="xs:string" use="optional"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="error" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">Indicates that the test errored</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType mixed="true">
+                                    <xs:attribute name="message" type="xs:string" use="optional"/>
+                                    <xs:attribute name="type" type="xs:string" use="optional"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="failure" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">Indicates that the test failed</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType mixed="true">
+                                    <xs:attribute name="message" type="xs:string" use="optional"/>
+                                    <xs:attribute name="type" type="xs:string" use="optional"/>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="system-out" type="xs:string" minOccurs="0" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">Stdout captured during test execution</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="system-err" type="xs:string" minOccurs="0" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">Stderr captured during test execution</xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="classname" type="xs:string" use="optional"/>
+                        <xs:attribute name="time" type="xs:decimal" use="optional"/>
+                        <xs:attribute name="file" type="xs:string" use="optional"/>
+                        <xs:attribute name="line" type="xs:int" use="optional"/>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="system-out" type="xs:string" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Stdout captured during suite execution</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="system-err" type="xs:string" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Stderr captured during suite execution</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tests" type="xs:int" use="optional"/>
+            <xs:attribute name="failures" type="xs:int" use="optional"/>
+            <xs:attribute name="errors" type="xs:int" use="optional"/>
+            <xs:attribute name="skipped" type="xs:int" use="optional"/>
+            <xs:attribute name="time" type="xs:decimal" use="optional"/>
+            <xs:attribute name="timestamp" type="xs:string" use="optional"/>
+            <xs:attribute name="hostname" type="xs:string" use="optional"/>
+            <xs:attribute name="id" type="xs:int" use="optional"/>
+            <xs:attribute name="package" type="xs:string" use="optional"/>
+            <xs:attribute name="file" type="xs:string" use="optional"/>
+            <xs:attribute name="log" type="xs:string" use="optional"/>
+            <xs:attribute name="url" type="xs:string" use="optional"/>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
