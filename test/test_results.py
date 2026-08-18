@@ -229,7 +229,7 @@ class TestMergeResults:
         src = _write_xml(str(tmp_path), 'bad_root.xml', INVALID_ROOT_ELEMENT)
         out = str(tmp_path / 'merged.xml')
 
-        with pytest.raises(ResultValidationError, match="Unexpected root element"):
+        with pytest.raises(ResultValidationError, match="XSD validation failed"):
             merge_results([src], out)
 
     def test_empty_paths_list(self, tmp_path):
