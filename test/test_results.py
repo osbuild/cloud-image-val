@@ -77,6 +77,15 @@ VALID_BARE_TESTSUITE = """\
 </testsuite>
 """
 
+INVALID_ROOT_ELEMENT = """\
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <testsuite name="pytest" errors="0" failures="0" tests="1" time="0.001">
+        <testcase classname="test_x" name="test_a" time="0.001" />
+    </testsuite>
+</root>
+"""
+
 INVALID_XML = "this is not xml"
 
 INVALID_SCHEMA = """\
@@ -100,11 +109,11 @@ class TestValidateJunitXml:
 
     def test_valid_file(self, tmp_path):
         path = _write_xml(str(tmp_path), 'valid.xml', VALID_SINGLE_SUITE)
-        assert validate_junit_xml(path) is True
+        validate_junit_xml(path)
 
     def test_valid_bare_testsuite(self, tmp_path):
         path = _write_xml(str(tmp_path), 'bare.xml', VALID_BARE_TESTSUITE)
-        assert validate_junit_xml(path) is True
+        validate_junit_xml(path)
 
     def test_malformed_xml_raises(self, tmp_path):
         path = _write_xml(str(tmp_path), 'bad.xml', INVALID_XML)
@@ -176,6 +185,13 @@ class TestMergeResults:
         with pytest.raises(ValueError, match="instance_labels must match"):
             merge_results([src], out, instance_labels=['a', 'b'])
 
+    def test_empty_instance_labels_raises(self, tmp_path):
+        src = _write_xml(str(tmp_path), 'r1.xml', VALID_SINGLE_SUITE)
+        out = str(tmp_path / 'merged.xml')
+
+        with pytest.raises(ValueError, match="instance_labels must match"):
+            merge_results([src], out, instance_labels=[])
+
     def test_empty_suite(self, tmp_path):
         src = _write_xml(str(tmp_path), 'empty.xml', VALID_EMPTY_SUITE)
         out = str(tmp_path / 'merged.xml')
@@ -207,6 +223,13 @@ class TestMergeResults:
         out = str(tmp_path / 'merged.xml')
 
         with pytest.raises(ResultValidationError, match="XSD validation failed"):
+            merge_results([src], out)
+
+    def test_unexpected_root_element_raises(self, tmp_path):
+        src = _write_xml(str(tmp_path), 'bad_root.xml', INVALID_ROOT_ELEMENT)
+        out = str(tmp_path / 'merged.xml')
+
+        with pytest.raises(ResultValidationError, match="Unexpected root element"):
             merge_results([src], out)
 
     def test_empty_paths_list(self, tmp_path):
