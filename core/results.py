@@ -6,6 +6,7 @@ from pathlib import Path
 from lxml import etree
 
 _XSD_PATH = Path(__file__).resolve().parent.parent / 'schemas' / 'junit.xsd'
+_SAFE_PARSER = etree.XMLParser(resolve_entities=False, no_network=True)
 
 
 class ResultValidationError(Exception):
@@ -25,18 +26,21 @@ def _load_xsd() -> etree.XMLSchema:
     return etree.XMLSchema(etree.parse(str(_XSD_PATH)))
 
 
-def validate_junit_xml(path: str) -> bool:
+def _parse_and_validate(path: str, schema: etree.XMLSchema) -> etree._ElementTree:
     try:
-        doc = etree.parse(path)
+        doc = etree.parse(path, parser=_SAFE_PARSER)
     except etree.XMLSyntaxError as exc:
         raise ResultValidationError(f"Malformed XML in {path}: {exc}") from exc
 
-    schema = _load_xsd()
     if not schema.validate(doc):
         errors = "; ".join(str(e) for e in schema.error_log)
         raise ResultValidationError(f"XSD validation failed for {path}: {errors}")
 
-    return True
+    return doc
+
+
+def validate_junit_xml(path: str) -> None:
+    _parse_and_validate(path, _load_xsd())
 
 
 def merge_results(
@@ -44,7 +48,7 @@ def merge_results(
     output_path: str,
     instance_labels: list[str] | None = None,
 ) -> MergeResult:
-    if instance_labels and len(instance_labels) != len(result_paths):
+    if instance_labels is not None and len(instance_labels) != len(result_paths):
         raise ValueError("instance_labels must match the length of result_paths")
 
     schema = _load_xsd()
@@ -56,17 +60,9 @@ def merge_results(
     total_time = 0.0
 
     for i, path in enumerate(result_paths):
-        try:
-            doc = etree.parse(path)
-        except etree.XMLSyntaxError as exc:
-            raise ResultValidationError(f"Malformed XML in {path}: {exc}") from exc
-
-        if not schema.validate(doc):
-            errors = "; ".join(str(e) for e in schema.error_log)
-            raise ResultValidationError(f"XSD validation failed for {path}: {errors}")
-
+        doc = _parse_and_validate(path, schema)
         root = doc.getroot()
-        label = instance_labels[i] if instance_labels else None
+        label = instance_labels[i] if instance_labels is not None else None
 
         if root.tag == "testsuites":
             suites = root.findall("testsuite")
