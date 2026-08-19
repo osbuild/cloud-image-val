@@ -647,16 +647,33 @@ class TestsGeneric:
     @pytest.mark.run_on(['all'])
     def test_number_gpg_keys(self, host, instance_data):
         """
-        Check that the number of GPGs is correct
+        Check that the number of GPGs is correct in the default rpmdb.
+
+        On OCI, Oracle Cloud Agent imports two Oracle Linux keys at first boot.
+        On RHEL 9.7+ OCI, Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys),
+        so this test expects only those 2 OCA keys in the default rpmdb.
+        On RHEL 10 OCI, Red Hat keys are in the default rpmdb (expect 5).
         """
+        release = version.parse(host.system_info.release)
+        is_oci = instance_data['cloud'] == 'oci'
+
         with host.sudo():
             # print the gpg public keys installed
             print(host.check_output('rpm -qa | grep gpg-pubkey'))
 
             if host.system_info.distribution == 'fedora':
                 num_of_gpg_keys = 1
+            elif is_oci and host.system_info.distribution == 'rhel' and \
+                    release >= version.parse('10'):
+                # 3 Red Hat keys + 2 Oracle Cloud Agent keys
+                num_of_gpg_keys = 5
+            elif is_oci and host.system_info.distribution == 'rhel' and \
+                    version.parse('9.7') <= release < version.parse('10'):
+                # Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys);
+                # default rpmdb has the 2 Oracle Cloud Agent keys
+                num_of_gpg_keys = 2
             elif host.system_info.distribution == 'rhel' and \
-                    version.parse(host.system_info.release) >= version.parse('9.0'):
+                    release >= version.parse('9.0'):
                 num_of_gpg_keys = 3
             else:
                 num_of_gpg_keys = 2
@@ -664,6 +681,32 @@ class TestsGeneric:
         # check correct number of gpg keys installed
         assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
             f'There should be {num_of_gpg_keys} gpg key(s) installed'
+
+    @pytest.mark.pub
+    @pytest.mark.run_on(['rhel'])
+    def test_pqrpm_gpg_keys(self, host, instance_data):
+        """
+        RHEL 9.7+ image-builder imports Red Hat GPG keys with pqrpm into
+        /usr/lib/pqrpm/lib/sysimage/rpm. OCI-only until other clouds are measured.
+        """
+        if instance_data['cloud'] != 'oci':
+            pytest.skip('Expected pqrpm key counts are only known for OCI')
+
+        release = version.parse(host.system_info.release)
+        if release < version.parse('9.7') or release >= version.parse('10'):
+            pytest.skip('pqrpm key db is used on RHEL 9.7+ (not RHEL 10)')
+
+        pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
+        num_of_gpg_keys = 2
+
+        with host.sudo():
+            assert host.file(pqrpm_db).exists, \
+                f'pqrpm rpmdb missing at {pqrpm_db}'
+            print(host.check_output(
+                f'rpm --dbpath {pqrpm_db} -qa | grep gpg-pubkey'))
+            assert int(host.check_output(
+                f'rpm --dbpath {pqrpm_db} -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
+                f'There should be {num_of_gpg_keys} gpg key(s) installed in the pqrpm db'
 
     @pytest.mark.run_on(['rhel'])
     def test_yum_plugins(self, host):
