@@ -769,10 +769,12 @@ class TestsGeneric:
                 f'There should be {num_of_gpg_keys} gpg key(s) installed in the pqrpm db'
 
     @pytest.mark.run_on(['rhel'])
+    @pytest.mark.usefixtures('third_party_only')
     def test_yum_plugins(self, host):
         """
         BugZilla 1932802
         Verify yum/dnf product-id and subscription-manager plugins are enabled for RHEL 8.4+.
+        This test only applies to third-party (3p) images.
         """
         expect_config = "enabled=1"
 

@@ -100,11 +100,14 @@ class TestOpenTofuController:
                 'ami': 'test_ami',
                 'image': 'test_ami',
                 'username': 'test_user',
+                'image_type': '1p',
             }
         }
 
         mock_get_aws_username_by_ami_name = mocker.MagicMock(return_value='test_user')
         self.tf_configurator.get_aws_username_by_ami_name = mock_get_aws_username_by_ami_name
+
+        self.tf_configurator.get_image_type.return_value = '1p'
 
         # Act
         result = tf_controller.get_instances_aws(resources)
@@ -160,6 +163,7 @@ class TestOpenTofuController:
                 'location': test_location,
                 'image': test_image,
                 'username': test_username,
+                'image_type': '1p',
             }
         }
 
@@ -170,6 +174,8 @@ class TestOpenTofuController:
         mock_get_azure_image_data_from_resource = mocker.patch.object(tf_controller,
                                                                       '_get_azure_image_data_from_resource',
                                                                       return_value=test_image)
+
+        self.tf_configurator.get_image_type.return_value = '1p'
 
         # Act
         result = tf_controller.get_instances_azure(resources)
@@ -225,8 +231,11 @@ class TestOpenTofuController:
                 'zone': test_zone,
                 'image': test_image,
                 'username': test_username,
+                'image_type': '1p',
             }
         }
+
+        self.tf_configurator.get_image_type.return_value = '1p'
 
         # Act
         result = tf_controller.get_instances_gcloud(resources)

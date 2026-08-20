@@ -166,6 +166,13 @@ def rhel_aws_marketplace_only(host, instance_data):
         pytest.skip('Not applicable to RHEL AWS Stratosphere images.')
 
 
+@pytest.fixture
+def third_party_only(instance_data):
+    """Skip test if the image is not a third-party (3p) image."""
+    if instance_data.get('image_type', '1p') != '3p':
+        pytest.skip('Only applicable to third-party (3p) images.')
+
+
 @pytest.fixture(scope='module', autouse=True)
 def instance_data(host):
     values_to_find = [host.backend.hostname]
