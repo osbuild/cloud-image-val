@@ -100,3 +100,10 @@ class OpenTofuConfigurator:
             if sanitized in tf_resource_name:
                 return instance['username']
         raise Exception(f'ERROR: No OCI instance matching tf resource name "{tf_resource_name}" was found')
+
+    def get_image_type(self):
+        """
+        Return the image_type from the top-level resource config.
+        Defaults to '1p' (first-party) if not specified.
+        """
+        return self.resources_dict.get('image_type', '1p')

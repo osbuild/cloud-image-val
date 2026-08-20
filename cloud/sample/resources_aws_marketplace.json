@@ -1,5 +1,6 @@
 {
   "provider": "aws",
+  "image_type": "1p",
   "instances": [
     {
       "ami": "ami-03724163927725aeb",

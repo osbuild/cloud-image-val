@@ -1,6 +1,7 @@
 {
   "provider": "oci",
   "profile": "DEFAULT",
+  "image_type": "3p",
   "instances": [
     {
       "image_id": "ocid1.image.oc1.us-sanjose-1.aaaaaaaamb7egvv2k4pslulaezw5dtgwx4f6js7fmapkjq4df2m2dqhtfbsq",

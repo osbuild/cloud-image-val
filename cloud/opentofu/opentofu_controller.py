@@ -99,6 +99,7 @@ class OpenTofuController:
                 'ami': ami_name,
                 'image': ami_name,
                 'username': username,
+                'image_type': self.tf_configurator.get_image_type(),
             }
 
             self._set_instance_default_address(instance_data)
@@ -132,6 +133,7 @@ class OpenTofuController:
                 'location': res['values']['location'],
                 'image': image,
                 'username': res['values']['admin_username'],
+                'image_type': self.tf_configurator.get_image_type(),
             }
 
             self._set_instance_default_address(instance_data)
@@ -160,6 +162,7 @@ class OpenTofuController:
                 'zone': resource['values']['zone'],
                 'image': resource['values']['metadata']['image'],
                 'username': resource['values']['metadata']['username'],
+                'image_type': self.tf_configurator.get_image_type(),
             }
 
         return instances_info
@@ -186,6 +189,7 @@ class OpenTofuController:
                 'shape': values['shape'],
                 'image': values['source_details'][0]['source_id'],
                 'username': self.tf_configurator.get_oci_username_by_instance_name(resource['name']),
+                'image_type': self.tf_configurator.get_image_type(),
             }
 
             self._set_instance_default_address(instance_data)
