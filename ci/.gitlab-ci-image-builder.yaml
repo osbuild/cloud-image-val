@@ -35,11 +35,6 @@
   INTERNAL_NETWORK: ["true"]
   NIGHTLY: ["true"]
 
-.fedora_runners: &fedora_runners
-  RUNNER:
-    - aws/fedora-44-x86_64
-  NIGHTLY: ["false"]
-
 ##################################
 #      END OF RUNNERS BLOCK      #
 ##################################
@@ -86,7 +81,6 @@ image-builder-aws:
     - if: $NIGHTLY == "false" && $CLOUDX_PKG_TESTING == "false"
   parallel:
     matrix:
-      - *fedora_runners
       - *rhel_runners
       - *rhel_runners_aarch64
 
@@ -115,7 +109,6 @@ image-builder-azure:
     - if: $NIGHTLY == "false" && $CLOUDX_PKG_TESTING == "false"
   parallel:
     matrix:
-      - *fedora_runners
       - *rhel_runners
 
 image-builder-azure-nightly-compose:
