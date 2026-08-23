@@ -562,6 +562,10 @@ class TestsGeneric:
         - Config files should have the correct MD5 checksums
         """
         checksums_by_version = {
+            '10.0+': {
+                '/etc/audit/auditd.conf': '4620bfd853bcd869f7a2cb8b1c6d715f',
+                '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
+            },
             '9.4+': {
                 '/etc/audit/auditd.conf': 'fd5c639b8b1bd57c486dab75985ad9af',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
@@ -582,7 +586,9 @@ class TestsGeneric:
             auditd_service).is_running, f'{auditd_service} expected to be running'
 
         system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('9.4'):
+        if system_release >= version.parse('10.0'):
+            checksums = checksums_by_version['10.0+']
+        elif system_release >= version.parse('9.4'):
             checksums = checksums_by_version['9.4+']
         elif version.parse('9.0') > system_release >= version.parse('8.10'):
             checksums = checksums_by_version['8.10+']
@@ -602,6 +608,24 @@ class TestsGeneric:
         either SIGPGP or RSAHEADER, and that a single GPG key is used.
         """
         with host.sudo():
+            # RHEL 9.7+ uses pqrpm: PQ signatures are not in the main
+            # rpmdb's SIGPGP/RSAHEADER fields. Verify GPG keys exist in
+            # the pqrpm db and gpgcheck is enforced instead.
+            pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
+            if host.file(pqrpm_db).is_directory:
+                gpg_keys = host.check_output(
+                    f"rpm --dbpath {pqrpm_db} -qa gpg-pubkey"
+                ).splitlines()
+                assert len(gpg_keys) > 0, \
+                    f'No GPG keys found in pqrpm db ({pqrpm_db})'
+
+                gpgcheck = host.run(
+                    "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
+                )
+                assert 'gpgcheck=1' in gpgcheck.stdout, \
+                    'gpgcheck=1 must be set when pqrpm is in use'
+                return
+
             # Query all installed RPMs and their GPG signature status
             rpm_signature_query_cmd = (
                 "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} "
