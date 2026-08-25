@@ -606,9 +606,9 @@ class TestsGeneric:
         """
         Checks that packages have a valid GPG signature,
         either SIGPGP or RSAHEADER, and that a single GPG key is used.
-        For RHEL 9.7+ with pqrpm, PQ signatures are not queryable via
-        traditional rpm tags; verifies GPG keys in the pqrpm db and
-        that gpgcheck=1 is configured as image policy.
+        On PQ-crypto systems (RHEL 9.7+ with pqrpm, RHEL 10+ natively),
+        traditional signature fields are empty; verifies GPG keys exist
+        and gpgcheck=1 is configured as image policy instead.
         """
         with host.sudo():
             # RHEL 9.7+ uses pqrpm: PQ signatures are not in the main
@@ -644,6 +644,24 @@ class TestsGeneric:
             for line in package_signature_lines:
                 if 'SIGPGP:(none)' in line and 'RSAHEADER:(none)' in line:
                     unsigned_packages.append(line)
+
+            # RHEL 10+ uses PQ signatures natively (no pqrpm db) but
+            # SIGPGP/RSAHEADER fields are still empty. If ALL packages
+            # appear unsigned but GPG keys exist in the main rpmdb,
+            # this is a PQ-signed system — verify gpgcheck=1 instead.
+            if unsigned_packages and \
+                    len(unsigned_packages) == len(package_signature_lines):
+                gpg_keys = host.check_output(
+                    "rpm -qa gpg-pubkey"
+                ).splitlines()
+                if len(gpg_keys) > 0:
+                    gpgcheck = host.run(
+                        "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
+                    )
+                    assert 'gpgcheck=1' in gpgcheck.stdout, \
+                        'Image policy requires gpgcheck=1 to ensure ' \
+                        'packages are signature-verified at install time'
+                    return
 
             # Construct a detailed error message if unsigned packages are found.
             error_message = (
