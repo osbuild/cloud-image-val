@@ -606,6 +606,9 @@ class TestsGeneric:
         """
         Checks that packages have a valid GPG signature,
         either SIGPGP or RSAHEADER, and that a single GPG key is used.
+        For RHEL 9.7+ with pqrpm, PQ signatures are not queryable via
+        traditional rpm tags; verifies GPG keys in the pqrpm db and
+        that gpgcheck=1 is configured as image policy.
         """
         with host.sudo():
             # RHEL 9.7+ uses pqrpm: PQ signatures are not in the main
@@ -623,7 +626,8 @@ class TestsGeneric:
                     "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
                 )
                 assert 'gpgcheck=1' in gpgcheck.stdout, \
-                    'gpgcheck=1 must be set when pqrpm is in use'
+                    'Image policy requires gpgcheck=1 to ensure packages ' \
+                    'are signature-verified at install time'
                 return
 
             # Query all installed RPMs and their GPG signature status
