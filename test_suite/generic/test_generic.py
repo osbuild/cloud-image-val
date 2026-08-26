@@ -604,40 +604,58 @@ class TestsGeneric:
     @pytest.mark.run_on(['all'])
     def test_pkg_signature_and_gpg_keys(self, host):
         """
-        Checks that packages have a valid GPG signature,
-        either SIGPGP or RSAHEADER, and that a single GPG key is used.
-        On PQ-crypto systems (RHEL 9.7+ with pqrpm, RHEL 10+ natively),
-        traditional signature fields are empty; verifies GPG keys exist
-        and gpgcheck=1 is configured as image policy instead.
+        Verifies the image enforces package signature verification.
+
+        Three paths based on RHEL version and PQ (post-quantum) crypto support:
+
+        - Pre-PQ (< 9.7): Checks SIGPGP/RSAHEADER per package and verifies
+          all signatures use a single Key ID.
+        - RHEL 9.7-9.x (pqrpm): RPM 4.16 can't query PQ signatures via any
+          tag. Verifies GPG keys exist in the pqrpm db, gpgcheck=1 is set
+          globally, and no repo overrides with gpgcheck=0.
+        - RHEL 10+ (native PQ): RPM 4.19 has an OPENPGP tag but it currently
+          returns (none) for all packages. Verifies GPG keys exist in the
+          main rpmdb, gpgcheck=1 is set globally, and no repo overrides
+          with gpgcheck=0.
         """
         with host.sudo():
-            # RHEL 9.7+ uses pqrpm: PQ signatures are not in the main
-            # rpmdb's SIGPGP/RSAHEADER fields. Verify GPG keys exist in
-            # the pqrpm db and gpgcheck is enforced instead.
-            pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
-            if host.file(pqrpm_db).is_directory:
+            is_rhel = host.system_info.distribution == 'rhel'
+            release = version.parse(host.system_info.release)
+            uses_pqrpm = is_rhel and release >= version.parse('9.7') \
+                and release < version.parse('10.0')
+            uses_native_pq = is_rhel and release >= version.parse('10.0')
+
+            if uses_pqrpm:
+                pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
+                assert host.file(pqrpm_db).is_directory, \
+                    f'Expected pqrpm db on RHEL {release}: {pqrpm_db}'
+
                 gpg_keys = host.check_output(
                     f"rpm --dbpath {pqrpm_db} -qa gpg-pubkey"
                 ).splitlines()
                 assert len(gpg_keys) > 0, \
                     f'No GPG keys found in pqrpm db ({pqrpm_db})'
 
-                gpgcheck = host.run(
-                    "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
-                )
-                assert 'gpgcheck=1' in gpgcheck.stdout, \
-                    'Image policy requires gpgcheck=1 to ensure packages ' \
-                    'are signature-verified at install time'
+                self._assert_gpgcheck_enforced(host)
                 return
 
-            # Query all installed RPMs and their GPG signature status
+            if uses_native_pq:
+                gpg_keys = host.check_output(
+                    "rpm -qa gpg-pubkey"
+                ).splitlines()
+                assert len(gpg_keys) > 0, \
+                    'No GPG keys found in rpmdb'
+
+                self._assert_gpgcheck_enforced(host)
+                return
+
+            # Pre-PQ: verify actual signatures per package
             rpm_signature_query_cmd = (
                 "rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE} "
                 "SIGPGP:%{SIGPGP:pgpsig} RSAHEADER:%{RSAHEADER:pgpsig}\\n'"
             )
             filter_gpg_pubkey = f"{rpm_signature_query_cmd} | grep -v gpg-pubkey"
 
-            # Get all lines for software packages
             package_signature_lines = host.check_output(filter_gpg_pubkey).splitlines()
 
             unsigned_packages = []
@@ -645,25 +663,6 @@ class TestsGeneric:
                 if 'SIGPGP:(none)' in line and 'RSAHEADER:(none)' in line:
                     unsigned_packages.append(line)
 
-            # RHEL 10+ uses PQ signatures natively (no pqrpm db) but
-            # SIGPGP/RSAHEADER fields are still empty. If ALL packages
-            # appear unsigned but GPG keys exist in the main rpmdb,
-            # this is a PQ-signed system — verify gpgcheck=1 instead.
-            if unsigned_packages and \
-                    len(unsigned_packages) == len(package_signature_lines):
-                gpg_keys = host.check_output(
-                    "rpm -qa gpg-pubkey"
-                ).splitlines()
-                if len(gpg_keys) > 0:
-                    gpgcheck = host.run(
-                        "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
-                    )
-                    assert 'gpgcheck=1' in gpgcheck.stdout, \
-                        'Image policy requires gpgcheck=1 to ensure ' \
-                        'packages are signature-verified at install time'
-                    return
-
-            # Construct a detailed error message if unsigned packages are found.
             error_message = (
                 "ERROR: The following software packages were found to be installed "
                 "without a valid GPG signature:\n"
@@ -674,10 +673,9 @@ class TestsGeneric:
                 "packages are from trusted sources."
             )
 
-            # Assert that no unsigned packages were found.
             assert not unsigned_packages, error_message
 
-            # check use only one keyid
+            # Verify all signatures use a single Key ID
             rpm_signatures_cmd = (
                 "rpm -qa --qf '%{NAME} %{SIGPGP:pgpsig} %{RSAHEADER:pgpsig}\\n'"
             )
@@ -688,6 +686,22 @@ class TestsGeneric:
                                         "| sort | uniq | wc -l"])
             assert int(host.check_output(key_ids_command)) == 1, \
                 'Number of key IDs for rhui pkgs should be 1'
+
+    def _assert_gpgcheck_enforced(self, host):
+        """Check gpgcheck=1 globally and no repo overrides with gpgcheck=0."""
+        gpgcheck = host.run(
+            "grep -s '^gpgcheck' /etc/dnf/dnf.conf /etc/yum.conf"
+        )
+        assert 'gpgcheck=1' in gpgcheck.stdout, \
+            'Image policy requires gpgcheck=1 to ensure packages ' \
+            'are signature-verified at install time'
+
+        repo_override = host.run(
+            "grep -rl 'gpgcheck=0' /etc/yum.repos.d/"
+        )
+        assert repo_override.stdout.strip() == '', \
+            f'Repos with gpgcheck=0 override global policy: ' \
+            f'{repo_override.stdout.strip()}'
 
     @pytest.mark.pub
     @pytest.mark.run_on(['all'])
