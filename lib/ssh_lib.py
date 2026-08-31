@@ -1,3 +1,9 @@
+from ssh.client import (  # noqa: F401 — re-exports for backward compatibility
+    generate_ssh_key_pair,
+    wait_for_host_ssh_up,
+    add_ssh_keys_to_instances,
+)
+
 import os
 import time
 import sshconf
