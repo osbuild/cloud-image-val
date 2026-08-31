@@ -1,9 +1,3 @@
-from ssh.client import (  # noqa: F401 — re-exports for backward compatibility
-    generate_ssh_key_pair,
-    wait_for_host_ssh_up,
-    add_ssh_keys_to_instances,
-)
-
 import os
 import time
 import sshconf
@@ -159,3 +153,8 @@ def __copy_team_ssh_keys_to_instance(instance, ssh_config_file, team_ssh_keys):
 
     assert success, f"[{instance_address}] ERROR: Could not copy public SSH key(s)"
     print(f"[{instance_address}] Public SSH key(s) copied successfully!")
+
+
+from ssh.client import generate_ssh_key_pair as generate_ssh_key_pair  # noqa: E402, F811, F401
+from ssh.client import wait_for_host_ssh_up as wait_for_host_ssh_up  # noqa: E402, F811, F401
+from ssh.client import add_ssh_keys_to_instances as add_ssh_keys_to_instances  # noqa: E402, F811, F401
