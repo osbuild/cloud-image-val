@@ -562,7 +562,7 @@ class TestsGeneric:
         - Config files should have the correct MD5 checksums
         """
         checksums_by_version = {
-            '10.0+': {
+            '10.3+': {
                 '/etc/audit/auditd.conf': '4620bfd853bcd869f7a2cb8b1c6d715f',
                 '/etc/audit/audit.rules': '795528bd4c7b4131455c15d5d49991bb'
             },
@@ -586,8 +586,8 @@ class TestsGeneric:
             auditd_service).is_running, f'{auditd_service} expected to be running'
 
         system_release = version.parse(host.system_info.release)
-        if system_release >= version.parse('10.0'):
-            checksums = checksums_by_version['10.0+']
+        if system_release >= version.parse('10.3'):
+            checksums = checksums_by_version['10.3+']
         elif system_release >= version.parse('9.4'):
             checksums = checksums_by_version['9.4+']
         elif version.parse('9.0') > system_release >= version.parse('8.10'):
