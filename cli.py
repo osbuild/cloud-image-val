@@ -9,7 +9,7 @@ import sys
 
 from core.config import CoreConfig
 from core.executor import execute
-from core.metadata import InstanceMetadata
+from core.metadata import InstanceMetadata, write_instances_json
 from core.provisioner import Provisioner
 from core.results import get_exit_code, merge_results
 
@@ -39,7 +39,7 @@ def _build_config(args: argparse.Namespace) -> CoreConfig:
 
     for attr in ("debug", "parallel", "stop_cleanup"):
         val = getattr(args, attr, None)
-        if val:
+        if val is not None:
             config_dict[attr] = val
 
     if getattr(args, "tags", None):
@@ -124,37 +124,32 @@ def cmd_run(args: argparse.Namespace) -> int:
     config = _build_config(args)
     provisioner = Provisioner(config)
     try:
-        instances = provisioner.provision()
-        provisioner.prepare_environment(instances)
+        if getattr(args, "attach", False):
+            instances = provisioner.get_instances()
+            write_instances_json(instances, config.instances_json)
+        else:
+            instances = provisioner.provision()
+            provisioner.prepare_environment(instances)
 
         command = getattr(args, "command", None) or _build_test_command(config)
         results_dir = os.path.dirname(config.output_file) or "/tmp"
-        exec_result = execute(
-            instances=instances,
+
+        exec_args = argparse.Namespace(
+            instances_json=config.instances_json,
             command=command,
             ssh_config=config.ssh_config_file,
             results_dir=results_dir,
             timeout=getattr(args, "timeout", 3600),
         )
+        exit_code = cmd_execute(exec_args)
 
-        for ir in exec_result.instance_results:
-            status = "PASS" if ir.exit_code == 0 else "FAIL"
-            print(f"  [{status}] {ir.instance_name} (exit={ir.exit_code})")
-
-        result_files = [
-            r.result_file for r in exec_result.instance_results if r.result_file
-        ]
-        if not result_files:
-            print("No result files collected")
-            return 1
-
-        merge_result = merge_results(result_files, config.output_file)
-        print(
-            f"Merged {merge_result.total_tests} tests: "
-            f"{merge_result.failures} failures, "
-            f"{merge_result.errors} errors"
+        collect_args = argparse.Namespace(
+            results_dir=results_dir,
+            output_file=config.output_file,
         )
-        return get_exit_code(merge_result)
+        collect_code = cmd_collect(collect_args)
+
+        return collect_code if collect_code != 0 else exit_code
 
     except Exception as exc:
         print(f"Error: {exc}")
@@ -250,6 +245,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Custom command (overrides test flags)")
     p_run.add_argument("--timeout", type=int, default=3600,
                        help="Timeout in seconds (default: 3600)")
+    p_run.add_argument("-a", "--attach", action="store_true", default=False,
+                       help="Attach to existing infrastructure instead of provisioning")
     p_run.set_defaults(func=cmd_run)
 
     # --- cleanup ---
