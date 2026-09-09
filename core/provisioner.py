@@ -72,20 +72,21 @@ class Provisioner:
         }
 
     def cleanup(self) -> None:
-        if self._controller is not None:
-            self._controller.destroy_infra()
-
-        if not self.config.debug:
-            for path in (
-                self.config.ssh_identity_file,
-                self.config.ssh_pub_key_file,
-                self.config.ssh_config_file,
-                self.config.instances_json,
-            ):
-                try:
-                    os.remove(path)
-                except FileNotFoundError:
-                    pass
+        try:
+            if self._controller is not None:
+                self._controller.destroy_infra()
+        finally:
+            if not self.config.debug:
+                for path in (
+                    self.config.ssh_identity_file,
+                    self.config.ssh_pub_key_file,
+                    self.config.ssh_config_file,
+                    self.config.instances_json,
+                ):
+                    try:
+                        os.remove(path)
+                    except FileNotFoundError:
+                        pass
 
     def prepare_environment(self, instances: dict[str, InstanceMetadata]) -> None:
         print("Copying team SSH public keys in the running instance(s)...")

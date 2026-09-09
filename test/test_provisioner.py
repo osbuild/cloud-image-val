@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from core.config import CoreConfig
 from core.metadata import InstanceMetadata
 from core.provisioner import Provisioner
@@ -195,6 +197,25 @@ class TestCleanup:
         provisioner = Provisioner(config)
         provisioner.get_instances()
         provisioner.cleanup()
+
+    @patch("core.provisioner.os.remove")
+    @patch("core.provisioner.OpenTofuController")
+    @patch("core.provisioner.OpenTofuConfigurator")
+    def test_removes_files_when_destroy_infra_fails(
+        self, MockConfigurator, MockController, mock_remove,
+    ):
+        mock_controller = MockController.return_value
+        mock_controller.get_instances.return_value = RAW_INSTANCE
+        mock_controller.destroy_infra.side_effect = Exception("tofu destroy failed")
+
+        config = _make_config(debug=False)
+        provisioner = Provisioner(config)
+        provisioner.get_instances()
+
+        with pytest.raises(Exception, match="tofu destroy failed"):
+            provisioner.cleanup()
+
+        assert mock_remove.call_count == 4
 
 
 class TestPrepareEnvironment:
