@@ -34,6 +34,7 @@ def _run_on_instance(
     remote_results_path: str,
     timeout: int,
 ) -> InstanceResult:
+    ssh_failed = False
     try:
         result = subprocess.run(
             [
@@ -50,10 +51,12 @@ def _run_on_instance(
         stdout = result.stdout
         stderr = result.stderr
     except subprocess.TimeoutExpired:
+        ssh_failed = True
         exit_code = 124
         stdout = ""
         stderr = f"SSH command timed out after {timeout} seconds"
     except Exception as exc:
+        ssh_failed = True
         exit_code = 1
         stdout = ""
         stderr = str(exc)
@@ -61,20 +64,22 @@ def _run_on_instance(
     local_result_file = os.path.join(
         results_dir, f"instance-{instance.name}.xml",
     )
-    try:
-        scp_result = subprocess.run(
-            [
-                "scp",
-                "-F", ssh_config,
-                f"{instance.username}@{instance.address}:{remote_results_path}",
-                local_result_file,
-            ],
-            capture_output=True,
-            timeout=60,
-        )
-        collected = scp_result.returncode == 0
-    except Exception:
-        collected = False
+    collected = False
+    if not ssh_failed:
+        try:
+            scp_result = subprocess.run(
+                [
+                    "scp",
+                    "-F", ssh_config,
+                    f"{instance.username}@{instance.address}:{remote_results_path}",
+                    local_result_file,
+                ],
+                capture_output=True,
+                timeout=60,
+            )
+            collected = scp_result.returncode == 0
+        except Exception:
+            pass
 
     return InstanceResult(
         instance_name=instance.name,

@@ -63,11 +63,8 @@ class TestRunOnInstance:
         assert result.stderr == "error"
 
     @patch("core.executor.subprocess.run")
-    def test_timeout_handling(self, mock_run):
-        mock_run.side_effect = [
-            subprocess.TimeoutExpired(cmd="ssh", timeout=10),
-            subprocess.CompletedProcess(args=[], returncode=1),
-        ]
+    def test_timeout_skips_scp(self, mock_run):
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="ssh", timeout=10)
 
         result = _run_on_instance(
             _make_instance(), "slow-cmd", "/tmp/ssh_config",
@@ -76,13 +73,12 @@ class TestRunOnInstance:
 
         assert result.exit_code == 124
         assert "timed out" in result.stderr
+        assert result.result_file is None
+        assert mock_run.call_count == 1
 
     @patch("core.executor.subprocess.run")
-    def test_ssh_connection_error(self, mock_run):
-        mock_run.side_effect = [
-            Exception("Connection refused"),
-            subprocess.CompletedProcess(args=[], returncode=1),
-        ]
+    def test_ssh_connection_error_skips_scp(self, mock_run):
+        mock_run.side_effect = Exception("Connection refused")
 
         result = _run_on_instance(
             _make_instance(), "cmd", "/tmp/ssh_config",
@@ -91,6 +87,8 @@ class TestRunOnInstance:
 
         assert result.exit_code == 1
         assert "Connection refused" in result.stderr
+        assert result.result_file is None
+        assert mock_run.call_count == 1
 
     @patch("core.executor.subprocess.run")
     def test_scp_failure_sets_result_file_none(self, mock_run):
