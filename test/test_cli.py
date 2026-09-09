@@ -55,6 +55,7 @@ def _run_args(**overrides):
         "tags": None,
         "command": None,
         "timeout": 3600,
+        "attach": False,
     }
     defaults.update(overrides)
     return Namespace(**defaults)
@@ -174,7 +175,7 @@ class TestBuildParser:
             "-t", "test_ssh", "--test-suites", "a/", "b/",
             "-m", "pub", "-p", "-d", "-s", "-e", "automated",
             "--tags", "env:prod", "--command", "echo hi",
-            "--timeout", "600",
+            "--timeout", "600", "-a",
         ])
         assert args.resources_file == "resources.json"
         assert args.test_filter == "test_ssh"
@@ -187,6 +188,7 @@ class TestBuildParser:
         assert args.tags == "env:prod"
         assert args.command == "echo hi"
         assert args.timeout == 600
+        assert args.attach is True
 
     def test_cleanup_subcommand(self):
         parser = build_parser()
@@ -310,70 +312,42 @@ class TestCmdCollect:
 
 
 class TestCmdRun:
-    @patch("cli.merge_results")
-    @patch("cli.execute")
+    @patch("cli.cmd_collect", return_value=0)
+    @patch("cli.cmd_execute", return_value=0)
     @patch("cli.Provisioner")
-    def test_full_pipeline_success(self, MockProv, mock_execute, mock_merge):
+    def test_full_pipeline_success(self, MockProv, mock_exec, mock_coll):
         mock_prov = MockProv.return_value
         mock_prov.provision.return_value = {"inst1": MagicMock()}
-
-        mock_ir = MagicMock()
-        mock_ir.exit_code = 0
-        mock_ir.instance_name = "inst1"
-        mock_ir.result_file = "/tmp/r/inst1.xml"
-        mock_exec_result = MagicMock()
-        mock_exec_result.instance_results = [mock_ir]
-        mock_execute.return_value = mock_exec_result
-
-        mock_merge.return_value = MergeResult(
-            total_tests=5, failures=0, errors=0, skipped=0, time=1.0,
-        )
 
         args = _run_args()
         assert cmd_run(args) == 0
         mock_prov.provision.assert_called_once()
         mock_prov.prepare_environment.assert_called_once()
+        mock_exec.assert_called_once()
+        mock_coll.assert_called_once()
         mock_prov.cleanup.assert_called_once()
 
-    @patch("cli.merge_results")
-    @patch("cli.execute")
+    @patch("cli.cmd_collect", return_value=1)
+    @patch("cli.cmd_execute", return_value=0)
     @patch("cli.Provisioner")
-    def test_returns_exit_code_from_merge(self, MockProv, mock_execute, mock_merge):
+    def test_returns_collect_exit_code(self, MockProv, mock_exec, mock_coll):
         mock_prov = MockProv.return_value
         mock_prov.provision.return_value = {"inst1": MagicMock()}
-
-        mock_ir = MagicMock()
-        mock_ir.exit_code = 0
-        mock_ir.instance_name = "inst1"
-        mock_ir.result_file = "/tmp/r/inst1.xml"
-        mock_exec_result = MagicMock()
-        mock_exec_result.instance_results = [mock_ir]
-        mock_execute.return_value = mock_exec_result
-
-        mock_merge.return_value = MergeResult(
-            total_tests=5, failures=2, errors=0, skipped=0, time=1.0,
-        )
 
         args = _run_args()
         assert cmd_run(args) == 1
 
-    @patch("cli.execute")
+    @patch("cli.cmd_collect", return_value=0)
+    @patch("cli.cmd_execute", return_value=1)
     @patch("cli.Provisioner")
-    def test_returns_one_when_no_result_files(self, MockProv, mock_execute):
+    def test_returns_execute_exit_code_when_collect_passes(
+        self, MockProv, mock_exec, mock_coll,
+    ):
         mock_prov = MockProv.return_value
         mock_prov.provision.return_value = {"inst1": MagicMock()}
 
-        mock_ir = MagicMock()
-        mock_ir.exit_code = 1
-        mock_ir.instance_name = "inst1"
-        mock_ir.result_file = None
-        mock_exec_result = MagicMock()
-        mock_exec_result.instance_results = [mock_ir]
-        mock_execute.return_value = mock_exec_result
-
         args = _run_args()
         assert cmd_run(args) == 1
-        mock_prov.cleanup.assert_called_once()
 
     @patch("cli.Provisioner")
     def test_returns_100_on_infra_error(self, MockProv):
@@ -384,48 +358,43 @@ class TestCmdRun:
         assert cmd_run(args) == 100
         mock_prov.cleanup.assert_called_once()
 
-    @patch("cli.execute")
+    @patch("cli.cmd_collect", return_value=0)
+    @patch("cli.cmd_execute", return_value=0)
     @patch("cli.Provisioner")
-    def test_skips_cleanup_when_stop_cleanup(self, MockProv, mock_execute):
+    def test_skips_cleanup_when_stop_cleanup(self, MockProv, mock_exec, mock_coll):
         mock_prov = MockProv.return_value
         mock_prov.provision.return_value = {"inst1": MagicMock()}
-
-        mock_ir = MagicMock()
-        mock_ir.result_file = None
-        mock_ir.exit_code = 0
-        mock_ir.instance_name = "inst1"
-        mock_exec_result = MagicMock()
-        mock_exec_result.instance_results = [mock_ir]
-        mock_execute.return_value = mock_exec_result
 
         args = _run_args(stop_cleanup=True)
         cmd_run(args)
         mock_prov.cleanup.assert_not_called()
 
-    @patch("cli.merge_results")
-    @patch("cli.execute")
+    @patch("cli.cmd_collect", return_value=0)
+    @patch("cli.cmd_execute", return_value=0)
     @patch("cli.Provisioner")
-    def test_uses_custom_command(self, MockProv, mock_execute, mock_merge):
+    def test_passes_custom_command(self, MockProv, mock_exec, mock_coll):
         mock_prov = MockProv.return_value
         mock_prov.provision.return_value = {"inst1": MagicMock()}
 
-        mock_ir = MagicMock()
-        mock_ir.exit_code = 0
-        mock_ir.instance_name = "inst1"
-        mock_ir.result_file = "/tmp/r/inst1.xml"
-        mock_exec_result = MagicMock()
-        mock_exec_result.instance_results = [mock_ir]
-        mock_execute.return_value = mock_exec_result
-
-        mock_merge.return_value = MergeResult(
-            total_tests=1, failures=0, errors=0, skipped=0, time=0.5,
-        )
-
         args = _run_args(command="echo hi")
         cmd_run(args)
-        mock_execute.assert_called_once()
-        call_kwargs = mock_execute.call_args
-        assert call_kwargs[1]["command"] == "echo hi"
+        exec_call_args = mock_exec.call_args[0][0]
+        assert exec_call_args.command == "echo hi"
+
+    @patch("cli.cmd_collect", return_value=0)
+    @patch("cli.cmd_execute", return_value=0)
+    @patch("cli.write_instances_json")
+    @patch("cli.Provisioner")
+    def test_attach_skips_provision(self, MockProv, mock_write, mock_exec, mock_coll):
+        mock_prov = MockProv.return_value
+        mock_prov.get_instances.return_value = {"inst1": MagicMock()}
+
+        args = _run_args(attach=True)
+        assert cmd_run(args) == 0
+        mock_prov.provision.assert_not_called()
+        mock_prov.prepare_environment.assert_not_called()
+        mock_prov.get_instances.assert_called_once()
+        mock_write.assert_called_once()
 
 
 class TestCmdCleanup:
