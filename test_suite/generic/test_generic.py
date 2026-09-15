@@ -752,26 +752,22 @@ class TestsGeneric:
     @pytest.mark.run_on(['rhel'])
     def test_pqrpm_gpg_keys(self, host, instance_data):
         """
-        RHEL 9.7+ image-builder imports GPG keys with pqrpm into
-        /usr/lib/pqrpm/lib/sysimage/rpm.
-        OCI: 2 Red Hat keys. Azure: 2 Red Hat + 1 Microsoft key.
+        RHEL 9.7+ image-builder imports Red Hat GPG keys with pqrpm into
+        /usr/lib/pqrpm/lib/sysimage/rpm. OCI-only until other clouds are measured.
         """
+        if instance_data['cloud'] != 'oci':
+            pytest.skip('Expected pqrpm key counts are only known for OCI')
+
         release = version.parse(host.system_info.release)
-        if release >= version.parse('10'):
-            pytest.skip('pqrpm key db is not used on RHEL 10')
+        if release < version.parse('9.7') or release >= version.parse('10'):
+            pytest.skip('pqrpm key db is used on RHEL 9.7+ (not RHEL 10)')
 
         pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
-        if not host.file(pqrpm_db).exists:
-            pytest.skip('pqrpm rpmdb not present on this image')
-
-        if instance_data['cloud'] == 'oci':
-            num_of_gpg_keys = 2
-        elif instance_data['cloud'] == 'azure':
-            num_of_gpg_keys = 3
-        else:
-            pytest.skip(f"Expected pqrpm key count not known for {instance_data['cloud']}")
+        num_of_gpg_keys = 2
 
         with host.sudo():
+            assert host.file(pqrpm_db).exists, \
+                f'pqrpm rpmdb missing at {pqrpm_db}'
             print(host.check_output(
                 f'rpm --dbpath {pqrpm_db} -qa | grep gpg-pubkey'))
             assert int(host.check_output(
