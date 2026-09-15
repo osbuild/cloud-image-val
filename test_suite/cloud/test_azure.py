@@ -50,6 +50,7 @@ def get_expected_rhui_rpm_name(host, source_string):
             'sap-ha': '-sap-ha',
             'sap-apps': '-sapapps',
             'sapapps': '-sapapps',
+            '-ha': '-ha',
             'arm64': '-arm64',
         }
 
