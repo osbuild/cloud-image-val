@@ -215,7 +215,7 @@ def ensure_rpm_usable_before_tests(host, instance_data):
 
         combined_output = fix.stderr + fix.stdout
         if any(pattern in combined_output for pattern in ("403", "404", "not registered", "not installed")):
-            print(f"\n[!] Skipping RPM workaround: repo/entitlement issue.")
+            print("\n[!] Skipping RPM workaround: repo/entitlement issue.")
             return
 
         assert fix.succeeded, f"Failed workaround: {fix.stderr}"
