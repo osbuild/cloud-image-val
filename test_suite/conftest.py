@@ -195,14 +195,10 @@ def html_report_links(extra, host, instance_data):
 def ensure_rpm_usable_before_tests(host, instance_data):
     """
     Workaround for broken rpm-sequoia / openssl-libs combination.
-    Only applies to RHEL 10+ where rpm-sequoia exists.
+    Ensures rpm is usable before any tests in this module execute.
     """
     if instance_data['cloud'] == 'oci':
         print("\n[!] OCI instance: skipping RHUI RPM workaround.")
-        return
-
-    if not host.system_info.release.startswith("10"):
-        print(f"\n[!] RHEL {host.system_info.release}: rpm-sequoia not applicable, skipping workaround.")
         return
 
     with host.sudo():
