@@ -713,13 +713,15 @@ class TestsGeneric:
         On RHEL 9.7+ OCI, Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys),
         so this test expects only those 2 OCA keys in the default rpmdb.
         On RHEL 10 OCI, Red Hat keys are in the default rpmdb (expect 5).
+        On RHEL 9.8+ Azure, all keys are in the pqrpm db (expect 0 in default).
         """
         release = version.parse(host.system_info.release)
         is_oci = instance_data['cloud'] == 'oci'
+        pqrpm_db = '/usr/lib/pqrpm/lib/sysimage/rpm'
+        has_pqrpm = host.file(pqrpm_db).exists
 
         with host.sudo():
-            # print the gpg public keys installed
-            print(host.check_output('rpm -qa | grep gpg-pubkey'))
+            print(host.run('rpm -qa | grep gpg-pubkey').stdout)
 
             if host.system_info.distribution == 'fedora':
                 num_of_gpg_keys = 1
@@ -732,14 +734,16 @@ class TestsGeneric:
                 # Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys);
                 # default rpmdb has the 2 Oracle Cloud Agent keys
                 num_of_gpg_keys = 2
+            elif has_pqrpm:
+                # Non-OCI: all keys moved to pqrpm db
+                num_of_gpg_keys = 0
             elif host.system_info.distribution == 'rhel' and \
                     release >= version.parse('9.0'):
                 num_of_gpg_keys = 3
             else:
                 num_of_gpg_keys = 2
 
-        # check correct number of gpg keys installed
-        assert int(host.check_output('rpm -q gpg-pubkey | wc -l')) == num_of_gpg_keys, \
+        assert int(host.check_output('rpm -qa gpg-pubkey | wc -l')) == num_of_gpg_keys, \
             f'There should be {num_of_gpg_keys} gpg key(s) installed'
 
     @pytest.mark.pub
