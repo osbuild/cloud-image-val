@@ -729,7 +729,8 @@ class TestsGeneric:
                     release >= version.parse('10'):
                 # 3 Red Hat keys + 2 Oracle Cloud Agent keys
                 num_of_gpg_keys = 5
-            elif is_oci and has_pqrpm:
+            elif is_oci and host.system_info.distribution == 'rhel' and \
+                    version.parse('9.7') <= release < version.parse('10'):
                 # Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys);
                 # default rpmdb has the 2 Oracle Cloud Agent keys
                 num_of_gpg_keys = 2
