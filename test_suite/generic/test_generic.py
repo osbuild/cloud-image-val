@@ -710,9 +710,10 @@ class TestsGeneric:
         Check that the number of GPGs is correct in the default rpmdb.
 
         On OCI, Oracle Cloud Agent imports two Oracle Linux keys at first boot.
-        On RHEL 9.7+, Red Hat keys may be in the pqrpm db (test_pqrpm_gpg_keys)
-        instead of the default rpmdb.
+        On RHEL 9.7+ OCI, Red Hat keys are in the pqrpm db (test_pqrpm_gpg_keys),
+        so this test expects only those 2 OCA keys in the default rpmdb.
         On RHEL 10 OCI, Red Hat keys are in the default rpmdb (expect 5).
+        On RHEL 9.8+ Azure, all keys are in the pqrpm db (expect 0 in default).
         """
         release = version.parse(host.system_info.release)
         is_oci = instance_data['cloud'] == 'oci'
