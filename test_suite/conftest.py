@@ -195,23 +195,30 @@ def html_report_links(extra, host, instance_data):
 def ensure_rpm_usable_before_tests(host, instance_data):
     """
     Workaround for broken rpm-sequoia / openssl-libs combination.
-    Ensures rpm is usable before any tests in this module execute.
+    Only applies to RHEL 10+ where rpm-sequoia exists.
     """
     if instance_data['cloud'] == 'oci':
         print("\n[!] OCI instance: skipping RHUI RPM workaround.")
         return
 
+    if not host.system_info.release.startswith("10"):
+        print(f"\n[!] RHEL {host.system_info.release}: rpm-sequoia not applicable, skipping workaround.")
+        return
+
     with host.sudo():
         fix = host.run("yum -y update rpm-sequoia openssl-libs")
 
-        if not fix.succeeded and ("403" in fix.stderr or "not registered" in fix.stdout):
-            print("\n[!] Entitlement issue (3P). Skipping RPM workaround.")
+        if fix.succeeded:
+            recheck = host.run("rpm -qa")
+            assert recheck.succeeded, f"rpm still broken after workaround: {recheck.stderr}"
+            return
+
+        combined_output = fix.stderr + fix.stdout
+        if any(pattern in combined_output for pattern in ("403", "404", "not registered", "not installed")):
+            print(f"\n[!] Skipping RPM workaround: repo/entitlement issue.")
             return
 
         assert fix.succeeded, f"Failed workaround: {fix.stderr}"
-
-        recheck = host.run("rpm -qa")
-        assert recheck.succeeded, f"rpm still broken after workaround: {recheck.stderr}"
 
 
 @pytest.fixture(params=[False, True], ids=["FIPS-OFF", "FIPS-ON"], scope="module")
