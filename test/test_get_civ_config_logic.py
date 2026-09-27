@@ -13,6 +13,7 @@ def mock_get_method_changes_for_file(test_file):
         CLOUD_TEST_FILES['aws']: {'test_aws_method1'},
         CLOUD_TEST_FILES['azure']: {'test_azure_method2'},
         CLOUD_TEST_FILES['gcp']: {'test_gcp_method3'},
+        CLOUD_TEST_FILES['oci']: {'test_oci_method4'},
         GENERIC_TEST_FILE: {'test_generic_method1', 'test_generic_method2'},
     }.get(test_file, set())
 
@@ -26,7 +27,7 @@ def mock_get_method_changes_for_file(test_file):
         'azure': {'test_azure_method2'}
     }),
     # Only generic file and methods changed
-    ([GENERIC_TEST_FILE], 'generic_methods', ['aws', 'azure', 'gcp'], {'generic': {'test_generic_method1', 'test_generic_method2'}}),
+    ([GENERIC_TEST_FILE], 'generic_methods', ['aws', 'azure', 'gcp', 'oci'], {'generic': {'test_generic_method1', 'test_generic_method2'}}),
     # Non-test file changed
     (['schutzbot/get_civ_config.py'], 'full', None, None),
     # Test file with no method detection (should fallback to full)
