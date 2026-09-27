@@ -17,6 +17,7 @@ CLOUD_TEST_FILES = {
     'aws': 'test_suite/cloud/test_aws.py',
     'azure': 'test_suite/cloud/test_azure.py',
     'gcp': 'test_suite/cloud/test_gcp.py',
+    'oci': 'test_suite/cloud/test_oci.py',
 }
 GENERIC_TEST_FILE = 'test_suite/generic/test_generic.py'
 
@@ -203,6 +204,7 @@ if __name__ == '__main__':
         vars['SKIP_AWS'] = 'false'
         vars['SKIP_AZURE'] = 'false'
         vars['SKIP_GCP'] = 'false'
+        vars['SKIP_OCI'] = 'false'
         civ_config['test_filter'] = ''
     elif run_mode['mode'] == 'cloud_methods':
         # Only run impacted clouds and collect all changed methods
@@ -222,6 +224,7 @@ if __name__ == '__main__':
         vars['SKIP_AWS'] = 'false'
         vars['SKIP_AZURE'] = 'false'
         vars['SKIP_GCP'] = 'false'
+        vars['SKIP_OCI'] = 'false'
         civ_config['test_filter'] = ' or '.join(run_mode['methods']['generic'])
 
     # Additional config from env vars
