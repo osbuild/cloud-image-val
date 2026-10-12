@@ -9,7 +9,7 @@
   "fedora-44": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     },
     "repos": [
@@ -52,14 +52,14 @@
   "rhel-9.8": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     }
   },
   "rhel-9.9": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     },
     "repos": [
@@ -105,7 +105,7 @@
   "rhel-10.2": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       },
       "bootc": {
         "guest-image": {
@@ -125,7 +125,7 @@
   "rhel-10.3": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     },
     "repos": [
@@ -171,14 +171,14 @@
   "centos-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     }
   },
   "centos-stream-9": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     },
     "repos": [
@@ -224,14 +224,14 @@
   "centos-10": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     }
   },
   "centos-stream-10": {
     "dependencies": {
       "osbuild": {
-        "commit": "4a7a9a9db5ce5cb82214141d681bb589a6599ba5"
+        "commit": "15a656b5b1d626978c03590766ef09b817cbbceb"
       }
     },
     "repos": [
