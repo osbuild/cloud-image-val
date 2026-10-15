@@ -74,17 +74,20 @@ class TestsOCI:
                 'NetworkManager must be running in OCI instances'
 
     @pytest.mark.run_on(['all'])
-    def test_correct_network_driver_is_used(self, host):
+    def test_correct_network_driver_is_used(self, host, instance_data_oci_web):
         """
-        OCI instances use the virtio driver (paravirtualized NIC).
+        Verify virtio for paravirtualized NICs and mlx5_core for bare-metal instances.
         """
         with host.sudo():
             nic_driver = host.check_output(
                 "grep -h DRIVER /sys/class/net/*/device/uevent"
             )
-
-        assert 'virtio' in nic_driver, \
-            f'Expected virtio network driver in OCI paravirtualized instance, got: {nic_driver}'
+        if instance_data_oci_web['shape'].startswith('BM.'):
+            assert 'mlx5_core' in nic_driver, \
+                f'Expected mlx5_core network driver in OCI bare-metal instance, got: {nic_driver}'
+        else:
+            assert 'virtio' in nic_driver, \
+                f'Expected virtio network driver in OCI paravirtualized instance, got: {nic_driver}'
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
