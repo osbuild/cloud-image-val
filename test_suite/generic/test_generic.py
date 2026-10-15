@@ -198,7 +198,7 @@ class TestsGeneric:
             dmesg_numa_nodes = host.check_output("dmesg | grep -i 'No NUMA'|wc -l")
 
             if int(lscpu_numa_nodes) > 1:
-                assert dmesg_numa_nodes > 1, \
+                assert int(dmesg_numa_nodes) > 1, \
                     f'NUMA seems to be disabled, when it should be enabled (NUMA nodes: {lscpu_numa_nodes})'
 
     @pytest.mark.run_on(['rhel'])
