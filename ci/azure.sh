@@ -217,7 +217,7 @@ tee "${TEMPDIR}/resource-file.json" <<EOF
             "vhd_uri": "${BLOB_URL}",
             "arch": "$ARCH",
             "storage_account": "${AZURE_STORAGE_ACCOUNT}",
-            "location": "eastus",
+            "location": "${AZURE_LOCATION:-eastus}",
             "username": "$SSH_USER",
             "name": "civ-pkg-testing-image"
         }
