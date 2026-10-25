@@ -18,6 +18,7 @@ class SuiteRunner:
     connection_backend = 'paramiko'
     max_reruns = 3
     rerun_delay_sec = 5
+    global_timeout_sec = 7200
 
     def __init__(self,
                  cloud_provider,
@@ -61,6 +62,7 @@ class SuiteRunner:
             test_suite_paths = self.get_default_test_suite_paths()
 
         command_with_args = [
+            f'timeout {self.global_timeout_sec}',
             'pytest',
             ' '.join(test_suite_paths),
             f'--hosts={all_hosts}',
