@@ -55,7 +55,8 @@ class TestSuiteRunner:
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
-          f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")}'),
+          f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
+          f'--timeout=600'),
          (None, test_filter, test_marker, False, False,
           'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
@@ -63,6 +64,7 @@ class TestSuiteRunner:
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
+          f'--timeout=600 '
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
          (None, None, None, False, True,
@@ -72,6 +74,7 @@ class TestSuiteRunner:
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
+          f'--timeout=600 '
           f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
@@ -83,6 +86,7 @@ class TestSuiteRunner:
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
+          f'--timeout=600 '
           f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
