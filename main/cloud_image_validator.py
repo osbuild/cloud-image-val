@@ -1,6 +1,7 @@
 import json
 import os
 import traceback
+import xml.etree.ElementTree as ET
 
 from pprint import pprint
 from cloud.opentofu.opentofu_controller import OpenTofuController
@@ -22,6 +23,7 @@ class CloudImageValidator:
     def main(self, attach=False):
         exit_code = 0
         instances = None
+        failed_deployments = []
 
         try:
             if attach:
@@ -36,6 +38,7 @@ class CloudImageValidator:
 
                 console_lib.print_divider('Deploying infrastructure')
                 instances = self.deploy_infrastructure()
+                failed_deployments = getattr(self.infra_controller, 'failed_deployments', [])
 
                 console_lib.print_divider('Preparing environment')
                 self.prepare_environment(instances)
@@ -44,6 +47,18 @@ class CloudImageValidator:
             wait_status = self.run_tests_in_all_instances(instances)
 
             exit_code = wait_status >> 8
+
+            if failed_deployments:
+                self._append_failed_deployments_to_report(
+                    self.config['output_file'], failed_deployments)
+                self._append_failed_deployments_to_json_report(
+                    self.config['output_file'].replace('xml', 'json'), failed_deployments)
+                console_lib.print_divider('Deployment failures')
+                print(f'{len(failed_deployments)} instance(s) failed to deploy:')
+                for dep in failed_deployments:
+                    print(f'  - {dep["name"]} ({dep["region"]})')
+                if exit_code == 0:
+                    exit_code = 1
 
         except Exception:
             traceback.print_exc()
@@ -133,6 +148,84 @@ class CloudImageValidator:
                                 self.config['output_file'],
                                 self.config['test_filter'],
                                 self.config['include_markers'])
+
+    def _append_failed_deployments_to_report(self, report_path, failed_deployments):
+        if not failed_deployments or not os.path.exists(report_path):
+            return
+
+        try:
+            tree = ET.parse(report_path)
+            root = tree.getroot()
+
+            testsuite = root.find('testsuite') if root.tag != 'testsuite' else root
+
+            deploy_suite = ET.SubElement(
+                root if root.tag == 'testsuites' else testsuite,
+                'testsuite',
+                name='deployment',
+                tests=str(len(failed_deployments)),
+                errors=str(len(failed_deployments)),
+                failures='0',
+            )
+
+            for dep in failed_deployments:
+                testcase = ET.SubElement(
+                    deploy_suite,
+                    'testcase',
+                    classname='deployment',
+                    name=f'deploy_{dep["name"]}_{dep["region"]}',
+                )
+                error = ET.SubElement(
+                    testcase,
+                    'error',
+                    message=f'Failed to deploy instance in {dep["region"]}',
+                    type='DeploymentError',
+                )
+                error.text = dep.get('error', '')
+
+            tree.write(report_path, xml_declaration=True, encoding='unicode')
+        except Exception as e:
+            print(f'WARNING: Could not append deployment failures to report: {e}')
+
+    def _append_failed_deployments_to_json_report(self, json_report_path, failed_deployments):
+        if not failed_deployments or not os.path.exists(json_report_path):
+            return
+
+        try:
+            with open(json_report_path) as f:
+                report_data = json.load(f)
+
+            for dep in failed_deployments:
+                report_data['tests'].append({
+                    'nodeid': f'deployment::deploy_{dep["name"]}_{dep["region"]}',
+                    'lineno': 0,
+                    'outcome': 'failed',
+                    'keywords': [
+                        f'deploy_{dep["name"]}_{dep["region"]}',
+                        'deployment',
+                    ],
+                    'setup': {'duration': 0, 'outcome': 'passed'},
+                    'call': {
+                        'duration': 0,
+                        'outcome': 'failed',
+                        'crash': {
+                            'path': 'deployment',
+                            'lineno': 0,
+                            'message': f'Failed: DeploymentError: Failed to deploy instance '
+                                       f'{dep["name"]} in {dep["region"]}. {dep.get("error", "")}',
+                        },
+                        'traceback': [],
+                    },
+                    'teardown': {'duration': 0, 'outcome': 'passed'},
+                })
+
+            report_data['summary']['failed'] = report_data['summary'].get('failed', 0) + len(failed_deployments)
+            report_data['summary']['total'] = report_data['summary'].get('total', 0) + len(failed_deployments)
+
+            with open(json_report_path, 'w') as f:
+                json.dump(report_data, f, indent=4)
+        except Exception as e:
+            print(f'WARNING: Could not append deployment failures to JSON report: {e}')
 
     def cleanup(self):
         self.infra_controller.destroy_infra()
