@@ -5,6 +5,21 @@ class AWSConfigBuilderEfs(BaseConfigBuilder):
     cloud_name = 'aws'
     cloud_provider_definition = {'aws': {'source': 'hashicorp/aws', 'version': '~> 5.49.0'}}
 
+    default_x86_instance_type = 'm5.large'
+    default_arm64_instance_type = 'm6g.medium'
+    m7g_only_regions = ['me-west-1']
+
+    def _resolve_instance_type(self, instance):
+        arch = instance.get('arch', '')
+        region = instance.get('region', '')
+        instance_type = instance.get('instance_type', '')
+
+        if arch in ('arm64', 'aarch64'):
+            if region in self.m7g_only_regions:
+                return 'm7g.medium'
+            return instance_type or self.default_arm64_instance_type
+        return instance_type or self.default_x86_instance_type
+
     def build_providers(self):
         all_regions = self.__get_all_regions_from_resources_file()
         for region in all_regions:
@@ -154,9 +169,7 @@ class AWSConfigBuilderEfs(BaseConfigBuilder):
         self.resources_tf['resource'][tf_resource_type][efs_mount_target_name] = new_efs_mount_target
 
     def __new_aws_instance(self, instance):
-        if not instance['instance_type']:
-            # CIV will assume the AMI is x64. For ARM, the instance_type must be manually specified in resources.json
-            instance['instance_type'] = 't3.medium'
+        instance['instance_type'] = self._resolve_instance_type(instance)
 
         name_tag_value = instance['name'].replace('.', '-')
         name = self.create_resource_name([name_tag_value])

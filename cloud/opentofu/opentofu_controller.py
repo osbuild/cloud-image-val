@@ -17,16 +17,70 @@ class OpenTofuController:
             self.debug_sufix = '1> /dev/null'
 
     def create_infra(self):
+        self.failed_deployments = []
+
         cmd_output = os.system(f'tofu init {self.debug_sufix}')
         if cmd_output:
             raise Exception('tofu init command failed, check configuration')
 
         cmd_output = os.system(f'tofu apply -auto-approve {self.debug_sufix}')
         if cmd_output:
-            raise Exception('tofu apply command failed, check configuration')
+            created = self._count_created_instances()
+            total = len(self.tf_configurator.resources_dict['instances'])
+            if created == 0:
+                raise Exception('tofu apply command failed and no instances were created, check configuration')
+            failed = total - created
+            self.failed_deployments = self._identify_failed_deployments()
+            print(f'WARNING: tofu apply partially failed. '
+                  f'{created} of {total} instances were created successfully, '
+                  f'{failed} failed to deploy.', flush=True)
+            for dep in self.failed_deployments:
+                print(f'  - {dep["name"]} ({dep["region"]}): {dep["error"]}', flush=True)
 
         print('Waiting for the ssh server in the instance(s) to be ready...')
         self.wait_for_all_instances_ssh_up()
+
+    def _count_created_instances(self):
+        try:
+            resources = self.get_opentofu_resources()
+            instance_types = {
+                'aws': 'aws_instance',
+                'azure': 'azurerm_linux_virtual_machine',
+                'gcloud': 'google_compute_instance',
+                'oci': 'oci_core_instance',
+            }
+            instance_type = instance_types.get(self.cloud_name)
+            return len([r for r in resources if r['type'] == instance_type])
+        except Exception:
+            return 0
+
+    def _identify_failed_deployments(self):
+        try:
+            resources = self.get_opentofu_resources()
+            instance_types = {
+                'aws': 'aws_instance',
+                'azure': 'azurerm_linux_virtual_machine',
+                'gcloud': 'google_compute_instance',
+                'oci': 'oci_core_instance',
+            }
+            instance_type = instance_types.get(self.cloud_name)
+            created_names = {r['name'] for r in resources if r['type'] == instance_type}
+
+            planned_instances = self.tf_configurator.resources_tf.get('resource', {}).get(instance_type, {})
+
+            failed = []
+            for tf_name, tf_config in planned_instances.items():
+                if tf_name not in created_names:
+                    region = tf_config.get('provider', '').replace(f'{self.cloud_name}.', '')
+                    name_tag = tf_config.get('tags', {}).get('name', tf_name)
+                    failed.append({
+                        'name': name_tag,
+                        'region': region or 'unknown',
+                        'error': 'Instance failed to deploy (check tofu apply output for details)',
+                    })
+            return failed
+        except Exception:
+            return []
 
     def wait_for_all_instances_ssh_up(self):
         seconds_to_wait = 300
