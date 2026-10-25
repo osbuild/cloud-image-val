@@ -62,6 +62,8 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
             LogLevel="ERROR",
             ConnectTimeout=30,
             ConnectionAttempts=5,
+            ServerAliveInterval=60,
+            ServerAliveCountMax=5,
         )
 
     conf.write(ssh_config_file)
