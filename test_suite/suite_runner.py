@@ -70,7 +70,6 @@ class SuiteRunner:
             f'--html {output_filepath.replace("xml", "html")}',
             '--self-contained-html',
             f'--json-report --json-report-file={output_filepath.replace("xml", "json")}',
-            '--timeout=600',
         ]
 
         if test_filter:
