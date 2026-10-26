@@ -1,7 +1,9 @@
+import functools
 import os
 import re
 import time
 
+import paramiko.ssh_exception
 import pytest
 import requests
 from packaging import version
@@ -9,10 +11,50 @@ from py.xml import html
 from pytest_html import extras
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from testinfra.backend.paramiko import ParamikoBackend
 
 from test_suite.generic import helpers
 
 from lib import test_lib, aws_lib
+
+_original_client_fget = ParamikoBackend.client.func
+
+
+@functools.cached_property
+def _client_with_keepalive(self):
+    client = _original_client_fget(self)
+    transport = client.get_transport()
+    if transport:
+        transport.set_keepalive(60)
+    return client
+
+
+_client_with_keepalive.__set_name__(ParamikoBackend, 'client')
+ParamikoBackend.client = _client_with_keepalive
+
+_CMD_TIMEOUT = 600
+
+_original_exec_command = ParamikoBackend._exec_command
+
+
+def _exec_command_with_timeout(self, command):
+    transport = self.client.get_transport()
+    assert transport is not None
+    chan = transport.open_session()
+    if self.get_pty:
+        chan.get_pty()
+    chan.exec_command(command)
+    if not chan.status_event.wait(timeout=_CMD_TIMEOUT):
+        chan.close()
+        raise paramiko.ssh_exception.SSHException(
+            f'Command timed out after {_CMD_TIMEOUT}s')
+    rc = chan.exit_status
+    stdout = b''.join(chan.makefile('rb'))
+    stderr = b''.join(chan.makefile_stderr('rb'))
+    return rc, stdout, stderr
+
+
+ParamikoBackend._exec_command = _exec_command_with_timeout
 
 
 def __get_host_info(host):
