@@ -50,43 +50,39 @@ class TestSuiteRunner:
     @pytest.mark.parametrize(
         'test_test_suites, test_filter, test_marker, test_debug, test_parallel, expected_command_string',
         [(None, None, None, False, False,
-          'timeout 7200 pytest path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
-          f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--timeout=600'),
+          f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")}'),
          (None, test_filter, test_marker, False, False,
-          'timeout 7200 pytest path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--timeout=600 '
           f'-k "{test_filter}" '
           f'-m "{test_marker}"'),
          (None, None, None, False, True,
-          'timeout 7200 pytest path1 path2 --hosts=user1@host1,user2@host2 '
+          'pytest path1 path2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--timeout=600 '
           f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
           '--reruns 3 --reruns-delay 5'),
          (test_test_suite_paths, None, None, True, True,
-          'timeout 7200 pytest test_path_1 test_path_2 --hosts=user1@host1,user2@host2 '
+          'pytest test_path_1 test_path_2 --hosts=user1@host1,user2@host2 '
           f'--connection={test_connection} '
           f'--ssh-config {test_ssh_config} --junit-xml {test_output_filepath} '
           f'--html {test_output_filepath.replace("xml", "html")} '
           f'--self-contained-html '
           f'--json-report --json-report-file={test_output_filepath.replace("xml", "json")} '
-          f'--timeout=600 '
           f'--numprocesses={len(test_instances)} --maxprocesses=162 '
           '--only-rerun="socket.timeout|refused|ConnectionResetError|TimeoutError|SSHException|NoValidConnectionsError'
           '|Error while installing Development tools group" '
