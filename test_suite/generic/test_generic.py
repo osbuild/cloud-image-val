@@ -325,6 +325,7 @@ class TestsGeneric:
             * 8.y and aarch64
             * 9.y
             * 10.y and Azure and LVM
+            * 10.y and OCI and LVM
             * Fedora
         In all other cases the /boot mount doesn't exist on a system.
         If /boot exists it should be at least 960Mib (lower threshold of 1024MiB)
@@ -342,7 +343,7 @@ class TestsGeneric:
         if (
            (release_major == 8 and is_aarch64)
            or (release_major == 9)
-           or (release_major >= 10 and is_azure and lvm_check)
+           or (release_major >= 10 and (is_azure or is_oci) and lvm_check)
            or is_fedora
            or is_oci
            ):
