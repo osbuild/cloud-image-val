@@ -46,13 +46,14 @@ def generate_ssh_key_pair(identity_file):
 
 
 def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
+    ssh_jump_host = os.environ.get('CIV_SSH_JUMP_HOST')
+
     if os.path.exists(ssh_config_file):
         os.remove(ssh_config_file)
 
     conf = sshconf.empty_ssh_config_file()
     for inst in instances.values():
-        conf.add(
-            inst["address"],
+        host_kwargs = dict(
             Hostname=inst["address"],
             User=inst["username"],
             Port=22,
@@ -65,6 +66,10 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
             ServerAliveInterval=60,
             ServerAliveCountMax=5,
         )
+        if ssh_jump_host:
+            host_kwargs['ProxyJump'] = ssh_jump_host
+
+        conf.add(inst["address"], **host_kwargs)
 
     conf.write(ssh_config_file)
 
@@ -76,10 +81,17 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
     :param timeout_seconds: The maximum number of seconds to check for SSH availability.
     :return: None
     """
+    ssh_jump_host = os.environ.get('CIV_SSH_JUMP_HOST')
+
     start_time = time.time()
     while time.time() < start_time + timeout_seconds:
         tick = time.time()
-        if (os.system(f'ssh-keyscan "{host_address}" > /dev/null 2>&1') >> 8) == 0:
+        if ssh_jump_host:
+            check_cmd = (f'ssh -J "{ssh_jump_host}" -o StrictHostKeyChecking=no '
+                         f'-o ConnectTimeout=5 -o BatchMode=yes "{host_address}" true > /dev/null 2>&1')
+        else:
+            check_cmd = f'ssh-keyscan "{host_address}" > /dev/null 2>&1'
+        if (os.system(check_cmd) >> 8) == 0:
             print(f"{host_address} SSH is up! ({time.time() - start_time} seconds)")
             return
         else:
