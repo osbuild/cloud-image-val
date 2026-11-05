@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 import sshconf
 
@@ -45,6 +46,15 @@ def generate_ssh_key_pair(identity_file):
     return identity_file, identity_file + '.pub'
 
 
+def _fix_key_permissions(key_path):
+    if os.path.exists(key_path) and oct(os.stat(key_path).st_mode)[-3:] != '600':
+        fixed_key = '/tmp/bastion_key'
+        shutil.copy2(key_path, fixed_key)
+        os.chmod(fixed_key, 0o600)
+        return fixed_key
+    return key_path
+
+
 def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
     ssh_jump_host = os.environ.get('CIV_SSH_JUMP_HOST')
     ssh_jump_key = os.environ.get('CIV_SSH_JUMP_KEY')
@@ -64,6 +74,7 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
         if ssh_jump_user:
             jump_kwargs['User'] = ssh_jump_user
         if ssh_jump_key:
+            ssh_jump_key = _fix_key_permissions(ssh_jump_key)
             jump_kwargs['IdentityFile'] = ssh_jump_key
             jump_kwargs['IdentitiesOnly'] = 'yes'
         conf.add(ssh_jump_host, **jump_kwargs)
@@ -101,13 +112,19 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
     ssh_jump_key = os.environ.get('CIV_SSH_JUMP_KEY')
     ssh_jump_user = os.environ.get('CIV_SSH_JUMP_USER')
 
+    if ssh_jump_key:
+        ssh_jump_key = _fix_key_permissions(ssh_jump_key)
+
     start_time = time.time()
     while time.time() < start_time + timeout_seconds:
         tick = time.time()
         if ssh_jump_host:
             jump_target = f'{ssh_jump_user}@{ssh_jump_host}' if ssh_jump_user else ssh_jump_host
-            jump_key_opt = f'-o "IdentityFile={ssh_jump_key}" -o IdentitiesOnly=yes' if ssh_jump_key else ''
-            check_cmd = (f'ssh -J "{jump_target}" {jump_key_opt} -o StrictHostKeyChecking=no '
+            jump_key_opt = f'-i {ssh_jump_key}' if ssh_jump_key else ''
+            proxy_cmd = (f'ssh -W %h:%p {jump_key_opt} '
+                         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+                         f'{jump_target}')
+            check_cmd = (f'ssh -o "ProxyCommand={proxy_cmd}" -o StrictHostKeyChecking=no '
                          f'-o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o BatchMode=yes '
                          f'"{host_address}" true > /dev/null 2>&1')
         else:
