@@ -121,12 +121,9 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
         if ssh_jump_host:
             jump_target = f'{ssh_jump_user}@{ssh_jump_host}' if ssh_jump_user else ssh_jump_host
             jump_key_opt = f'-i {ssh_jump_key}' if ssh_jump_key else ''
-            proxy_cmd = (f'ssh -W %h:%p {jump_key_opt} '
+            check_cmd = (f'timeout 5 ssh -W {host_address}:22 {jump_key_opt} '
                          f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
-                         f'{jump_target}')
-            check_cmd = (f'ssh -o "ProxyCommand={proxy_cmd}" -o StrictHostKeyChecking=no '
-                         f'-o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o BatchMode=yes '
-                         f'"{host_address}" true > /dev/null 2>&1')
+                         f'{jump_target} < /dev/null 2>/dev/null | grep -q SSH')
         else:
             check_cmd = f'ssh-keyscan "{host_address}" > /dev/null 2>&1'
         if (os.system(check_cmd) >> 8) == 0:
