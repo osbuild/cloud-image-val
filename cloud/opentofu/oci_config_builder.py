@@ -134,7 +134,7 @@ class OCIConfigBuilder(BaseConfigBuilder):
 
         new_instance = {
             'provider': f'oci.{region}',
-            'availability_domain': f'${{{declared_ad}}}',
+            'availability_domain': instance.get('availability_domain', f'${{{declared_ad}}}'),
             'compartment_id': instance['compartment_id'],
             'display_name': name_value,
             'shape': instance.get('shape', 'VM.Standard.E4.Flex'),
