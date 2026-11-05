@@ -65,19 +65,15 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
 
     conf = sshconf.empty_ssh_config_file()
 
+    proxy_command = None
     if ssh_jump_host:
-        jump_kwargs = dict(
-            Hostname=ssh_jump_host,
-            StrictHostKeyChecking="no",
-            UserKnownHostsFile="/dev/null",
-        )
-        if ssh_jump_user:
-            jump_kwargs['User'] = ssh_jump_user
         if ssh_jump_key:
             ssh_jump_key = _fix_key_permissions(ssh_jump_key)
-            jump_kwargs['IdentityFile'] = ssh_jump_key
-            jump_kwargs['IdentitiesOnly'] = 'yes'
-        conf.add(ssh_jump_host, **jump_kwargs)
+        jump_target = f'{ssh_jump_user}@{ssh_jump_host}' if ssh_jump_user else ssh_jump_host
+        jump_key_opt = f'-i {ssh_jump_key}' if ssh_jump_key else ''
+        proxy_command = (f'ssh -W %h:%p {jump_key_opt} '
+                         f'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null '
+                         f'{jump_target}')
 
     for inst in instances.values():
         host_kwargs = dict(
@@ -93,8 +89,8 @@ def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
             ServerAliveInterval=60,
             ServerAliveCountMax=5,
         )
-        if ssh_jump_host:
-            host_kwargs['ProxyJump'] = ssh_jump_host
+        if proxy_command:
+            host_kwargs['ProxyCommand'] = proxy_command
 
         conf.add(inst["address"], **host_kwargs)
 
