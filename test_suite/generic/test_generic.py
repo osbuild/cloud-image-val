@@ -378,7 +378,7 @@ class TestsGeneric:
             assert not host.file(grub_default_file).contains(kernel_boot_param), \
                 f'{kernel_boot_param} is found in {grub_default_file}!'
         else:
-            if instance_data['cloud'] == 'aws':
+            if instance_data['cloud'] in ('aws', 'oci'):
                 with host.sudo():
                     assert host.file(cmdline_file).contains(kernel_boot_param), \
                         'ifnames expected to be specified'
