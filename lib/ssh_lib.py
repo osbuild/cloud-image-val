@@ -47,11 +47,27 @@ def generate_ssh_key_pair(identity_file):
 
 def generate_instances_ssh_config(ssh_key_path, ssh_config_file, instances):
     ssh_jump_host = os.environ.get('CIV_SSH_JUMP_HOST')
+    ssh_jump_key = os.environ.get('CIV_SSH_JUMP_KEY')
+    ssh_jump_user = os.environ.get('CIV_SSH_JUMP_USER')
 
     if os.path.exists(ssh_config_file):
         os.remove(ssh_config_file)
 
     conf = sshconf.empty_ssh_config_file()
+
+    if ssh_jump_host:
+        jump_kwargs = dict(
+            Hostname=ssh_jump_host,
+            StrictHostKeyChecking="no",
+            UserKnownHostsFile="/dev/null",
+        )
+        if ssh_jump_user:
+            jump_kwargs['User'] = ssh_jump_user
+        if ssh_jump_key:
+            jump_kwargs['IdentityFile'] = ssh_jump_key
+            jump_kwargs['IdentitiesOnly'] = 'yes'
+        conf.add(ssh_jump_host, **jump_kwargs)
+
     for inst in instances.values():
         host_kwargs = dict(
             Hostname=inst["address"],
@@ -82,13 +98,18 @@ def wait_for_host_ssh_up(host_address, timeout_seconds):
     :return: None
     """
     ssh_jump_host = os.environ.get('CIV_SSH_JUMP_HOST')
+    ssh_jump_key = os.environ.get('CIV_SSH_JUMP_KEY')
+    ssh_jump_user = os.environ.get('CIV_SSH_JUMP_USER')
 
     start_time = time.time()
     while time.time() < start_time + timeout_seconds:
         tick = time.time()
         if ssh_jump_host:
-            check_cmd = (f'ssh -J "{ssh_jump_host}" -o StrictHostKeyChecking=no '
-                         f'-o ConnectTimeout=5 -o BatchMode=yes "{host_address}" true > /dev/null 2>&1')
+            jump_target = f'{ssh_jump_user}@{ssh_jump_host}' if ssh_jump_user else ssh_jump_host
+            jump_key_opt = f'-o "IdentityFile={ssh_jump_key}" -o IdentitiesOnly=yes' if ssh_jump_key else ''
+            check_cmd = (f'ssh -J "{jump_target}" {jump_key_opt} -o StrictHostKeyChecking=no '
+                         f'-o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 -o BatchMode=yes '
+                         f'"{host_address}" true > /dev/null 2>&1')
         else:
             check_cmd = f'ssh-keyscan "{host_address}" > /dev/null 2>&1'
         if (os.system(check_cmd) >> 8) == 0:
