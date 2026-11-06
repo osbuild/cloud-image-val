@@ -76,15 +76,34 @@ class TestsOCI:
     @pytest.mark.run_on(['all'])
     def test_correct_network_driver_is_used(self, host):
         """
-        OCI instances use the virtio driver (paravirtualized NIC).
+        OCI VM instances use the virtio driver (paravirtualized NIC) and BM instances use mlx5_core
         """
         with host.sudo():
-            nic_driver = host.check_output(
-                "grep -h DRIVER /sys/class/net/*/device/uevent"
-            )
+            if host.system_info.distribution == 'fedora':
+                host.run_test('dnf install lshw -y >/dev/null')
 
-        assert 'virtio' in nic_driver, \
-            f'Expected virtio network driver in OCI paravirtualized instance, got: {nic_driver}'
+            nic_name = host.check_output('lshw -C network')
+            nic_driver = host.check_output('lshw -C network | grep "driver="')
+
+            self.__test_nic_is_using_correct_driver(nic_name, nic_driver)
+
+    def __test_nic_is_using_correct_driver(self, nic_name, nic_driver):
+        name_filter, driver_filter = self.__get_nic_filters_for_drivers(nic_name)
+
+        assert driver_filter in nic_driver, \
+            f'{name_filter} network adapter must use {driver_filter} driver'
+
+    def __get_nic_filters_for_drivers(self, nic_name):
+        if 'virtio' in nic_name.lower():
+            nic_name_filter = 'Virtio'
+            nic_driver_name_filter = 'virtio'
+        elif 'mellanox' in nic_name.lower():
+            nic_name_filter = 'Mellanox'
+            nic_driver_name_filter = 'mlx5_core'
+        else:
+            pytest.fail(f'Unrecognized OCI network adapter: {nic_name}')
+
+        return nic_name_filter, nic_driver_name_filter
 
     @pytest.mark.run_on(['rhel'])
     def test_unwanted_packages_are_not_present(self, host):
