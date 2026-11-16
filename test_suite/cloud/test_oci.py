@@ -79,7 +79,7 @@ class TestsOCI:
         OCI VM instances use the virtio driver (paravirtualized NIC) and BM instances use mlx5_core
         """
         with host.sudo():
-            if host.system_info.distribution == 'fedora':
+            if host.system_info.distribution == 'fedora' or host.system_info.distribution == 'rhel':
                 host.run_test('dnf install lshw -y >/dev/null')
 
             nic_name = host.check_output('lshw -C network')
