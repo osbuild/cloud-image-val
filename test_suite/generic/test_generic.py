@@ -372,15 +372,15 @@ class TestsGeneric:
         system_release_major = version.parse(host.system_info.release).major
 
         if system_release_major >= 10:
-            assert not host.file(cmdline_file).contains(kernel_boot_param), \
+            assert kernel_boot_param not in host.file(cmdline_file).content_string.split(), \
                 f'There is unexpected {kernel_boot_param} in kernel real-time boot parameters.'
 
-            assert not host.file(grub_default_file).contains(kernel_boot_param), \
+            assert not host.file(grub_default_file).contains(re.escape(kernel_boot_param)), \
                 f'{kernel_boot_param} is found in {grub_default_file}!'
         else:
-            if instance_data['cloud'] == 'aws':
+            if instance_data['cloud'] in ('aws', 'oci'):
                 with host.sudo():
-                    assert host.file(cmdline_file).contains(kernel_boot_param), \
+                    assert kernel_boot_param in host.file(cmdline_file).content_string.split(), \
                         'ifnames expected to be specified'
 
     @pytest.mark.run_on(['rhel'])
