@@ -53,9 +53,23 @@ for HAPKG in ${HAPKGS}; do
         fi
     fi
 
-    yum -y install ${HAPKG}
-    if [ $? -ne 0 ]; then
-        echo "Install of ${HAPKG} failed."
+    # Retry logic for yum lock errors
+    MAX_RETRIES=5
+    RETRY_COUNT=0
+    SUCCESS=0
+    while [ ${RETRY_COUNT} -lt ${MAX_RETRIES} ] && [ ${SUCCESS} -eq 0 ]; do
+        yum -y install ${HAPKG}
+        if [ $? -eq 0 ]; then
+            SUCCESS=1
+        else
+            echo "Attempt $((RETRY_COUNT+1)) to install ${HAPKG} failed. Retrying in 5 seconds..."
+            sleep 5
+            RETRY_COUNT=$((RETRY_COUNT+1))
+        fi
+    done
+
+    if [ ${SUCCESS} -ne 1 ]; then
+        echo "Install of ${HAPKG} failed after multiple retries."
         exit 1
     else
         rpm -q ${HAPKG}
@@ -252,6 +266,9 @@ for R in ${RAS}; do
 	exit 1
     fi
 
+    # Here the script can exit with a "Warning: required resource options..."
+    # The --force flag is intended to bypass this, but it still prints the warning
+    # and the resource is created successfully, so the script continues.
     pcs resource create --force ${RA} ocf:heartbeat:${RA}
     if [ $? -ne 0 ]; then
         echo "Cannot create resource agent ${RA} resource."
@@ -308,34 +325,44 @@ fi
 for R in ${RAS}; do
     RA=$(basename ${R})
 
+    # Disable the resource if it's currently running or failed
     pcs resource disable --wait=5 ${RA}
+    # This command can return a non-zero exit code if the resource is already stopped.
+    # The script handles this by checking for a return code of 0 or 1.
     if [ $? -ne 0 -a $? -ne 1 ]; then
 	echo "Cannot disable resource agent ${RA}."
 	exit 1
     fi
 
+    # Clean up any failed operations for the resource
     pcs resource cleanup ${RA}
     if [ $? -ne 0 -a $? -ne 1 ]; then
         echo "Cannot cleanup resource agent ${RA} resource."
         exit 1
     fi
 
-    pcs resource delete ${RA}
-    if [ $? -ne 0 ]; then
-        echo "Cannot delete resource agent ${RA} resource."
-        exit 1
+    # Check if the resource exists before attempting to delete it
+    # This prevents the script from failing if the resource is already gone.
+    pcs resource config ${RA} &> /dev/null
+    if [ $? -eq 0 ]; then
+        pcs resource delete ${RA}
+        if [ $? -ne 0 ]; then
+            echo "Cannot delete resource agent ${RA} resource."
+            exit 1
+        fi
     fi
 
     if [ ${RHELMAJOR} -lt 8 ]; then
-	pcs resource show ${RA}
+        pcs resource show ${RA}
     else
-	pcs resource config ${RA}
+        pcs resource config ${RA}
     fi
     if [ $? -eq 0 ]; then
-        echo "Got resource configuration for ${RA}."
+        echo "Removal of ${RA} failed."
         exit 1
     fi
 done
+
 
 # Make the cluster forget failed operations from history of the resource
 # and re-detect its current state
