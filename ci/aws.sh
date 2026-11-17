@@ -12,6 +12,9 @@ set -euo pipefail
 source ci/set-env-variables.sh
 source ci/shared_lib.sh
 
+greenprint "🧪 Debugging: Checking Shell Variables"
+echo "AWS_REGION is: ${AWS_REGION}"
+echo "AWS_BUCKET is: ${AWS_BUCKET}"
 
 # Container image used for cloud provider CLI tools
 CONTAINER_IMAGE_CLOUD_TOOLS="quay.io/osbuild/cloud-tools:latest"
@@ -57,29 +60,26 @@ COMPOSE_START=${TEMPDIR}/compose-start-${TEST_ID}.json
 COMPOSE_INFO=${TEMPDIR}/compose-info-${TEST_ID}.json
 AMI_DATA=${TEMPDIR}/ami-data-${TEST_ID}.json
 
-# Dynamic endpoint selection based on region. 
-# EUSC uses .eu, while others use .com (standard)
-if [[ "$AWS_REGION" == eusc-* ]]; then
-    STS_ENDPOINT="https://sts.\$AWS_REGION.amazonaws.eu"
-else
-    STS_ENDPOINT="https://sts.\$AWS_REGION.amazonaws.com"
-fi
-
 # We need awscli to talk to AWS.
 if ! hash aws; then
     echo "Using 'awscli' from a container"
     sudo "${CONTAINER_RUNTIME}" pull ${CONTAINER_IMAGE_CLOUD_TOOLS}
 
-    # Escape dollar signs prevent Jenkins interpolation warnings
-    # Add specific endpoint-url for multi-region compatibility
     AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
-        -e AWS_ACCESS_KEY_ID=\$V2_AWS_ACCESS_KEY_ID \
-        -e AWS_SECRET_ACCESS_KEY=\$V2_AWS_SECRET_ACCESS_KEY \
+        -e AWS_REGION=${AWS_REGION} \
+        -e AWS_ACCESS_KEY_ID=${V2_AWS_ACCESS_KEY_ID} \
+        -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
         -v ${TEMPDIR}:${TEMPDIR}:Z \
-        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region \$AWS_REGION --endpoint-url $STS_ENDPOINT --output json --color on"
+        ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region ${AWS_REGION} --output json --color on"
+
+    # AWS_CMD="sudo ${CONTAINER_RUNTIME} run --rm \
+    #     -e AWS_ACCESS_KEY_ID=\"${V2_AWS_ACCESS_KEY_ID} \
+    #     -e AWS_SECRET_ACCESS_KEY=${V2_AWS_SECRET_ACCESS_KEY} \
+    #     -v ${TEMPDIR}:${TEMPDIR}:Z \
+    #     ${CONTAINER_IMAGE_CLOUD_TOOLS} aws --region $AWS_REGION --output json --color on"
 else
     echo "Using pre-installed 'aws' from the system"
-    AWS_CMD="aws --region \$AWS_REGION --endpoint-url $STS_ENDPOINT --output json --color on"
+    AWS_CMD="aws --region $AWS_REGION --output json --color on"
 fi
 $AWS_CMD --version
 
@@ -110,17 +110,32 @@ get_compose_metadata () {
 }
 
 # Write an AWS TOML file
-# Variables are escaped to prevent Groovy from baking secrets into the file
 tee "$AWS_CONFIG" > /dev/null << EOF
 provider = "aws"
 
 [settings]
-accessKeyID = "\$V2_AWS_ACCESS_KEY_ID"
-secretAccessKey = "\$V2_AWS_SECRET_ACCESS_KEY"
+accessKeyID = "${V2_AWS_ACCESS_KEY_ID}"
+secretAccessKey = "${V2_AWS_SECRET_ACCESS_KEY}"
 bucket = "${AWS_BUCKET}"
-region = "\$AWS_REGION"
+region = "${AWS_REGION}"
 key = "${TEST_ID}"
 EOF
+
+greenprint "🧪 Debugging: Verifying AWS Config Expansion"
+
+# Check if the literal strings like '${AWS_REGION}' still exist in the file
+if grep -q '\${' "$AWS_CONFIG"; then
+    echo "❌ ERROR: Late evaluation bug detected! Literal variables found in config."
+    # This safely shows which variables didn't expand without showing the keys
+    grep -o '\${[^}]*}' "$AWS_CONFIG" | sort -u
+else
+    echo "✅ SUCCESS: All variables appear to have expanded."
+fi
+
+# Safely verify that the keys are not empty strings
+if grep -E 'accessKeyID = ""|secretAccessKey = ""' "$AWS_CONFIG"; then
+    echo "⚠️ WARNING: Keys are present but appear to be empty strings."
+fi
 
 # Write a basic blueprint for our image.
 tee "$BLUEPRINT_FILE" > /dev/null << EOF
@@ -196,6 +211,9 @@ if [[ $COMPOSE_STATUS != FINISHED ]]; then
     redprint "Something went wrong with the compose. 😢"
     exit 1
 fi
+
+greenprint "🧪 Debugging: Testing Container Variable Injection"
+$AWS_CMD configure get region || echo "ERROR: Container cannot see the region!"
 
 # Find the image that we made in AWS.
 greenprint "🔍 Search for created AMI"
@@ -297,13 +315,12 @@ fi
 
 cp "${CIV_CONFIG_FILE}" "${TEMPDIR}/civ_config.yml"
 
-# Escaped variables ensure security and multi-region endpoint resolution
 sudo "${CONTAINER_RUNTIME}" run \
     -a stdout -a stderr \
-    -e AWS_ACCESS_KEY_ID='\$CLOUDX_AWS_ACCESS_KEY_ID' \
-    -e AWS_SECRET_ACCESS_KEY='\$CLOUDX_AWS_SECRET_ACCESS_KEY' \
-    -e AWS_REGION='\$AWS_REGION' \
-    -e AWS_ENDPOINT_URL_STS="$STS_ENDPOINT" \
+    -e AWS_ACCESS_KEY_ID="${CLOUDX_AWS_ACCESS_KEY_ID}" \
+    -e AWS_SECRET_ACCESS_KEY="${CLOUDX_AWS_SECRET_ACCESS_KEY}" \
+    -e AWS_REGION="${AWS_REGION}" \
+    -e JIRA_PAT="${JIRA_PAT}" \
     -v "${TEMPDIR}":/tmp:Z \
     "${CONTAINER_CLOUD_IMAGE_VAL}" \
     python cloud-image-val.py \
