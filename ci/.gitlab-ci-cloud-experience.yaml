@@ -25,6 +25,12 @@ variables:
       - "true"
       - "false"
     description: "Specify if packages should be tested in AWS instances."
+  PACKAGES_TESTING_AZURE:
+    value: "false"
+    options:
+      - "true"
+      - "false"
+    description: "Specify if packages should be tested in Azure instances."
   KEEP_GENERATED_AMI:
     value: "true"
     options:
@@ -84,3 +90,13 @@ cloudx-packages-testing-aws:
     - if: $CLOUDX_PKG_TESTING == "true" && $PACKAGES_TESTING_AWS == "true"
   script:
     - bash ci/aws.sh
+
+cloudx-packages-testing-azure:
+  extends: .cloudx_packages_base
+  stage: test
+  variables:
+    RUNNER: $RUN_ON
+  rules:
+    - if: $CLOUDX_PKG_TESTING == "true" && $PACKAGES_TESTING_AZURE == "true"
+  script:
+    - bash ci/azure.sh
